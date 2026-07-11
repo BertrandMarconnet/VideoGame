@@ -25,10 +25,10 @@ jobs:
 
       - name: Install validation tools
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install gdtoolkit
-          sudo apt-get update
-          sudo apt-get install -y unzip
+          python -m pip install --quiet --upgrade pip
+          python -m pip install --quiet gdtoolkit
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq unzip >/dev/null
 
       - name: Validate project source
         run: python project/tools/validate_project.py
@@ -37,8 +37,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl -fL --retry 4 -o godot.zip https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_linux.x86_64.zip
-          curl -fL --retry 4 -o templates.tpz https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_export_templates.tpz
+          curl -fsSL --retry 4 -o godot.zip https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_linux.x86_64.zip
+          curl -fsSL --retry 4 -o templates.tpz https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_export_templates.tpz
           mkdir -p .godot-bin .templates "$HOME/.local/share/godot/export_templates/4.7.stable"
           unzip -q godot.zip -d .godot-bin
           unzip -q templates.tpz -d .templates
@@ -49,14 +49,33 @@ jobs:
           "$GODOT_BIN" --version
 
       - name: Import project with Godot
-        run: timeout 180 "$GODOT_BIN" --headless --editor --path project --quit-after 20
+        shell: bash
+        run: |
+          set +e
+          timeout 180 "$GODOT_BIN" --headless --editor --path project --quit-after 20 >godot-import.log 2>&1
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ]; then
+            echo "Godot import failed:"
+            grep -Ei "error|failed|parser|invalid|cannot|could not" godot-import.log | tail -n 120 || tail -n 120 godot-import.log
+            exit "$status"
+          fi
+          tail -n 20 godot-import.log
 
       - name: Export Web PWA
         shell: bash
         run: |
-          set -euo pipefail
+          set +e
           mkdir -p project/build/web
-          "$GODOT_BIN" --headless --path project --export-release Web "$GITHUB_WORKSPACE/project/build/web/index.html"
+          "$GODOT_BIN" --headless --path project --export-release Web "$GITHUB_WORKSPACE/project/build/web/index.html" >godot-export.log 2>&1
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ]; then
+            echo "Godot Web export failed:"
+            grep -Ei "error|failed|parser|invalid|cannot|could not|not found" godot-export.log | tail -n 160 || tail -n 160 godot-export.log
+            exit "$status"
+          fi
+          tail -n 30 godot-export.log
           touch project/build/web/.nojekyll
           test -s project/build/web/index.html
           test -s project/build/web/index.wasm
