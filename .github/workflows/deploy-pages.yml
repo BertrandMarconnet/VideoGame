@@ -54,6 +54,7 @@ jobs:
           set +e
           timeout 180 "$GODOT_BIN" --headless --editor --path project --quit-after 20 >godot-import.log 2>&1
           status=$?
+          echo "$status" > godot-import-status.txt
           set -e
           if [ "$status" -ne 0 ]; then
             echo "Godot import failed:"
@@ -69,6 +70,7 @@ jobs:
           mkdir -p project/build/web
           "$GODOT_BIN" --headless --path project --export-release Web "$GITHUB_WORKSPACE/project/build/web/index.html" >godot-export.log 2>&1
           status=$?
+          echo "$status" > godot-export-status.txt
           set -e
           if [ "$status" -ne 0 ]; then
             echo "Godot Web export failed:"
@@ -81,6 +83,18 @@ jobs:
           test -s project/build/web/index.wasm
           test -s project/build/web/index.pck
           test -s project/build/web/index.js
+
+      - name: Upload Godot diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-diagnostics-${{ github.run_id }}
+          path: |
+            godot-import.log
+            godot-import-status.txt
+            godot-export.log
+            godot-export-status.txt
+          if-no-files-found: warn
 
       - name: Configure GitHub Pages
         if: github.event_name == 'push'
