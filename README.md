@@ -1,24 +1,32 @@
-# Blackout Protocol: Steel Echo — Godot/Jolt
+# Blackout Protocol: Steel Echo — Godot/Jolt v10
 
-Survival-horror industriel en vue subjective, développé sous Godot 4 avec physique Jolt, contrôles PC et smartphone, usine procédurale, objets physiques et robots adaptatifs.
+Vertical slice jouable d’un survival-horror industriel en vue subjective, développé sous Godot 4.7 avec le moteur physique Jolt.
 
 ## Jouer en ligne
 
-Après le premier déploiement GitHub Pages :
-
 **https://bertrandmarconnet.github.io/VideoGame/**
 
-Sur smartphone, ouvrir le lien dans Chrome ou Safari, passer en paysage puis utiliser « Ajouter à l'écran d'accueil » pour un lancement proche d'une application.
+Sur smartphone : ouvrir le lien dans Chrome ou Safari, passer en paysage puis toucher **COMMENCER LA RONDE**. Les commandes tactiles apparaissent automatiquement.
 
-## Construction automatique
+## Contenu
 
-Le workflow `.github/workflows/deploy-pages.yml` télécharge la dernière version stable de Godot et ses modèles d'export, compile la cible Web/PWA et publie automatiquement le jeu sur GitHub Pages à chaque mise à jour de `main`.
+- usine procédurale longue avec cinq secteurs ;
+- SPECTER-5, CRAWLER-7, MIMIC-3 et RAM-9 ;
+- directeur de peur adaptatif ;
+- phase initiale d’observation sans attaque immédiate ;
+- objets Jolt saisissables et projetables ;
+- panneaux destructibles et brèches réparables ;
+- contrôles PC et smartphone ;
+- menu de pause, luminosité, qualité et volumes ;
+- audio industriel généré procéduralement ;
+- export Web/PWA automatique par GitHub Actions.
 
-## Commandes
+## Commandes PC
 
-- PC : ZQSD/WASD, souris, E, F, Tab, Espace, Maj, Échap.
-- Smartphone : joystick gauche, caméra tactile droite et boutons contextuels.
+ZQSD/WASD : déplacement · Souris : caméra · E : saisir/interagir · clic gauche : lancer · F : lampe · Espace : saut · Maj : courir · B : barricader · Tab : tablette · Échap : pause.
 
-## Confidentialité et licence
+## Développement
 
-Projet propriétaire. Aucun élément graphique, modèle ou musique de Terminator, FNAF, Silent Hill, Resident Evil ou Metal Gear Solid n'est inclus.
+Le workflow `.github/workflows/deploy-pages.yml` valide le projet, télécharge Godot 4.7 et ses modèles d’export officiels, produit l’export Web/PWA puis le publie sur GitHub Pages.
+
+Projet original. Aucun modèle, son, musique, logo ou personnage provenant de Terminator, FNAF, Silent Hill, Resident Evil ou Metal Gear Solid n’est inclus.
