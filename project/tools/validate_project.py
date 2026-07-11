@@ -45,7 +45,7 @@ for token in [
     "GameDirector",
     "RobotAgent",
     "MobileControls",
-    "get_path",
+    "get_navigation_path",
     "repair_nearest_breach",
     "fear_profile",
     "_make_procedural_loop",
