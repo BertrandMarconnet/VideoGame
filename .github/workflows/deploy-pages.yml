@@ -108,6 +108,40 @@ jobs:
         with:
           path: project/build/web
 
+  smoke-test-live-site:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check published GitHub Pages game
+        shell: bash
+        run: |
+          set +e
+          curl -L --retry 4 --retry-delay 5 --connect-timeout 20 --max-time 120 \
+            -sS -D pages-headers.txt -o pages-index.html \
+            -w "%{http_code}\n" \
+            https://bertrandmarconnet.github.io/VideoGame/ > pages-status.txt
+          status=$?
+          set -e
+          echo "curl_exit=$status" >> pages-status.txt
+          cat pages-status.txt
+          grep -qi "Godot" pages-index.html || true
+          if [ "$status" -ne 0 ]; then
+            exit "$status"
+          fi
+          grep -q "200" pages-status.txt
+          test -s pages-index.html
+
+      - name: Upload live-site smoke-test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pages-smoke-test-${{ github.run_id }}
+          path: |
+            pages-status.txt
+            pages-headers.txt
+            pages-index.html
+          if-no-files-found: warn
+
   deploy:
     if: github.event_name == 'push'
     environment:
