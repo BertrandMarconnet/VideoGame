@@ -56,9 +56,6 @@ refs = set(re.findall(r'(?:load|preload)\("res://([^\"]+)"\)', all_text))
 for ref in sorted(refs):
     check(f"resource:{ref}", (ROOT / ref).exists())
 
-# gdtoolkit is useful for style diagnostics, but Godot itself is the source of
-# truth for syntax, type resolution, resource import and Web export. A style
-# warning must not prevent the engine validation steps from running.
 try:
     result = subprocess.run(
         ["gdlint", *[str(path) for path in sorted((ROOT / "scripts").glob("*.gd"))]],
@@ -67,10 +64,12 @@ try:
         text=True,
         timeout=60,
     )
-    print("GDScript lint diagnostics:")
-    print((result.stdout + result.stderr).strip() or "No lint diagnostics.")
+    diagnostics = [line for line in (result.stdout + result.stderr).splitlines() if line.strip()]
+    print(f"GDScript style diagnostics: {len(diagnostics)} line(s); non-blocking.")
+    for line in diagnostics[:8]:
+        print(line)
 except FileNotFoundError:
-    print("GDScript lint diagnostics unavailable: gdlint is not installed.")
+    print("GDScript style diagnostics unavailable; non-blocking.")
 
 passed = sum(1 for _, ok, _ in checks if ok)
 print(f"Blackout Protocol structural validation: {passed}/{len(checks)} checks passed")
