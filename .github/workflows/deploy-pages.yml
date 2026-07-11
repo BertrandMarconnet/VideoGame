@@ -21,43 +21,47 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify project
-        run: test -s project/project.godot && test -s project/main.gd
+      - name: Install validation tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install gdtoolkit
+          sudo apt-get update
+          sudo apt-get install -y unzip
 
-      - name: Install tools
-        run: sudo apt-get update && sudo apt-get install -y curl jq unzip
+      - name: Validate project source
+        run: python project/tools/validate_project.py
 
-      - name: Download latest stable Godot and export templates
+      - name: Install Godot 4.7 and export templates
         shell: bash
         run: |
           set -euo pipefail
-          TAG="$(curl -fsSL https://api.github.com/repos/godotengine/godot/releases/latest | jq -r '.tag_name')"
-          test -n "$TAG" && test "$TAG" != "null"
-          echo "Using Godot $TAG"
-          curl -fL --retry 4 -o godot.zip "https://github.com/godotengine/godot/releases/download/${TAG}/Godot_v${TAG}_linux.x86_64.zip"
-          curl -fL --retry 4 -o templates.tpz "https://github.com/godotengine/godot/releases/download/${TAG}/Godot_v${TAG}_export_templates.tpz"
+          curl -fL --retry 4 -o godot.zip https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_linux.x86_64.zip
+          curl -fL --retry 4 -o templates.tpz https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_export_templates.tpz
+          mkdir -p .godot-bin .templates "$HOME/.local/share/godot/export_templates/4.7.stable"
           unzip -q godot.zip -d .godot-bin
+          unzip -q templates.tpz -d .templates
+          cp -a .templates/templates/. "$HOME/.local/share/godot/export_templates/4.7.stable/"
           GODOT_BIN="$(find .godot-bin -maxdepth 1 -type f -name 'Godot*' | head -n 1)"
           chmod +x "$GODOT_BIN"
           echo "GODOT_BIN=$GODOT_BIN" >> "$GITHUB_ENV"
-          VERSION="${TAG%-stable}"
-          mkdir -p "$HOME/.local/share/godot/export_templates/${VERSION}.stable"
-          unzip -q templates.tpz -d .templates
-          cp -a .templates/templates/. "$HOME/.local/share/godot/export_templates/${VERSION}.stable/"
+          "$GODOT_BIN" --version
 
-      - name: Import project
-        run: timeout 180 "$GODOT_BIN" --headless --path project --editor --quit-after 20
+      - name: Import project with Godot
+        run: timeout 180 "$GODOT_BIN" --headless --editor --path project --quit-after 20
 
-      - name: Export Web/PWA
+      - name: Export Web PWA
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p project/build/web
-          "$GODOT_BIN" --headless --path project --export-release Web build/web/index.html
+          "$GODOT_BIN" --headless --path project --export-release Web "$GITHUB_WORKSPACE/project/build/web/index.html"
           touch project/build/web/.nojekyll
           test -s project/build/web/index.html
           test -s project/build/web/index.wasm
           test -s project/build/web/index.pck
+          test -s project/build/web/index.js
 
-      - name: Configure Pages
+      - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
         with:
           enablement: true
