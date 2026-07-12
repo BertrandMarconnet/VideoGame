@@ -1,12 +1,12 @@
-# Blackout Protocol: Steel Echo — ATHENA Protocol v15
+# Blackout Protocol: Steel Echo — Storyboard v16
 
-Vertical slice jouable d’un survival-horror industriel en vue subjective, développée avec Godot 4.7, Jolt Physics et publiée automatiquement en Web.
+Vertical slice jouable d’un survival-horror industriel en vue subjective, développée avec Godot 4.7, Jolt Physics et publiée automatiquement en Web/PWA.
 
 ## Jouer en ligne
 
 **https://bertrandmarconnet.github.io/VideoGame/**
 
-La version v15 affiche désormais un terminal de démarrage ToyGuard pendant la construction procédurale de la scène. Après un déploiement, utiliser `Ctrl+F5` une seule fois pour éviter qu’un ancien fichier Web reste dans le cache du navigateur.
+Après un déploiement, utiliser `Ctrl+F5` une seule fois afin d’éviter qu’un ancien export Web reste dans le cache du navigateur.
 
 ## Canon du premier chapitre
 
@@ -14,17 +14,52 @@ En septembre 1987, **ToyGuard Industries**, à New Halcyon, fabrique officiellem
 
 L’opération soviétique **MATRYOSHKA** et le malware **BABOUCHKA** contaminent le complexe. Pour résister, l’IA militaire **ATHENA** fusionne plusieurs systèmes de sécurité et développe une proto-conscience. Le joueur incarne **Alex Mercer**, analyste en contre-mesures affecté au bunker **S-01**. Ses décisions influencent l’empathie, la discipline, la confiance et le développement cognitif d’ATHENA.
 
-**Project Daedalus**, Blacklake, Paul Merrick, DAEDALUS, DELTA-00 et la salle Hermès appartiennent à un concept antérieur conservé comme réserve pour une extension ou un chapitre ultérieur. Ils ne remplacent pas le canon ToyGuard de 1987.
+**Project Daedalus**, Blacklake, Paul Merrick, DAEDALUS, DELTA-00 et la salle Hermès restent réservés à une extension ou à un chapitre ultérieur. Ils ne remplacent pas le canon ToyGuard de 1987.
 
-## Version v15
+## Storyboard v16 — Acte I
 
-- démarrage procédural découpé en étapes afin que Firefox puisse rendre une interface immédiatement ;
-- écran de boot diégétique ToyGuard/S-01 en style industriel rétro ;
-- mise à jour du HUD suspendue tant que les interfaces ne sont pas complètement construites ;
-- chargement et lecture des MP3 Suno uniquement après une interaction réelle du joueur ;
-- test automatisé de l’export dans Firefox avec contrôle du marqueur `BLACKOUT_RUNTIME_READY` ;
-- détection automatique d’un canvas noir ou d’une erreur JavaScript/WebAssembly ;
-- conservation de la campagne de cinq rondes, de KITE-01, de la roue d’actions, de Sentinel OS et des systèmes Jolt existants.
+La campagne ne commence plus directement dans la salle de contrôle. Après le prologue unique, le joueur reçoit le contrôle **à l’extérieur de ToyGuard Industries**, sous la pluie, conformément au plan 01 du storyboard.
+
+Le premier parcours suit maintenant l’ordre narratif prévu :
+
+1. arrivée nocturne devant la façade ToyGuard ;
+2. progression vers l’accès personnel S-01 ;
+3. entrée dans le bunker et consultation de Sentinel OS ;
+4. première patrouille dans les secteurs logistique et assemblage ;
+5. observation des unités ToyGuard ;
+6. déploiement de KITE-01 ;
+7. reconnaissance distante ;
+8. premier contact contrôlé avec ATHENA ;
+9. apparition différée de SPECTER-5 ;
+10. réparation du relais nord.
+
+Les menaces principales sont bloquées pendant l’arrivée extérieure et ne sont libérées qu’après la consultation de Sentinel OS. Cela évite une apparition incohérente de SPECTER-5 avant sa scène de storyboard.
+
+## Direction artistique PS1 industrial low-poly
+
+- façade, clôtures, poste de garde, lampadaires, flaques et signalétique procédurale low-poly ;
+- géométrie volontairement simple et silhouettes lisibles ;
+- matériaux mats, couleurs quantifiées et éclairage cyan/ambre/rouge ;
+- pluie construite avec `MultiMeshInstance3D`, limitée sur smartphone ;
+- lampe et main low-poly visibles en vue subjective ;
+- filtrage nearest, ombrage par sommet et palette réduite ;
+- pixelisation, scanlines, bruit et vignettage subtils appliqués uniquement au monde 3D ;
+- réglage **Filtre rétro** dans le menu de pause, permettant de réduire ou désactiver l’effet.
+
+Le filtre ne modifie pas la lisibilité du HUD et utilise une intensité plus faible sur smartphone.
+
+## Systèmes conservés
+
+- déplacement ZQSD/WASD et contrôles tactiles ;
+- interactions clic gauche, `E` et roue d’actions au clic droit ;
+- tablette Sentinel OS ;
+- KITE-01 et retour immédiat à la vue joueur ;
+- SPECTER-5 et CRAWLER-7 ;
+- unités ToyGuard et bras industriels ;
+- destruction locale et objets physiques Jolt ;
+- campagne de cinq rondes ;
+- directeur narratif local d’ATHENA ;
+- bande-son Suno déclenchée après interaction utilisateur.
 
 ## Bande-son adaptative
 
@@ -38,7 +73,7 @@ L’opération soviétique **MATRYOSHKA** et le malware **BABOUCHKA** contaminen
 - ronde 5 : `09_delta00_final.mp3` ;
 - crédits : `10_credits.mp3`.
 
-Les morceaux sont chargés à la demande. Aucun fichier audio n’est décodé pendant la construction initiale de l’usine. Le placement détaillé est décrit dans `docs/SOUNDTRACK_SUNO.md`.
+Les noms historiques des fichiers sont conservés pour éviter les références cassées. Leur usage narratif actuel reste rattaché à ATHENA/ToyGuard.
 
 ## Commandes PC
 
@@ -57,17 +92,7 @@ Les morceaux sont chargés à la demande. Aucun fichier audio n’est décodé p
 
 ## Validation
 
-Le workflow `.github/workflows/deploy-pages.yml` :
-
-1. reconstitue `scripts/main.gd` à partir des modules `src_parts` ;
-2. exécute `gdlint` ;
-3. importe le projet avec Godot 4.7 ;
-4. lance réellement `scenes/main.tscn` en mode headless ;
-5. produit `index.html`, `index.wasm` et `index.pck` ;
-6. lance l’export dans Firefox avec Playwright ;
-7. attend la fin du démarrage Godot ;
-8. analyse une capture pour refuser un écran effectivement noir ;
-9. publie GitHub Pages uniquement lorsque toutes les étapes réussissent.
+Le workflow `.github/workflows/deploy-pages.yml` reconstitue `scripts/main.gd`, exécute `gdlint`, importe le projet avec Godot 4.7, charge `scenes/main.tscn`, exporte `index.html`, `index.wasm` et `index.pck`, puis lance l’export dans Firefox et refuse un canvas noir avant le déploiement GitHub Pages.
 
 ## Documentation
 
