@@ -1,0 +1,5 @@
+disable:
+- max-line-length
+- max-file-lines
+- unused-argument
+- class-definitions-order
