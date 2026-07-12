@@ -43,13 +43,21 @@ jobs:
           grep -q 'func _open_context_menu_v12' scripts/main.gd
           grep -q 'func _update_factory_population_v12' scripts/main.gd
           grep -q 'func _athena_speak_v12' scripts/main.gd
+          grep -q 'func _update_suno_audio_v14' scripts/main.gd
           grep -q 'BLACKOUT_RUNTIME_READY' scripts/main.gd
 
       - name: Install validation tools
         run: python -m pip install --quiet --disable-pip-version-check gdtoolkit
 
       - name: Validate GDScript
-        run: gdlint scripts/main.gd
+        shell: bash
+        run: |
+          set +e
+          gdlint scripts/main.gd > gdlint.log 2>&1
+          status=$?
+          set -e
+          cat gdlint.log
+          exit "$status"
 
       - name: Download Godot 4.7 stable and official export templates
         shell: bash
@@ -127,6 +135,7 @@ jobs:
         with:
           name: godot-diagnostics-${{ github.run_id }}
           path: |
+            gdlint.log
             godot-import.log
             godot-runtime.log
             godot-export.log
