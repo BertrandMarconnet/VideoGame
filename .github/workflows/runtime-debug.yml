@@ -1,0 +1,24 @@
+name: Runtime source diagnostics
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  assemble-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assemble numbered source
+        run: |
+          mkdir -p scripts
+          cat src_parts/main_*.gdpart > scripts/main.gd
+          nl -ba scripts/main.gd | sed -n '1188,1204p;2252,2268p;2641,2657p;2729,2745p;2773,2789p' > scripts/error-context.txt
+          cat scripts/error-context.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: assembled-runtime-source-${{ github.run_id }}
+          path: scripts/
