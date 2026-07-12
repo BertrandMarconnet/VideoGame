@@ -1,0 +1,86 @@
+func _open_context_menu_v12() -> void:
+	if not game_started or tablet_open:
+		return
+	var hit := _raycast(5.2)
+	context_target = null
+	if not hit.is_empty():
+		context_target = hit.get("collider") as Node
+	for child in context_actions.get_children():
+		child.queue_free()
+	var target_name := "ZONE DEVANT VOUS"
+	if context_target:
+		target_name = context_target.name
+	context_title.text = "ACTIONS // " + target_name
+	_add_context_action_v12("Examiner / scanner", "examine")
+	if context_target is RigidBody3D and context_target.get_meta("grabbable", false):
+		_add_context_action_v12("Saisir l'objet", "grab")
+	if context_target and context_target.has_meta("terminal"):
+		_add_context_action_v12("Pirater / activer le terminal", "activate")
+	if context_target and context_target.get_meta("destructible", false):
+		_add_context_action_v12("Forcer la structure", "breach")
+	if context_target and context_target.get_meta("robot", false):
+		_add_context_action_v12("Marquer comme menace", "mark")
+		_add_context_action_v12("Demander à ATHENA de négocier", "educate")
+	if context_target and context_target.get_meta("ambient_agent", false):
+		_add_context_action_v12("Lire le diagnostic du jouet", "diagnose")
+		_add_context_action_v12("Isoler du réseau", "isolate")
+	_add_context_action_v12("Déployer / rappeler KITE-01", "kite")
+	context_menu_open = true
+	context_menu.visible = true
+	get_tree().paused = true
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	if mobile_layer:
+		mobile_layer.visible = false
+
+func _add_context_action_v12(label_text: String, action: String) -> void:
+	var button := Button.new()
+	button.text = label_text
+	button.custom_minimum_size = Vector2(290, 42)
+	button.pressed.connect(_execute_context_action_v12.bind(action))
+	context_actions.add_child(button)
+
+func _execute_context_action_v12(action: String) -> void:
+	if action == "examine":
+		if context_target:
+			if not context_target.get_meta("inspected", false):
+				context_target.set_meta("inspected", true)
+				clues_found = mini(clues_found + 1, 4)
+				athena_memory.append("• Analyse : %s contient des traces du protocole BABOUCHKA." % context_target.name)
+			_show_status("SCAN : %s // signature archivée" % context_target.name)
+		else:
+			_show_status("SCAN ENVIRONNEMENTAL : activité électromagnétique instable")
+	elif action == "grab" and context_target is RigidBody3D:
+		held_body = context_target as RigidBody3D
+		held_body.gravity_scale = 0.0
+		_show_status("OBJET SAISI")
+	elif action == "activate" and context_target and context_target.has_meta("terminal"):
+		_activate_terminal(String(context_target.get_meta("terminal")))
+	elif action == "breach" and context_target:
+		var target_3d := context_target as Node3D
+		var breach_position := target_3d.global_position if target_3d else Vector3.ZERO
+		_damage_destructible(context_target, 42.0, breach_position)
+	elif action == "mark" and context_target:
+		marked_target = context_target
+		_show_status("%s MARQUÉ — KITE-01 suit la cible" % context_target.name)
+	elif action == "educate" and context_target:
+		context_target.set_meta("stun", max(float(context_target.get_meta("stun", 0.0)), 4.0))
+		athena_empathy = clamp(athena_empathy + 3.0, 0.0, 100.0)
+		athena_last_line = "Je lui ai demandé de suspendre l'attaque. Il hésite, comme moi."
+		_show_status("CANAL EDUCARE OUVERT — cible temporairement hésitante")
+	elif action == "diagnose" and context_target:
+		_inspect_agent_v12(context_target as CharacterBody3D)
+	elif action == "isolate" and context_target:
+		_isolate_agent_v12(context_target as CharacterBody3D)
+	elif action == "kite":
+		_toggle_drone_v11()
+	_close_context_menu_v12()
+
+func _close_context_menu_v12(resume_game := true) -> void:
+	context_menu_open = false
+	context_menu.visible = false
+	context_target = null
+	if resume_game and game_started and not tablet_open and not pause_panel.visible:
+		get_tree().paused = false
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED if not is_mobile else Input.MOUSE_MODE_VISIBLE)
+		if mobile_layer:
+			mobile_layer.visible = true
