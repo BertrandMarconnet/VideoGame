@@ -1,0 +1,21 @@
+{
+  "asset_name": "pipeline_smoke_test",
+  "images": [
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2f8sAAAAASUVORK5CYII="
+  ],
+  "generation": {
+    "target_formats": ["glb"],
+    "target_polycount": 1000,
+    "should_texture": false,
+    "should_remesh": true,
+    "moderation": true
+  },
+  "quality": {
+    "max_glb_mb": 1,
+    "require_glb": true
+  },
+  "provenance": {
+    "author": "Blackout Protocol CI",
+    "license_review": "test data only"
+  }
+}
