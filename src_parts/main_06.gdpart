@@ -14,7 +14,7 @@
 		button.button_up.connect(_mobile_up.bind(StringName(info[1])))
 		mobile_layer.add_child(button)
 	var attack := Button.new()
-	attack.text = "LANCER"
+	attack.text = "ACTION"
 	attack.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	attack.position = Vector2(-408, -86)
 	attack.custom_minimum_size = Vector2(88, 58)
@@ -45,11 +45,16 @@ func _apply_device_profile() -> void:
 		get_viewport().scaling_3d_scale = 0.82
 
 func _start_game() -> void:
+	if not intro_completed:
+		_start_intro_v12()
+		return
 	game_started = true
 	start_panel.visible = false
+	intro_panel.visible = false
 	get_tree().paused = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED if not is_mobile else Input.MOUSE_MODE_VISIBLE)
-	_show_status("RONDE DÉMARRÉE — C/KITE déploie le drone KITE-01.")
+	_show_status("RONDE DÉMARRÉE — TAB ouvre Sentinel, clic droit affiche les actions.")
+	_athena_speak_v12("start")
 	if mobile_layer:
 		mobile_layer.visible = true
 
@@ -58,6 +63,7 @@ func _physics_process(delta: float) -> void:
 		return
 	elapsed += delta
 	_update_v11(delta)
+	_update_v12(delta)
 	_update_player(delta)
 	_update_held_object(delta)
 	_update_robots(delta)
@@ -70,6 +76,7 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
 	if audio_playback:
 		_fill_audio(delta)
+	_update_v12_ui(delta)
 
 func _update_player(delta: float) -> void:
 	if drone_active:
@@ -89,8 +96,10 @@ func _update_player(delta: float) -> void:
 		flashlight.visible = not flashlight.visible
 		fear_flash += 1.0
 		_show_status("LAMPE " + ("ACTIVE" if flashlight.visible else "COUPÉE"))
-	if Input.is_action_just_pressed("interact") or Input.is_action_just_pressed("secondary"):
+	if Input.is_action_just_pressed("interact"):
 		_interact()
+	if Input.is_action_just_pressed("secondary"):
+		_open_context_menu_v12()
 	if Input.is_action_just_pressed("primary"):
 		_primary_action()
 	if Input.is_action_pressed("sprint") and direction.length() > 0.2:
@@ -99,7 +108,26 @@ func _update_player(delta: float) -> void:
 		fear_still += delta
 
 func _input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE and game_started:
-		_toggle_pause()
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_TAB and game_started:
+		_toggle_tablet_v12()
 		get_viewport().set_input_as_handled()
+		return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE and game_started:
+		if tablet_open:
+			_toggle_tablet_v12()
+		elif context_menu_open:
+			_close_context_menu_v12()
+		else:
+			_toggle_pause()
+		get_viewport().set_input_as_handled()
+		return
 	if not game_started or get_tree().paused:
+		return
+	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		_rotate_view(event.relative)
+		if abs(event.relative.x) > 38.0:
+			fear_turns += abs(event.relative.x) / 120.0
+	if event is InputEventScreenDrag:
+		if event.position.x > get_viewport().get_visible_rect().size.x * 0.44:
+			_rotate_view(event.relative * 0.65)
+			fear_turns += abs(event.relative.x) / 160.0
