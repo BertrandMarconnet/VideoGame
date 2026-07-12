@@ -45,8 +45,12 @@ func _apply_device_profile() -> void:
 		get_viewport().scaling_3d_scale = 0.82
 
 func _start_game() -> void:
+	# Browser audio must be initialized from a real user gesture. This also keeps
+	# Firefox from decoding MP3 resources while the procedural scene is booting.
+	_ensure_suno_audio_v14()
 	if not intro_completed:
 		_start_intro_v12()
+		_play_suno_music_v14("intro")
 		return
 	game_started = true
 	start_panel.visible = false
@@ -56,6 +60,7 @@ func _start_game() -> void:
 	if audio_player and not audio_player.playing:
 		audio_player.play()
 		audio_playback = audio_player.get_stream_playback() as AudioStreamGeneratorPlayback
+	_play_suno_music_v14(_round_music_key_v14())
 	_show_status("RONDE %d/%d — TAB ouvre Sentinel, clic droit affiche la roue d'actions." % [current_round, TOTAL_ROUNDS])
 	_athena_speak_v12("start")
 	if mobile_layer:
