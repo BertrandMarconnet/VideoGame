@@ -3,6 +3,7 @@ import { PNG } from "pngjs";
 import fs from "node:fs";
 
 const targetUrl = process.env.BLACKOUT_TEST_URL ?? "http://127.0.0.1:8080/";
+const headless = process.env.BLACKOUT_FIREFOX_HEADLESS !== "0";
 const consoleLines = [];
 const runtimeErrors = [];
 let markReady;
@@ -15,7 +16,20 @@ const timeout = setTimeout(() => {
   markFailed(new Error("BLACKOUT_RUNTIME_READY was not emitted within 120 seconds"));
 }, 120_000);
 
-const browser = await firefox.launch({ headless: true });
+const browser = await firefox.launch({
+  headless,
+  env: {
+    ...process.env,
+    LIBGL_ALWAYS_SOFTWARE: process.env.LIBGL_ALWAYS_SOFTWARE ?? "1",
+    MOZ_WEBRENDER: process.env.MOZ_WEBRENDER ?? "1",
+  },
+  firefoxUserPrefs: {
+    "webgl.disabled": false,
+    "webgl.force-enabled": true,
+    "webgl.enable-webgl2": true,
+    "gfx.webrender.software": true,
+  },
+});
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 page.on("console", (message) => {
   const line = `[${message.type()}] ${message.text()}`;
@@ -40,6 +54,23 @@ page.on("crash", () => {
 
 try {
   await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 120_000 });
+  const webgl = await page.evaluate(() => {
+    const testCanvas = document.createElement("canvas");
+    const context = testCanvas.getContext("webgl2");
+    if (!context) {
+      return { available: false };
+    }
+    return {
+      available: true,
+      renderer: context.getParameter(context.RENDERER),
+      vendor: context.getParameter(context.VENDOR),
+      version: context.getParameter(context.VERSION),
+    };
+  });
+  consoleLines.push(`[webgl2] ${JSON.stringify(webgl)}`);
+  if (!webgl.available) {
+    throw new Error("Firefox test environment does not expose WebGL2");
+  }
   await runtimeReady;
   await page.waitForTimeout(2_000);
   const canvas = page.locator("canvas").first();
@@ -76,15 +107,20 @@ try {
   }
   const state = await page.evaluate(() => {
     const canvasElement = document.querySelector("canvas");
+    const compatibilityPanel = document.getElementById("blackout-webgl-error");
     return {
       title: document.title,
       canvasWidth: canvasElement?.width ?? 0,
       canvasHeight: canvasElement?.height ?? 0,
       visibility: document.visibilityState,
+      compatibilityPanelVisible: compatibilityPanel ? getComputedStyle(compatibilityPanel).display !== "none" : false,
       bodyText: document.body.innerText.slice(0, 500),
     };
   });
   consoleLines.push(`[state] ${JSON.stringify(state)}`);
+  if (state.compatibilityPanelVisible) {
+    throw new Error("Compatibility panel remained visible despite WebGL2 support");
+  }
   if (runtimeErrors.length > 0) {
     throw new Error(`Firefox emitted runtime errors:\n${runtimeErrors.join("\n")}`);
   }
