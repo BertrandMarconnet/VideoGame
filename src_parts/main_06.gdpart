@@ -83,6 +83,10 @@ func _physics_process(delta: float) -> void:
 	_update_hud()
 
 func _process(delta: float) -> void:
+	# _ready() now yields between construction stages on Web. Do not run HUD or
+	# soundtrack updates until the final v13 interface has been created.
+	if not health_progress:
+		return
 	if audio_playback:
 		_fill_audio(delta)
 	_update_v12_ui(delta)
