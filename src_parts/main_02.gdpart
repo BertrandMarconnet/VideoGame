@@ -1,0 +1,100 @@
+	_build_destructible_wall(Vector3(-8.0, 2.2, -119), Vector3(0.5, 4.4, 8.0), "SecretWall")
+	_static_box(Vector3(0.5, 4.4, 10), Vector3(-16.0, 2.2, -119), _material(Color(0.18, 0.19, 0.2), 0.4, 0.72), "SecretShell")
+	_static_box(Vector3(8.0, 4.4, 0.5), Vector3(-12.0, 2.2, -124), _material(Color(0.18, 0.19, 0.2), 0.4, 0.72), "SecretBack")
+	for i in range(3):
+		_create_prop(Vector3(-13.5 + float(i) * 1.5, 1.0, -120.0), Vector3(1.0, 1.0, 1.0), 8.0, Color(0.22, 0.26, 0.28))
+
+func _build_terminals() -> void:
+	uplink_terminal = _terminal(Vector3(0, 1.1, -6.0), "uplink")
+	relay_terminal = _terminal(Vector3(0, 1.1, -165.0), "relay")
+
+func _build_props() -> void:
+	for i in range(20):
+		var lane := -1.0 if i % 2 == 0 else 1.0
+		var x := lane * rng.randf_range(5.0, 12.5)
+		var z := -22.0 - float(i) * 6.4
+		var size := Vector3(rng.randf_range(0.7, 1.4), rng.randf_range(0.7, 1.3), rng.randf_range(0.7, 1.4))
+		_create_prop(Vector3(x, size.y * 0.5 + 0.1, z), size, rng.randf_range(4.0, 16.0), Color(0.18, 0.22, 0.24))
+	for i in range(8):
+		_create_prop(Vector3(-5.0 + float(i) * 1.5, 0.8, -55.0), Vector3(0.7, 1.5, 0.7), 10.0, Color(0.24, 0.19, 0.13))
+
+func _build_pipe_run(z: float) -> void:
+	for x in [-13.8, 13.8]:
+		_visual_cylinder(0.18, 8.0, Vector3(x, 6.1, z), _material(Color(0.18, 0.2, 0.21), 0.9, 0.3), "Pipe", Vector3(90, 0, 0))
+
+func _build_rack(at: Vector3) -> void:
+	for y in [0.6, 1.8, 3.0]:
+		_static_box(Vector3(6.5, 0.12, 1.8), at + Vector3(0, y, 0), _material(Color(0.12, 0.15, 0.17), 0.8, 0.35), "RackShelf")
+	for x in [-3.1, 3.1]:
+		for z in [-0.8, 0.8]:
+			_static_box(Vector3(0.12, 3.8, 0.12), at + Vector3(x, 1.9, z), _material(Color(0.16, 0.19, 0.21), 0.82, 0.35), "RackPost")
+
+func _build_ceiling_light(at: Vector3, damaged: bool) -> void:
+	_visual_box(Vector3(4.2, 0.18, 0.55), at, _material(Color(0.15, 0.17, 0.18), 0.65, 0.35), "Fixture")
+	_visual_box(Vector3(3.7, 0.05, 0.3), at + Vector3(0, -0.13, 0), _material(Color(0.7, 0.86, 0.92), 0.1, 0.3, Color(0.35, 0.72, 0.88)), "Tube")
+	if flicker_lights.size() < (5 if is_mobile else 10):
+		var light := OmniLight3D.new()
+		light.position = at + Vector3(0, -0.4, 0)
+		light.light_color = Color(0.55, 0.76, 0.92) if not damaged else Color(1.0, 0.24, 0.12)
+		light.light_energy = 1.5 if not damaged else 0.7
+		light.omni_range = 12.0
+		light.shadow_enabled = false
+		add_child(light)
+		flicker_lights.append(light)
+
+func _build_destructible_wall(at: Vector3, size: Vector3, label: String) -> StaticBody3D:
+	var body := _static_box(size, at, _material(Color(0.19, 0.2, 0.21), 0.45, 0.78), label)
+	body.set_meta("destructible", true)
+	body.set_meta("health", 75.0)
+	body.set_meta("size", size)
+	return body
+
+func _terminal(at: Vector3, terminal_id: String) -> StaticBody3D:
+	var body := _static_box(Vector3(2.0, 2.2, 1.1), at, _material(Color(0.06, 0.09, 0.11), 0.72, 0.35), "Terminal")
+	body.set_meta("terminal", terminal_id)
+	_visual_box(Vector3(1.35, 0.75, 0.05), at + Vector3(0, 0.25, -0.58), _material(Color(0.02, 0.12, 0.14), 0.1, 0.15, Color(0.0, 0.62, 0.72)), "TerminalScreen")
+	return body
+
+func _static_box(size: Vector3, at: Vector3, material: Material, label: String) -> StaticBody3D:
+	var body := StaticBody3D.new()
+	body.name = label
+	body.position = at
+	var mesh := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = size
+	mesh.mesh = box
+	mesh.material_override = material
+	body.add_child(mesh)
+	var collision := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = size
+	collision.shape = shape
+	body.add_child(collision)
+	add_child(body)
+	return body
+
+func _visual_box(size: Vector3, at: Vector3, material: Material, label: String) -> MeshInstance3D:
+	var mesh := MeshInstance3D.new()
+	mesh.name = label
+	var box := BoxMesh.new()
+	box.size = size
+	mesh.mesh = box
+	mesh.material_override = material
+	mesh.position = at
+	add_child(mesh)
+	return mesh
+
+func _visual_cylinder(radius: float, height: float, at: Vector3, material: Material, label: String, rotation_value := Vector3.ZERO) -> MeshInstance3D:
+	var mesh := MeshInstance3D.new()
+	mesh.name = label
+	var cylinder := CylinderMesh.new()
+	cylinder.top_radius = radius
+	cylinder.bottom_radius = radius
+	cylinder.height = height
+	cylinder.radial_segments = 10
+	mesh.mesh = cylinder
+	mesh.material_override = material
+	mesh.position = at
+	mesh.rotation_degrees = rotation_value
+	add_child(mesh)
+	return mesh
