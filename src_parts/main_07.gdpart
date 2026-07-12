@@ -95,6 +95,6 @@ func _break_destructible(body: StaticBody3D, at: Vector3) -> void:
 		debris.append(piece)
 		get_tree().create_timer(14.0).timeout.connect(_freeze_debris.bind(piece))
 	while debris.size() > MAX_DEBRIS:
-		var oldest := debris.pop_front()
+		var oldest: RigidBody3D = debris.pop_front()
 		if is_instance_valid(oldest):
 			oldest.freeze = true
