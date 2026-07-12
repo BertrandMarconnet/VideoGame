@@ -29,8 +29,8 @@ func _intro_slides_v12() -> Array:
 			"body": "[center][color=#7feeff]ATHENA[/color] — Adaptive Tactical Hybrid Engine for Networked Autonomy — a relié les fragments pour se défendre.\n\nElle pose désormais des questions, conserve vos réponses et éveille les jouets afin de comprendre qui menace réellement le complexe.[/center]"
 		},
 		{
-			"title": "VOTRE RONDE",
-			"body": "[center]Vous êtes l'analyste envoyé dans le bunker S-01.\n\nProtégez l'usine. Enquêtez sur l'attaque. Utilisez la tablette Sentinel. Et surtout, choisissez ce que vous apprenez à ATHENA : [color=#78ffb0]l'empathie[/color], [color=#ffd35a]la discipline[/color]… ou la peur.[/center]"
+			"title": "VOTRE CAMPAGNE",
+			"body": "[center]Vous êtes l'analyste envoyé dans le bunker S-01.\n\nCinq rondes vous attendent. L'usine, les lignes d'assemblage et ATHENA évolueront après chaque uplink. Choisissez ce que vous lui apprenez : [color=#78ffb0]l'empathie[/color], [color=#ffd35a]la discipline[/color]… ou la peur.[/center]"
 		}
 	]
 
@@ -76,7 +76,7 @@ func _toggle_tablet_v12() -> void:
 			mobile_layer.visible = false
 	else:
 		get_tree().paused = false
-		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED if not is_mobile else Input.MOUSE_MODE_VISIBLE)
+		_capture_pointer_v13()
 		if mobile_layer:
 			mobile_layer.visible = true
 
@@ -91,14 +91,15 @@ func _refresh_tablet_v12() -> void:
 		var relay_state := "[color=#78ffae]TERMINÉ[/color]" if objective_stage > 0 else "[color=#ffd05a]EN COURS[/color]"
 		var uplink_state := "[color=#78ffae]TERMINÉ[/color]" if objective_stage > 1 else "[color=#ff856b]VERROUILLÉ[/color]"
 		tablet_content.text = (
-			"[b]TASK TAB // NUIT 01[/b]\n\n"
+			"[b]TASK TAB // RONDE %02d / %02d[/b]\n" % [current_round, TOTAL_ROUNDS]
+			+ "[color=#8ba3ad]Graine environnementale : %06d[/color]\n\n" % round_seed
 			+ "1. Inspecter le bunker S-01  [color=#78ffae]TERMINÉ[/color]\n"
 			+ "2. Atteindre le relais nord  " + relay_state + "\n"
 			+ "3. Restaurer l'uplink S-01  " + uplink_state + "\n"
 			+ "4. Identifier l'origine de MATRYOSHKA  [color=#ffd05a]%d/4 indices[/color]\n\n" % clues_found
 			+ "[b]COMMANDES[/b]\n"
-			+ "Clic gauche : interaction directe / saisir / lancer / endommager\n"
-			+ "Clic droit : liste d'actions contextuelles\n"
+			+ "Clic gauche : interaction directe / saisir / lancer / scanner avec KITE\n"
+			+ "Clic droit : roue d'actions ; en vue drone, retour immédiat au joueur\n"
 			+ "TAB : tablette · C : KITE-01 · F : lampe · E : interaction rapide\n\n"
 			+ "[color=#8ba3ad]Décors détruits : %d · Profil de peur : %s[/color]" % [destroyed_decor, fear_profile]
 		)
@@ -108,22 +109,22 @@ func _refresh_tablet_v12() -> void:
 			"[b]CARTE TACTIQUE // COMPLEXE TOYGUARD[/b]\n\n"
 			+ "S-01 CENTRE DE CONTRÔLE ........ [color=#78ffae]EN LIGNE[/color]\n"
 			+ "LOGISTIQUE / CAM 02 ............ [color=#9eeeff]ACTIVITÉ %02d[/color]\n" % factory_agents.size()
-			+ "ASSEMBLAGE / CAM 04 ............ [color=#ff9b63]SPECTER-5[/color]\n"
+			+ "ASSEMBLAGE / CAM 04 ............ [color=#ff9b63]BRAS 6 AXES %d/6[/color]\n" % maxi(current_round - 1, 0)
 			+ "ARCHIVES VHS / CAM 06 .......... [color=#ffd05a]SIGNAL ANALOGIQUE[/color]\n"
 			+ "FONDERIE / CAM 09 .............. [color=#ff5d4b]CRAWLER-7[/color]\n"
 			+ "RELAIS NORD / CAM 12 ........... %s\n\n" % ("[color=#78ffae]ACTIF[/color]" if objective_stage > 0 else "[color=#ff856b]HORS LIGNE[/color]")
 			+ "Unités utilitaires compromises : [b]%d[/b]\n" % corrupted
-			+ "KITE-01 : %s" % ("[color=#78ffae]DÉPLOYÉ[/color]" if drone_active else "[color=#8ba3ad]EN VEILLE[/color]")
+			+ "KITE-01 : %s · batterie %d%%" % [("[color=#78ffae]DÉPLOYÉ[/color]" if drone_active else "[color=#8ba3ad]EN VEILLE[/color]"), int(drone_battery)]
 		)
 	elif tablet_tab == "ATHENA":
 		tablet_content.text = (
-			"[b]EDUCARE // SESSION ATHENA[/b]\n\n"
+			"[b]EDUCARE // SESSION ATHENA // RONDE %d[/b]\n\n" % current_round
 			+ "Stade cognitif : [color=#7feeff]%s[/color]\n" % athena_stage
 			+ "Empathie : %d/100\n" % int(athena_empathy)
 			+ "Discipline : %d/100\n" % int(athena_discipline)
 			+ "Confiance envers l'opérateur : %d/100\n\n" % int(athena_trust)
 			+ "[color=#7feeff]ATHENA >[/color] %s\n\n" % athena_last_line
-			+ "[color=#8ba3ad]Les trois décisions sous l'écran modifient sa personnalité, les dialogues et les événements de la nuit. Le directeur narratif local combine l'état du complexe, vos choix et votre profil de peur.[/color]"
+			+ "[color=#8ba3ad]Les décisions modifient sa personnalité, l'activation des lignes et les événements des rondes suivantes.[/color]"
 		)
 	else:
 		var memory_text := ""
