@@ -1,0 +1,100 @@
+		["◀", "move_left", Vector2(34, -148)], ["▶", "move_right", Vector2(158, -148)],
+		["E", "interact", Vector2(-210, -158)], ["F", "flashlight", Vector2(-112, -158)],
+		["JUMP", "jump", Vector2(-210, -86)], ["RUN", "sprint", Vector2(-112, -86)]
+	]
+	for info in buttons:
+		var button := Button.new()
+		button.text = info[0]
+		button.custom_minimum_size = Vector2(76, 58)
+		button.set_anchors_preset(Control.PRESET_BOTTOM_LEFT if float(info[2].x) > 0 else Control.PRESET_BOTTOM_RIGHT)
+		button.position = info[2]
+		button.modulate = Color(0.8, 0.94, 1.0, 0.68)
+		button.button_down.connect(_mobile_down.bind(StringName(info[1])))
+		button.button_up.connect(_mobile_up.bind(StringName(info[1])))
+		mobile_layer.add_child(button)
+	var attack := Button.new()
+	attack.text = "LANCER"
+	attack.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	attack.position = Vector2(-310, -86)
+	attack.custom_minimum_size = Vector2(88, 58)
+	attack.button_down.connect(_mobile_down.bind(&"primary"))
+	attack.button_up.connect(_mobile_up.bind(&"primary"))
+	mobile_layer.add_child(attack)
+	var pause_button := Button.new()
+	pause_button.text = "Ⅱ"
+	pause_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	pause_button.position = Vector2(-74, 16)
+	pause_button.custom_minimum_size = Vector2(58, 48)
+	pause_button.pressed.connect(_toggle_pause)
+	mobile_layer.add_child(pause_button)
+
+func _mobile_down(action: StringName) -> void:
+	Input.action_press(action)
+
+func _mobile_up(action: StringName) -> void:
+	Input.action_release(action)
+
+func _apply_device_profile() -> void:
+	if is_mobile:
+		get_viewport().scaling_3d_scale = 0.58
+		camera.fov = 76.0
+		if world_env.environment:
+			world_env.environment.fog_density = 0.0028
+	else:
+		get_viewport().scaling_3d_scale = 0.82
+
+func _start_game() -> void:
+	game_started = true
+	start_panel.visible = false
+	get_tree().paused = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED if not is_mobile else Input.MOUSE_MODE_VISIBLE)
+	_show_status("RONDE DÉMARRÉE — le réseau est instable.")
+	if mobile_layer:
+		mobile_layer.visible = true
+
+func _physics_process(delta: float) -> void:
+	if not game_started or get_tree().paused:
+		return
+	elapsed += delta
+	_update_player(delta)
+	_update_held_object(delta)
+	_update_robots(delta)
+	_update_fear(delta)
+	_update_phase()
+	_update_scares()
+	_update_audio(delta)
+	_update_hud()
+
+func _process(delta: float) -> void:
+	if audio_playback:
+		_fill_audio(delta)
+
+func _update_player(delta: float) -> void:
+	var input_vec := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var direction := (player.transform.basis * Vector3(input_vec.x, 0, input_vec.y)).normalized()
+	var speed := SPRINT_SPEED if Input.is_action_pressed("sprint") else PLAYER_SPEED
+	player.velocity.x = direction.x * speed
+	player.velocity.z = direction.z * speed
+	if not player.is_on_floor():
+		player.velocity.y -= GRAVITY * delta
+	elif Input.is_action_just_pressed("jump"):
+		player.velocity.y = 6.2
+	player.move_and_slide()
+	if Input.is_action_just_pressed("flashlight"):
+		flashlight.visible = not flashlight.visible
+		fear_flash += 1.0
+		_show_status("LAMPE " + ("ACTIVE" if flashlight.visible else "COUPÉE"))
+	if Input.is_action_just_pressed("interact") or Input.is_action_just_pressed("secondary"):
+		_interact()
+	if Input.is_action_just_pressed("primary"):
+		_primary_action()
+	if Input.is_action_pressed("sprint") and direction.length() > 0.2:
+		fear_sprint += delta
+	if direction.length() < 0.05:
+		fear_still += delta
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE and game_started:
+		_toggle_pause()
+		get_viewport().set_input_as_handled()
+	if not game_started or get_tree().paused:
