@@ -1,0 +1,100 @@
+func _build_world_environment() -> void:
+	world_env = WorldEnvironment.new()
+	var env := Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color(0.018, 0.028, 0.038)
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color(0.34, 0.44, 0.54)
+	env.ambient_light_energy = 0.74
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_exposure = 1.42
+	env.fog_enabled = true
+	env.fog_light_color = Color(0.08, 0.12, 0.17)
+	env.fog_light_energy = 0.72
+	env.fog_density = 0.0042
+	world_env.environment = env
+	add_child(world_env)
+	var moon := DirectionalLight3D.new()
+	moon.rotation_degrees = Vector3(-58.0, -22.0, 0.0)
+	moon.light_color = Color(0.48, 0.66, 0.82)
+	moon.light_energy = 0.7
+	moon.shadow_enabled = false
+	add_child(moon)
+
+func _build_factory() -> void:
+	_static_box(Vector3(MAP_WIDTH, 0.6, MAP_LENGTH), Vector3(0, -0.3, -MAP_LENGTH * 0.5), _material(Color(0.105, 0.12, 0.135), 0.25, 0.86), "Floor")
+	_static_box(Vector3(MAP_WIDTH, 0.6, MAP_LENGTH), Vector3(0, 8.4, -MAP_LENGTH * 0.5), _material(Color(0.05, 0.06, 0.07), 0.5, 0.9), "Ceiling")
+	_static_box(Vector3(0.7, 9.0, MAP_LENGTH), Vector3(-MAP_WIDTH * 0.5, 4.2, -MAP_LENGTH * 0.5), _material(Color(0.12, 0.14, 0.16), 0.35, 0.84), "WestShell")
+	_static_box(Vector3(0.7, 9.0, MAP_LENGTH), Vector3(MAP_WIDTH * 0.5, 4.2, -MAP_LENGTH * 0.5), _material(Color(0.12, 0.14, 0.16), 0.35, 0.84), "EastShell")
+	_static_box(Vector3(MAP_WIDTH, 9.0, 0.7), Vector3(0, 4.2, 0), _material(Color(0.13, 0.14, 0.16), 0.35, 0.84), "SouthShell")
+	_static_box(Vector3(MAP_WIDTH, 9.0, 0.7), Vector3(0, 4.2, -MAP_LENGTH), _material(Color(0.13, 0.14, 0.16), 0.35, 0.84), "NorthShell")
+	for z in range(0, 18):
+		var section_z := -5.0 - float(z) * 9.5
+		_build_ceiling_light(Vector3(-8.0, 7.6, section_z), z % 4 == 0)
+		_build_ceiling_light(Vector3(8.0, 7.6, section_z), z % 5 == 0)
+		if z % 2 == 0:
+			_build_pipe_run(section_z)
+	_build_control_room()
+	_build_logistics_zone()
+	_build_assembly_zone()
+	_build_archive_zone()
+	_build_foundry_zone()
+	_build_secret_room()
+	_build_terminals()
+	_build_props()
+	observation_points = [
+		Vector3(-12, 1.0, -26), Vector3(12, 1.0, -43), Vector3(-11, 1.0, -69),
+		Vector3(10, 1.0, -98), Vector3(-12, 1.0, -128), Vector3(8, 1.0, -154)
+	]
+
+func _build_control_room() -> void:
+	_static_box(Vector3(26, 0.25, 18), Vector3(0, 0.12, -10), _material(Color(0.16, 0.18, 0.19), 0.3, 0.75), "ControlFloor")
+	_static_box(Vector3(0.35, 4.0, 18), Vector3(-13, 2.0, -10), _material(Color(0.22, 0.24, 0.25), 0.4, 0.7), "ControlWallL")
+	_static_box(Vector3(0.35, 4.0, 18), Vector3(13, 2.0, -10), _material(Color(0.22, 0.24, 0.25), 0.4, 0.7), "ControlWallR")
+	for x in [-8.0, -2.7, 2.7, 8.0]:
+		_static_box(Vector3(4.4, 1.1, 1.6), Vector3(x, 0.55, -7.5), _material(Color(0.08, 0.11, 0.13), 0.65, 0.35), "Console")
+		_visual_box(Vector3(3.2, 0.05, 0.85), Vector3(x, 1.12, -7.3), _material(Color(0.02, 0.15, 0.18), 0.15, 0.2, Color(0.0, 0.45, 0.58)), "Screen")
+
+func _build_logistics_zone() -> void:
+	for row in range(3):
+		for col in range(5):
+			var x := -11.5 + float(row) * 11.5
+			var z := -30.0 - float(col) * 6.0
+			_build_rack(Vector3(x, 0, z))
+	_static_box(Vector3(10, 0.45, 1.4), Vector3(0, 0.5, -48), _material(Color(0.1, 0.14, 0.16), 0.75, 0.45), "Conveyor")
+	for x in range(-4, 5):
+		_visual_cylinder(0.24, 1.2, Vector3(float(x) * 1.1, 0.9, -48), _material(Color(0.25, 0.28, 0.29), 0.85, 0.32), "Roller")
+
+func _build_assembly_zone() -> void:
+	for i in range(5):
+		var x := -10.0 + float(i % 2) * 20.0
+		var z := -63.0 - float(i) * 8.0
+		_static_box(Vector3(5.0, 2.4, 4.0), Vector3(x, 1.2, z), _material(Color(0.12, 0.16, 0.18), 0.72, 0.38), "Machine")
+		_visual_box(Vector3(3.7, 0.1, 2.7), Vector3(x, 2.43, z), _material(Color(0.1, 0.12, 0.13), 0.8, 0.3), "MachineTop")
+		_visual_box(Vector3(0.5, 1.0, 0.12), Vector3(x + 1.5, 1.35, z - 2.05), _material(Color(0.05, 0.2, 0.22), 0.2, 0.2, Color(0, 0.48, 0.52)), "Panel")
+	_build_destructible_wall(Vector3(0, 2.4, -86), Vector3(15.5, 4.8, 0.5), "AssemblyPartition")
+
+func _build_archive_zone() -> void:
+	for side in [-1.0, 1.0]:
+		for i in range(6):
+			_static_box(Vector3(2.4, 3.5, 0.9), Vector3(side * 11.5, 1.75, -96.0 - float(i) * 5.0), _material(Color(0.16, 0.16, 0.17), 0.6, 0.5), "ArchiveCabinet")
+	for i in range(4):
+		_static_box(Vector3(7.0, 0.12, 2.0), Vector3(0, 1.1 + float(i) * 0.7, -110), _material(Color(0.18, 0.19, 0.2), 0.8, 0.35), "ArchiveShelf")
+
+func _build_foundry_zone() -> void:
+	for i in range(4):
+		var x := -9.0 + float(i % 2) * 18.0
+		var z := -132.0 - float(i / 2) * 14.0
+		_static_box(Vector3(7.0, 4.8, 7.0), Vector3(x, 2.4, z), _material(Color(0.14, 0.105, 0.08), 0.72, 0.48), "FoundryPress")
+		var glow := OmniLight3D.new()
+		glow.position = Vector3(x, 2.3, z - 4.1)
+		glow.light_color = Color(1.0, 0.22, 0.06)
+		glow.light_energy = 2.4
+		glow.omni_range = 11.0
+		glow.shadow_enabled = false
+		add_child(glow)
+		flicker_lights.append(glow)
+	_static_box(Vector3(12, 0.8, 10), Vector3(0, 0.4, -162), _material(Color(0.11, 0.12, 0.13), 0.84, 0.32), "RecorderVault")
+
+func _build_secret_room() -> void:
+	_static_box(Vector3(8, 0.4, 10), Vector3(-12, 0.2, -119), _material(Color(0.12, 0.13, 0.14), 0.5, 0.7), "SecretFloor")
