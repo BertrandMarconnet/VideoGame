@@ -1,0 +1,37 @@
+{
+  "asset_name": "SPECTER-5",
+  "images": [
+    "assets/concepts/specter_5/front.png",
+    "assets/concepts/specter_5/right.png",
+    "assets/concepts/specter_5/back.png",
+    "assets/concepts/specter_5/three_quarter.png"
+  ],
+  "generation": {
+    "ai_model": "latest",
+    "should_texture": true,
+    "enable_pbr": false,
+    "hd_texture": false,
+    "texture_prompt": "Worn painted steel, dark gunmetal, matte industrial surfaces, bakelite joints, subtle rust, one red optical sensor, 1987 military prototype, PS1 low-poly horror palette, no logos, no human skin.",
+    "should_remesh": true,
+    "topology": "triangle",
+    "target_polycount": 12000,
+    "save_pre_remeshed_model": false,
+    "pose_mode": "a-pose",
+    "image_enhancement": false,
+    "remove_lighting": true,
+    "moderation": true,
+    "target_formats": ["glb"],
+    "auto_size": true,
+    "alpha_thumbnail": true,
+    "multi_view_thumbnails": true,
+    "origin_at": "bottom"
+  },
+  "quality": {
+    "max_glb_mb": 20,
+    "require_glb": true
+  },
+  "provenance": {
+    "author": "Bertrand Marconnet / Blackout Protocol",
+    "license_review": "pending before production integration"
+  }
+}
