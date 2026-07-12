@@ -112,4 +112,5 @@ func _build_mobile_controls() -> void:
 	_add_mobile_action_control("▼D", &"drone_down", Control.PRESET_BOTTOM_RIGHT, Vector2(-310, -86), Vector2(76, 58))
 	_add_mobile_action_control("ACTION", &"primary", Control.PRESET_BOTTOM_RIGHT, Vector2(-408, -86), Vector2(88, 58))
 	_add_mobile_callback_control("Ⅱ", Callable(self, "_toggle_pause"), Control.PRESET_TOP_RIGHT, Vector2(-74, 16), Vector2(58, 48))
+	_build_mobile_look_pad_v17()
 	print("BLACKOUT_MOBILE_CONTROLS_READY")
