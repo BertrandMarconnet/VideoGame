@@ -1,6 +1,7 @@
 		["◀", "move_left", Vector2(34, -148)], ["▶", "move_right", Vector2(158, -148)],
 		["E", "interact", Vector2(-210, -158)], ["F", "flashlight", Vector2(-112, -158)],
-		["JUMP", "jump", Vector2(-210, -86)], ["RUN", "sprint", Vector2(-112, -86)]
+		["JUMP", "jump", Vector2(-210, -86)], ["RUN", "sprint", Vector2(-112, -86)],
+		["KITE", "drone", Vector2(-310, -158)], ["▼D", "drone_down", Vector2(-310, -86)]
 	]
 	for info in buttons:
 		var button := Button.new()
@@ -15,7 +16,7 @@
 	var attack := Button.new()
 	attack.text = "LANCER"
 	attack.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	attack.position = Vector2(-310, -86)
+	attack.position = Vector2(-408, -86)
 	attack.custom_minimum_size = Vector2(88, 58)
 	attack.button_down.connect(_mobile_down.bind(&"primary"))
 	attack.button_up.connect(_mobile_up.bind(&"primary"))
@@ -48,7 +49,7 @@ func _start_game() -> void:
 	start_panel.visible = false
 	get_tree().paused = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED if not is_mobile else Input.MOUSE_MODE_VISIBLE)
-	_show_status("RONDE DÉMARRÉE — le réseau est instable.")
+	_show_status("RONDE DÉMARRÉE — C/KITE déploie le drone KITE-01.")
 	if mobile_layer:
 		mobile_layer.visible = true
 
@@ -56,6 +57,7 @@ func _physics_process(delta: float) -> void:
 	if not game_started or get_tree().paused:
 		return
 	elapsed += delta
+	_update_v11(delta)
 	_update_player(delta)
 	_update_held_object(delta)
 	_update_robots(delta)
@@ -70,6 +72,9 @@ func _process(delta: float) -> void:
 		_fill_audio(delta)
 
 func _update_player(delta: float) -> void:
+	if drone_active:
+		_update_drone_v11(delta)
+		return
 	var input_vec := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := (player.transform.basis * Vector3(input_vec.x, 0, input_vec.y)).normalized()
 	var speed := SPRINT_SPEED if Input.is_action_pressed("sprint") else PLAYER_SPEED
