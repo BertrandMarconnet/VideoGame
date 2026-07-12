@@ -1,0 +1,176 @@
+func _build_v12_ui() -> void:
+	athena_hud_label = Label.new()
+	athena_hud_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	athena_hud_label.position = Vector2(-420, 18)
+	athena_hud_label.size = Vector2(390, 76)
+	athena_hud_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	athena_hud_label.add_theme_font_size_override("font_size", 13)
+	athena_hud_label.modulate = Color(0.42, 0.9, 1.0)
+	athena_hud_label.visible = false
+	hud_layer.add_child(athena_hud_label)
+	task_hint_label = Label.new()
+	task_hint_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	task_hint_label.position = Vector2(-430, -48)
+	task_hint_label.size = Vector2(410, 32)
+	task_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	task_hint_label.text = "TAB : TABLETTE SENTINEL  ·  CLIC DROIT : ACTIONS"
+	task_hint_label.add_theme_font_size_override("font_size", 12)
+	task_hint_label.modulate = Color(0.68, 0.8, 0.86, 0.82)
+	task_hint_label.visible = false
+	hud_layer.add_child(task_hint_label)
+	_build_intro_panel_v12()
+	_build_tablet_panel_v12()
+	_build_context_menu_v12()
+	if is_mobile and mobile_layer:
+		var tablet_button := Button.new()
+		tablet_button.text = "TAB"
+		tablet_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		tablet_button.position = Vector2(-144, 16)
+		tablet_button.custom_minimum_size = Vector2(62, 48)
+		tablet_button.pressed.connect(_toggle_tablet_v12)
+		mobile_layer.add_child(tablet_button)
+		var actions_button := Button.new()
+		actions_button.text = "⋮"
+		actions_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		actions_button.position = Vector2(-214, 16)
+		actions_button.custom_minimum_size = Vector2(62, 48)
+		actions_button.pressed.connect(_open_context_menu_v12)
+		mobile_layer.add_child(actions_button)
+
+func _build_intro_panel_v12() -> void:
+	intro_panel = _overlay(Color(0.002, 0.006, 0.012, 0.985))
+	intro_panel.visible = false
+	intro_scanline = ColorRect.new()
+	intro_scanline.color = Color(0.0, 0.75, 0.9, 0.12)
+	intro_scanline.position = Vector2(0, 0)
+	intro_scanline.size = Vector2(2000, 3)
+	intro_panel.add_child(intro_scanline)
+	var frame := VBoxContainer.new()
+	frame.set_anchors_preset(Control.PRESET_CENTER)
+	frame.position = Vector2(-430, -270)
+	frame.size = Vector2(860, 540)
+	frame.alignment = BoxContainer.ALIGNMENT_CENTER
+	intro_panel.add_child(frame)
+	var clearance := Label.new()
+	clearance.text = "TOYGUARD INTERNAL ARCHIVE // SEPTEMBER 1987"
+	clearance.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	clearance.modulate = Color(1.0, 0.3, 0.1)
+	clearance.add_theme_font_size_override("font_size", 15)
+	frame.add_child(clearance)
+	intro_title_label = Label.new()
+	intro_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	intro_title_label.add_theme_font_size_override("font_size", 34)
+	intro_title_label.modulate = Color(0.72, 0.94, 1.0)
+	intro_title_label.custom_minimum_size = Vector2(820, 72)
+	frame.add_child(intro_title_label)
+	intro_body_label = RichTextLabel.new()
+	intro_body_label.bbcode_enabled = true
+	intro_body_label.fit_content = false
+	intro_body_label.custom_minimum_size = Vector2(820, 260)
+	intro_body_label.scroll_active = false
+	intro_body_label.add_theme_font_size_override("normal_font_size", 19)
+	frame.add_child(intro_body_label)
+	intro_progress_label = Label.new()
+	intro_progress_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	intro_progress_label.modulate = Color(0.52, 0.68, 0.75)
+	frame.add_child(intro_progress_label)
+	var buttons := HBoxContainer.new()
+	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
+	frame.add_child(buttons)
+	var next_button := Button.new()
+	next_button.text = "CONTINUER"
+	next_button.custom_minimum_size = Vector2(220, 48)
+	next_button.pressed.connect(_advance_intro_v12)
+	buttons.add_child(next_button)
+	var skip_button := Button.new()
+	skip_button.text = "PASSER L'INTRODUCTION"
+	skip_button.custom_minimum_size = Vector2(260, 48)
+	skip_button.pressed.connect(_finish_intro_v12)
+	buttons.add_child(skip_button)
+
+func _build_tablet_panel_v12() -> void:
+	tablet_panel = _overlay(Color(0.0, 0.015, 0.022, 0.965))
+	tablet_panel.visible = false
+	var shell := VBoxContainer.new()
+	shell.set_anchors_preset(Control.PRESET_CENTER)
+	shell.position = Vector2(-500, -315)
+	shell.size = Vector2(1000, 630)
+	tablet_panel.add_child(shell)
+	tablet_title = Label.new()
+	tablet_title.text = "SENTINEL OS // TOYGUARD SECURE OPERATIONS"
+	tablet_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tablet_title.add_theme_font_size_override("font_size", 28)
+	tablet_title.modulate = Color(0.35, 0.92, 1.0)
+	shell.add_child(tablet_title)
+	var tabs := HBoxContainer.new()
+	tabs.alignment = BoxContainer.ALIGNMENT_CENTER
+	shell.add_child(tabs)
+	for tab_name in ["TÂCHES", "CARTE", "ATHENA", "ARCHIVES"]:
+		var tab_button := Button.new()
+		tab_button.text = tab_name
+		tab_button.custom_minimum_size = Vector2(205, 44)
+		tab_button.pressed.connect(_set_tablet_tab_v12.bind(tab_name))
+		tabs.add_child(tab_button)
+	tablet_content = RichTextLabel.new()
+	tablet_content.bbcode_enabled = true
+	tablet_content.custom_minimum_size = Vector2(960, 430)
+	tablet_content.add_theme_font_size_override("normal_font_size", 17)
+	tablet_content.add_theme_font_size_override("bold_font_size", 18)
+	shell.add_child(tablet_content)
+	var choices := HBoxContainer.new()
+	choices.alignment = BoxContainer.ALIGNMENT_CENTER
+	shell.add_child(choices)
+	var protect := Button.new()
+	protect.text = "PROTÉGER LE PERSONNEL"
+	protect.custom_minimum_size = Vector2(245, 46)
+	protect.pressed.connect(_athena_choice_v12.bind("protect"))
+	choices.add_child(protect)
+	var contain := Button.new()
+	contain.text = "CONFINER LES UNITÉS"
+	contain.custom_minimum_size = Vector2(245, 46)
+	contain.pressed.connect(_athena_choice_v12.bind("contain"))
+	choices.add_child(contain)
+	var truth := Button.new()
+	truth.text = "MONTRER LA VÉRITÉ À ATHENA"
+	truth.custom_minimum_size = Vector2(270, 46)
+	truth.pressed.connect(_athena_choice_v12.bind("truth"))
+	choices.add_child(truth)
+	var close_button := Button.new()
+	close_button.text = "FERMER [TAB]"
+	close_button.custom_minimum_size = Vector2(180, 44)
+	close_button.pressed.connect(_toggle_tablet_v12)
+	shell.add_child(close_button)
+
+func _build_context_menu_v12() -> void:
+	context_menu = PanelContainer.new()
+	context_menu.process_mode = Node.PROCESS_MODE_ALWAYS
+	context_menu.visible = false
+	context_menu.set_anchors_preset(Control.PRESET_CENTER)
+	context_menu.position = Vector2(160, -190)
+	context_menu.custom_minimum_size = Vector2(320, 380)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.015, 0.035, 0.045, 0.98)
+	style.border_color = Color(0.0, 0.62, 0.76, 0.9)
+	style.set_border_width_all(2)
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8
+	style.corner_radius_bottom_right = 8
+	context_menu.add_theme_stylebox_override("panel", style)
+	hud_layer.add_child(context_menu)
+	var box := VBoxContainer.new()
+	box.custom_minimum_size = Vector2(300, 350)
+	context_menu.add_child(box)
+	context_title = Label.new()
+	context_title.text = "ACTIONS DISPONIBLES"
+	context_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	context_title.add_theme_font_size_override("font_size", 19)
+	context_title.modulate = Color(0.42, 0.92, 1.0)
+	box.add_child(context_title)
+	context_actions = VBoxContainer.new()
+	context_actions.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.add_child(context_actions)
+	var close_button := Button.new()
+	close_button.text = "ANNULER"
+	close_button.pressed.connect(_close_context_menu_v12)
+	box.add_child(close_button)
