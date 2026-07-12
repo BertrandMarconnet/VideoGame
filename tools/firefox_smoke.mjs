@@ -6,6 +6,7 @@ const targetUrl = process.env.BLACKOUT_TEST_URL ?? "http://127.0.0.1:8080/";
 const headless = process.env.BLACKOUT_FIREFOX_HEADLESS !== "0";
 const consoleLines = [];
 const runtimeErrors = [];
+let storyboardReady = false;
 let markReady;
 let markFailed;
 const runtimeReady = new Promise((resolve, reject) => {
@@ -63,6 +64,7 @@ page.on("console", (message) => {
     clearTimeout(timeout);
     markReady();
   }
+  if (text.includes("BLACKOUT_STORYBOARD_ACT1_READY")) storyboardReady = true;
   const fatalPatterns = [
     "The following features required to run Godot projects",
     "SCRIPT ERROR",
@@ -127,9 +129,10 @@ try {
 
   await page.mouse.click(bounds.x + bounds.width * 0.5, bounds.y + bounds.height * 0.71);
   await page.waitForTimeout(3_000);
+  if (!storyboardReady) throw new Error("Act I exterior initialization marker was not emitted after campaign start");
   const startFrame = await page.screenshot({ path: "build/firefox-after-start.png", fullPage: true });
   analyzeFrame(startFrame, "after-start");
-  consoleLines.push("[interaction] campaign start click rendered successfully");
+  consoleLines.push("[interaction] campaign start initialized the Act I exterior and rendered successfully");
 
   if (runtimeErrors.length > 0) {
     throw new Error(`Firefox emitted runtime errors:\n${runtimeErrors.join("\n")}`);
