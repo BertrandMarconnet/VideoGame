@@ -20,6 +20,13 @@
 	robot_data[robot] = {"home": at, "target": at, "seen": false, "reposition": 0.0}
 
 func _build_audio() -> void:
+	# Godot's AudioStreamGenerator cannot be sampled by the single-threaded Web
+	# playback path. The browser build uses the licensed Suno stream director
+	# instead, initialized only after the player's first click.
+	if OS.has_feature("web"):
+		audio_player = null
+		audio_playback = null
+		return
 	var generator := AudioStreamGenerator.new()
 	generator.mix_rate = 22050.0
 	generator.buffer_length = 0.6
