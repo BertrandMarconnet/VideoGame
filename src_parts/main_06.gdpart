@@ -1,33 +1,74 @@
-		["◀", "move_left", Vector2(34, -148)], ["▶", "move_right", Vector2(158, -148)],
-		["E", "interact", Vector2(-210, -158)], ["F", "flashlight", Vector2(-112, -158)],
-		["JUMP", "jump", Vector2(-210, -86)], ["RUN", "sprint", Vector2(-112, -86)],
-		["KITE", "drone", Vector2(-310, -158)], ["▼D", "drone_down", Vector2(-310, -86)]
-	]
-	for info in buttons:
-		var button := Button.new()
-		button.text = info[0]
-		button.custom_minimum_size = Vector2(76, 58)
-		button.set_anchors_preset(Control.PRESET_BOTTOM_LEFT if float(info[2].x) > 0 else Control.PRESET_BOTTOM_RIGHT)
-		button.position = info[2]
-		button.modulate = Color(0.8, 0.94, 1.0, 0.68)
-		button.button_down.connect(_mobile_down.bind(StringName(info[1])))
-		button.button_up.connect(_mobile_up.bind(StringName(info[1])))
-		mobile_layer.add_child(button)
-	var attack := Button.new()
-	attack.text = "ACTION"
-	attack.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	attack.position = Vector2(-408, -86)
-	attack.custom_minimum_size = Vector2(88, 58)
-	attack.button_down.connect(_mobile_down.bind(&"primary"))
-	attack.button_up.connect(_mobile_up.bind(&"primary"))
-	mobile_layer.add_child(attack)
-	var pause_button := Button.new()
-	pause_button.text = "Ⅱ"
-	pause_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	pause_button.position = Vector2(-74, 16)
-	pause_button.custom_minimum_size = Vector2(58, 48)
-	pause_button.pressed.connect(_toggle_pause)
-	mobile_layer.add_child(pause_button)
+func _add_mobile_action_control(label_text: String, action: StringName, anchor_preset: int, offset: Vector2, control_size: Vector2) -> void:
+	var visual := _mobile_visual_button(label_text, anchor_preset, offset, control_size)
+	var touch_button := TouchScreenButton.new()
+	touch_button.name = "Touch_%s" % String(action)
+	touch_button.action = String(action)
+	touch_button.position = _mobile_touch_center(anchor_preset, offset, control_size)
+	touch_button.shape_centered = true
+	touch_button.passby_press = true
+	touch_button.visibility_mode = TouchScreenButton.VISIBILITY_ALWAYS
+	touch_button.z_index = 100
+	var touch_shape := RectangleShape2D.new()
+	touch_shape.size = control_size + Vector2(18, 18)
+	touch_button.shape = touch_shape
+	touch_button.pressed.connect(_mobile_touch_pressed.bind(action, visual))
+	touch_button.released.connect(_mobile_touch_released.bind(action, visual))
+	mobile_layer.add_child(touch_button)
+
+func _add_mobile_callback_control(label_text: String, callback: Callable, anchor_preset: int, offset: Vector2, control_size: Vector2) -> void:
+	var visual := _mobile_visual_button(label_text, anchor_preset, offset, control_size)
+	var touch_button := TouchScreenButton.new()
+	touch_button.name = "Touch_%s" % label_text
+	touch_button.position = _mobile_touch_center(anchor_preset, offset, control_size)
+	touch_button.shape_centered = true
+	touch_button.passby_press = true
+	touch_button.visibility_mode = TouchScreenButton.VISIBILITY_ALWAYS
+	touch_button.z_index = 100
+	var touch_shape := RectangleShape2D.new()
+	touch_shape.size = control_size + Vector2(18, 18)
+	touch_button.shape = touch_shape
+	touch_button.pressed.connect(_mobile_callback_pressed.bind(visual, callback))
+	touch_button.released.connect(_mobile_callback_released.bind(visual))
+	mobile_layer.add_child(touch_button)
+
+func _mobile_visual_button(label_text: String, anchor_preset: int, offset: Vector2, control_size: Vector2) -> Button:
+	var button := Button.new()
+	button.text = label_text
+	button.set_anchors_preset(anchor_preset)
+	button.position = offset
+	button.size = control_size
+	button.custom_minimum_size = control_size
+	button.focus_mode = Control.FOCUS_NONE
+	button.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.modulate = Color(0.8, 0.94, 1.0, 0.72)
+	mobile_layer.add_child(button)
+	return button
+
+func _mobile_touch_center(anchor_preset: int, offset: Vector2, control_size: Vector2) -> Vector2:
+	var viewport_size := get_viewport().get_visible_rect().size
+	var half_size := control_size * 0.5
+	if anchor_preset == Control.PRESET_BOTTOM_LEFT:
+		return Vector2(offset.x + half_size.x, viewport_size.y + offset.y + half_size.y)
+	if anchor_preset == Control.PRESET_BOTTOM_RIGHT:
+		return Vector2(viewport_size.x + offset.x + half_size.x, viewport_size.y + offset.y + half_size.y)
+	if anchor_preset == Control.PRESET_TOP_RIGHT:
+		return Vector2(viewport_size.x + offset.x + half_size.x, offset.y + half_size.y)
+	return offset + half_size
+
+func _mobile_touch_pressed(action: StringName, visual: Button) -> void:
+	visual.set_pressed_no_signal(true)
+	print("BLACKOUT_MOBILE_ACTION_DOWN ", String(action))
+
+func _mobile_touch_released(action: StringName, visual: Button) -> void:
+	visual.set_pressed_no_signal(false)
+	print("BLACKOUT_MOBILE_ACTION_UP ", String(action))
+
+func _mobile_callback_pressed(visual: Button, callback: Callable) -> void:
+	visual.set_pressed_no_signal(true)
+	callback.call()
+
+func _mobile_callback_released(visual: Button) -> void:
+	visual.set_pressed_no_signal(false)
 
 func _mobile_down(action: StringName) -> void:
 	Input.action_press(action)
@@ -71,6 +112,7 @@ func _start_game() -> void:
 		_athena_speak_v12("start")
 	if mobile_layer:
 		mobile_layer.visible = true
+	print("BLACKOUT_GAMEPLAY_STARTED")
 
 func _physics_process(delta: float) -> void:
 	if not game_started or get_tree().paused:
