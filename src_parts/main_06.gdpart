@@ -82,6 +82,7 @@ func _process(delta: float) -> void:
 		_fill_audio(delta)
 	_update_v12_ui(delta)
 	_update_v13_ui(delta)
+	_update_suno_audio_v14(delta)
 
 func _update_player(delta: float) -> void:
 	if drone_active:
