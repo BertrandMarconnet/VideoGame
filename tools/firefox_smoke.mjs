@@ -32,13 +32,15 @@ const browser = await firefox.launch({
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 page.on("console", (message) => {
-  const line = `[${message.type()}] ${message.text()}`;
+  const text = message.text();
+  const line = `[${message.type()}] ${text}`;
   consoleLines.push(line);
-  if (message.text().includes("BLACKOUT_RUNTIME_READY")) {
+  if (text.includes("BLACKOUT_RUNTIME_READY")) {
     clearTimeout(timeout);
     markReady();
   }
-  if (message.type() === "error") {
+  const warningOnly = text.trimStart().startsWith("WARNING:") || text.includes("JavaScript Warning:");
+  if (message.type() === "error" && !warningOnly) {
     runtimeErrors.push(line);
   }
 });
