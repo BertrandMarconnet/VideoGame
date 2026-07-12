@@ -1,0 +1,12 @@
+
+# Mobile look controller and storyboard art-pass state.
+var mobile_look_pad: PanelContainer
+var mobile_look_knob: ColorRect
+var mobile_look_touch_id := -1
+var mobile_look_origin := Vector2.ZERO
+var mobile_look_target := Vector2.ZERO
+var mobile_look_smoothed := Vector2.ZERO
+var mobile_look_active := false
+var first_person_rig_v17: Node3D
+var storyboard_art_root_v17: Node3D
+var visual_overhaul_time_v17 := 0.0
