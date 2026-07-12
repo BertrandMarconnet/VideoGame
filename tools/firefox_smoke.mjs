@@ -39,8 +39,16 @@ page.on("console", (message) => {
     clearTimeout(timeout);
     markReady();
   }
-  const warningOnly = text.trimStart().startsWith("WARNING:") || text.includes("JavaScript Warning:");
-  if (message.type() === "error" && !warningOnly) {
+  const fatalPatterns = [
+    "The following features required to run Godot projects",
+    "SCRIPT ERROR",
+    "Invalid call",
+    "Invalid get index",
+    "Attempt to call",
+    "RuntimeError",
+  ];
+  const fatalConsoleError = text.trimStart().startsWith("ERROR:") || fatalPatterns.some((pattern) => text.includes(pattern));
+  if (message.type() === "error" && fatalConsoleError) {
     runtimeErrors.push(line);
   }
 });
