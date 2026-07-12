@@ -1,0 +1,62 @@
+name: Validate local 3D asset pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/generate-triposr-asset.yml"
+      - ".github/workflows/validate-3d-pipeline.yml"
+      - "tools/triposr_*.py"
+      - "tools/setup_triposr_runner.sh"
+      - "tools/testdata/triposr_manifest_smoke.json"
+      - "docs/TRIPOSR_GITHUB_PIPELINE.md"
+      - "assets/concepts/**/triposr.json"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/generate-triposr-asset.yml"
+      - ".github/workflows/validate-3d-pipeline.yml"
+      - "tools/triposr_*.py"
+      - "tools/setup_triposr_runner.sh"
+      - "tools/testdata/triposr_manifest_smoke.json"
+      - "docs/TRIPOSR_GITHUB_PIPELINE.md"
+      - "assets/concepts/**/triposr.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Compile Python and shell tools
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            tools/triposr_generate.py \
+            tools/triposr_blender_postprocess.py
+          bash -n tools/setup_triposr_runner.sh
+
+      - name: Validate smoke manifest without GPU
+        run: |
+          set -euo pipefail
+          python3 tools/triposr_generate.py \
+            --manifest tools/testdata/triposr_manifest_smoke.json \
+            --validate-only \
+            --output-root build/triposr-smoke
+          test -s build/triposr-smoke/pipeline_smoke/summary.json
+          test -s build/triposr-smoke/pipeline_smoke/PROVENANCE.md
+
+      - name: Upload validation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: triposr-tooling-validation-${{ github.run_id }}
+          path: build/triposr-smoke
+          if-no-files-found: warn
+          retention-days: 7
