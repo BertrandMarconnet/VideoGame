@@ -95,6 +95,7 @@ func _setup_inputs() -> void:
 	_add_key_action("pause", KEY_ESCAPE)
 	_add_key_action("drop", KEY_G)
 	_add_key_action("drone", KEY_C)
+	_add_key_action("drone_down", KEY_CTRL)
 	_add_mouse_action("primary", MOUSE_BUTTON_LEFT)
 	_add_mouse_action("secondary", MOUSE_BUTTON_RIGHT)
 
