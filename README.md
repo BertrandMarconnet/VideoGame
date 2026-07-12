@@ -1,6 +1,6 @@
 # Blackout Protocol: Steel Echo — Godot/Jolt v10
 
-Vertical slice jouable d’un survival-horror industriel en vue subjective, développé sous Godot 4.7 avec le moteur physique Jolt.
+Vertical slice jouable d’un survival-horror industriel en vue subjective, développée sous Godot 4.7 avec le moteur physique Jolt et publiée automatiquement en Web/PWA.
 
 ## Jouer en ligne
 
@@ -8,25 +8,43 @@ Vertical slice jouable d’un survival-horror industriel en vue subjective, dév
 
 Sur smartphone : ouvrir le lien dans Chrome ou Safari, passer en paysage puis toucher **COMMENCER LA RONDE**. Les commandes tactiles apparaissent automatiquement.
 
-## Contenu
+## Contenu jouable
 
-- usine procédurale longue avec cinq secteurs ;
-- SPECTER-5, CRAWLER-7, MIMIC-3 et RAM-9 ;
-- directeur de peur adaptatif ;
-- phase initiale d’observation sans attaque immédiate ;
-- objets Jolt saisissables et projetables ;
-- panneaux destructibles et brèches réparables ;
-- contrôles PC et smartphone ;
-- menu de pause, luminosité, qualité et volumes ;
-- audio industriel généré procéduralement ;
+- usine 3D procédurale longue d’environ 176 mètres ;
+- cinq ambiances industrielles : contrôle, logistique, assemblage, archives et fonderie ;
+- SPECTER-5, qui avance lorsque le joueur détourne le regard ;
+- CRAWLER-7, activé plus tard selon la progression et le comportement ;
+- directeur de peur adaptatif : surveillance, poursuite, obscurité ou bruit ;
+- phase initiale de calibration sans attaque immédiate ;
+- objets physiques Jolt saisissables, transportables et projetables ;
+- dégâts infligés aux robots selon la masse et la vitesse des objets ;
+- cloisons destructibles, brèches et débris physiques persistants avec budget limité ;
+- objectif aller-retour : activer le relais nord puis restaurer l’uplink S-01 ;
+- éclairage industriel, lampe torche et ambiance sonore procédurale ;
+- menu de pause avec luminosité, volume, plein écran et redémarrage ;
+- commandes PC et smartphone ;
 - export Web/PWA automatique par GitHub Actions.
 
 ## Commandes PC
 
-ZQSD/WASD : déplacement · Souris : caméra · E : saisir/interagir · clic gauche : lancer · F : lampe · Espace : saut · Maj : courir · B : barricader · Tab : tablette · Échap : pause.
+ZQSD/WASD : déplacement · souris : caméra · E : saisir/interagir · clic gauche : lancer/frapper · clic droit : interaction · F : lampe · Espace : saut · Maj : courir · Échap : pause.
 
-## Développement
+## Commandes smartphone
 
-Le workflow `.github/workflows/deploy-pages.yml` valide le projet, télécharge Godot 4.7 et ses modèles d’export officiels, produit l’export Web/PWA puis le publie sur GitHub Pages.
+Boutons directionnels à gauche · glisser sur la moitié droite pour regarder · E : interagir/saisir · LANCER : lancer/frapper · F : lampe · JUMP : sauter · RUN : courir · Ⅱ : pause.
 
-Projet original. Aucun modèle, son, musique, logo ou personnage provenant de Terminator, FNAF, Silent Hill, Resident Evil ou Metal Gear Solid n’est inclus.
+Le mode paysage est fortement recommandé. Le profil mobile réduit automatiquement la résolution interne et le nombre de lumières dynamiques.
+
+## Construction et validation
+
+Le workflow `.github/workflows/deploy-pages.yml` :
+
+1. reconstitue `scripts/main.gd` à partir des parties versionnées ;
+2. vérifie la présence des principaux systèmes de gameplay ;
+3. valide le GDScript avec `gdlint` ;
+4. télécharge Godot 4.7 et les modèles d’export officiels ;
+5. importe réellement le projet en mode headless ;
+6. produit les fichiers WebAssembly et PWA ;
+7. publie le résultat sur GitHub Pages.
+
+Projet original. Aucun modèle, son, logo, personnage ou morceau musical provenant de *Terminator*, *FNAF*, *Silent Hill*, *Resident Evil*, *Metal Gear Solid* ou *Vigil* n’est inclus.
