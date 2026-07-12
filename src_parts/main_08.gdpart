@@ -1,0 +1,100 @@
+	_show_status("BRÈCHE OUVERTE — les robots peuvent l'utiliser.")
+
+func _freeze_debris(piece: RigidBody3D) -> void:
+	if is_instance_valid(piece) and piece != held_body:
+		piece.freeze = true
+
+func _damage_robot(robot: CharacterBody3D, amount: float, stun_time: float) -> void:
+	if not is_instance_valid(robot):
+		return
+	var hp := float(robot.get_meta("health", 100.0)) - amount
+	robot.set_meta("health", hp)
+	robot.set_meta("stun", max(float(robot.get_meta("stun", 0.0)), stun_time))
+	_show_status(robot.name + " ENDOMMAGÉ — %d%%" % int(max(hp, 0.0)))
+	if hp <= 0.0:
+		robot.visible = false
+		robot.set_physics_process(false)
+		_show_status(robot.name + " DÉSACTIVÉ")
+
+func _update_robots(delta: float) -> void:
+	for robot in robots:
+		if not is_instance_valid(robot):
+			continue
+		var stun := max(float(robot.get_meta("stun", 0.0)) - delta, 0.0)
+		robot.set_meta("stun", stun)
+		var attack_cd := max(float(robot.get_meta("attack_cd", 0.0)) - delta, 0.0)
+		robot.set_meta("attack_cd", attack_cd)
+		if stun > 0.0:
+			robot.velocity = Vector3.ZERO
+			continue
+		var personality := String(robot.get_meta("personality"))
+		if personality == "specter":
+			_update_specter(robot, delta)
+		else:
+			_update_crawler(robot, delta)
+
+func _update_specter(robot: CharacterBody3D, _delta: float) -> void:
+	var distance := robot.global_position.distance_to(player.global_position)
+	var observed := _is_observed(robot)
+	var can_attack := elapsed > 150.0 or objective_stage > 0
+	if elapsed < 45.0:
+		robot.visible = false
+		return
+	robot.visible = true
+	if not observed:
+		var target := player.global_position
+		var direction := target - robot.global_position
+		direction.y = 0
+		var speed := 2.0 if not can_attack else 3.4
+		if direction.length() > (8.0 if not can_attack else 1.3):
+			robot.velocity = direction.normalized() * speed
+			robot.look_at(Vector3(player.global_position.x, robot.global_position.y, player.global_position.z), Vector3.UP)
+			robot.move_and_slide()
+		else:
+			robot.velocity = Vector3.ZERO
+	else:
+		robot.velocity = Vector3.ZERO
+	if can_attack and distance < 1.45 and float(robot.get_meta("attack_cd")) <= 0.0:
+		_hurt_player(14.0, "SPECTER-5 a attendu que vous détourniez le regard.")
+		robot.set_meta("attack_cd", 2.4)
+
+func _update_crawler(robot: CharacterBody3D, _delta: float) -> void:
+	var active := objective_stage > 0 or (elapsed > 185.0 and fear_profile == "POURSUITE")
+	if not active:
+		robot.visible = elapsed > 85.0 and int(elapsed) % 27 < 5
+		robot.velocity = Vector3.ZERO
+		return
+	robot.visible = true
+	var direction := player.global_position - robot.global_position
+	direction.y = 0
+	if direction.length() > 1.15:
+		var speed := 4.1 if player.velocity.length() > 6.0 else 3.0
+		robot.velocity = direction.normalized() * speed
+		robot.look_at(Vector3(player.global_position.x, robot.global_position.y, player.global_position.z), Vector3.UP)
+		robot.move_and_slide()
+	else:
+		robot.velocity = Vector3.ZERO
+		if float(robot.get_meta("attack_cd")) <= 0.0:
+			_hurt_player(11.0, "CRAWLER-7 attaque au niveau du sol.")
+			robot.set_meta("attack_cd", 1.7)
+
+func _is_observed(robot: Node3D) -> bool:
+	var to_robot := robot.global_position - camera.global_position
+	var distance := to_robot.length()
+	if distance > 34.0:
+		return false
+	var dot := (-camera.global_transform.basis.z).dot(to_robot.normalized())
+	if dot < 0.78:
+		return false
+	var query := PhysicsRayQueryParameters3D.create(camera.global_position, robot.global_position + Vector3.UP * 0.4)
+	query.exclude = [player.get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	return not hit.is_empty() and hit.get("collider") == robot
+
+func _hurt_player(amount: float, reason: String) -> void:
+	player_health = max(player_health - amount, 0.0)
+	_show_status(reason)
+	if player_health <= 0.0:
+		game_started = false
+		get_tree().paused = true
+		status_label.text = "CONNEXION PERDUE — RECHARGEZ LA PAGE POUR RECOMMENCER"
