@@ -90,6 +90,24 @@ Les noms historiques des fichiers sont conservés pour éviter les références 
 - `Ctrl` : descendre avec le drone ;
 - `Échap` : retour joueur, fermeture d’interface ou pause.
 
+## Génération 3D open source
+
+Le pipeline principal de génération assistée utilise désormais **TripoSR en local** :
+
+```text
+.github/workflows/generate-triposr-asset.yml
+```
+
+Il ne nécessite ni compte de génération, ni clé API, ni crédits. La génération s’exécute sur un runner GPU auto-hébergé, puis Blender produit un GLB décimé, métrique et accompagné d’une collision simple. Le modèle est conservé comme artifact GitHub pour revue manuelle ; il n’est jamais intégré automatiquement au jeu.
+
+Documentation d’installation et d’utilisation :
+
+```text
+docs/TRIPOSR_GITHUB_PIPELINE.md
+```
+
+Le workflow Meshy reste disponible comme option payante/freemium, mais n’est plus le pipeline recommandé.
+
 ## Validation
 
 Le workflow `.github/workflows/deploy-pages.yml` reconstitue `scripts/main.gd`, exécute `gdlint`, importe le projet avec Godot 4.7, charge `scenes/main.tscn`, exporte `index.html`, `index.wasm` et `index.pck`, puis lance l’export dans Firefox et refuse un canvas noir avant le déploiement GitHub Pages.
@@ -100,4 +118,6 @@ Le workflow `.github/workflows/deploy-pages.yml` reconstitue `scripts/main.gd`, 
 - `docs/ATHENA_PROTOCOL_V12.md` : mécaniques adaptatives et Sentinel OS ;
 - `docs/STORYBOARD_IMPLEMENTATION_MATRIX.md` : correspondance entre storyboard et jeu ;
 - `docs/SOUNDTRACK_SUNO.md` : placement narratif des musiques ;
-- `docs/ASSET_PIPELINE.md` : licences et budgets 3D Web.
+- `docs/ASSET_PIPELINE.md` : licences, budgets 3D Web et choix des pipelines ;
+- `docs/TRIPOSR_GITHUB_PIPELINE.md` : génération 3D locale, gratuite et sans quota ;
+- `docs/MESHY_GITHUB_PIPELINE.md` : pipeline Meshy optionnel avec crédits.
