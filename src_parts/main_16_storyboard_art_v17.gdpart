@@ -16,7 +16,7 @@ func _ensure_storyboard_art_v17() -> void:
 func _build_first_person_rig_v17() -> void:
 	if not camera:
 		return
-	var old_tool := camera.get_node_or_null("FirstPersonFlashlight")
+	var old_tool: Node = camera.get_node_or_null("FirstPersonFlashlight")
 	if old_tool:
 		camera.remove_child(old_tool)
 		old_tool.queue_free()
@@ -25,19 +25,19 @@ func _build_first_person_rig_v17() -> void:
 	first_person_rig_v17.position = Vector3(0.43, -0.39, -0.74)
 	first_person_rig_v17.rotation_degrees = Vector3(-7.0, -8.0, -9.0)
 	camera.add_child(first_person_rig_v17)
-	var glove := _material(Color(0.085, 0.075, 0.065), 0.05, 0.96)
-	var leather := _material(Color(0.14, 0.095, 0.06), 0.02, 0.9)
-	var steel := _material(Color(0.19, 0.21, 0.22), 0.82, 0.4)
-	var dark := _material(Color(0.028, 0.034, 0.038), 0.62, 0.75)
-	var glass := _material(Color(0.06, 0.12, 0.14), 0.15, 0.2, Color(0.24, 0.62, 0.72))
+	var glove: StandardMaterial3D = _material(Color(0.085, 0.075, 0.065), 0.05, 0.96)
+	var leather: StandardMaterial3D = _material(Color(0.14, 0.095, 0.06), 0.02, 0.9)
+	var steel: StandardMaterial3D = _material(Color(0.19, 0.21, 0.22), 0.82, 0.4)
+	var dark: StandardMaterial3D = _material(Color(0.028, 0.034, 0.038), 0.62, 0.75)
+	var glass: StandardMaterial3D = _material(Color(0.06, 0.12, 0.14), 0.15, 0.2, Color(0.24, 0.62, 0.72))
 	_v17_box(first_person_rig_v17, Vector3(0.28, 0.22, 0.46), Vector3(0.0, -0.1, 0.18), glove, "Palm")
 	_v17_box(first_person_rig_v17, Vector3(0.34, 0.28, 0.38), Vector3(0.03, -0.18, 0.48), leather, "WristCuff")
 	_v17_box(first_person_rig_v17, Vector3(0.26, 0.25, 0.72), Vector3(0.05, -0.22, 0.95), _material(Color(0.055, 0.065, 0.07), 0.08, 0.92), "Sleeve")
-	for finger_index in range(4):
-		var finger := _v17_box(first_person_rig_v17, Vector3(0.055, 0.075, 0.25), Vector3(-0.105 + float(finger_index) * 0.07, -0.015, -0.02), glove, "Finger")
+	for finger_index: int in range(4):
+		var finger: MeshInstance3D = _v17_box(first_person_rig_v17, Vector3(0.055, 0.075, 0.25), Vector3(-0.105 + float(finger_index) * 0.07, -0.015, -0.02), glove, "Finger")
 		finger.rotation_degrees.x = -18.0
 	_v17_box(first_person_rig_v17, Vector3(0.08, 0.12, 0.28), Vector3(0.18, -0.03, 0.12), glove, "Thumb")
-	var flashlight_root := Node3D.new()
+	var flashlight_root: Node3D = Node3D.new()
 	flashlight_root.name = "MilitaryFlashlight"
 	flashlight_root.position = Vector3(0.0, 0.0, -0.15)
 	flashlight_root.rotation_degrees.x = 90.0
@@ -59,101 +59,101 @@ func _build_storyboard_environment_v17() -> void:
 	_build_relay_detail_v17(storyboard_art_root_v17)
 
 func _build_exterior_detail_v17(root: Node3D) -> void:
-	var wall := _material(Color(0.075, 0.085, 0.09), 0.22, 0.88)
-	var steel := _material(Color(0.13, 0.145, 0.15), 0.82, 0.44)
-	var glass := _material(Color(0.018, 0.075, 0.09), 0.15, 0.25, Color(0.0, 0.18, 0.24))
-	for side in [-1.0, 1.0]:
-		for index in range(3):
-			var x := side * (7.0 + float(index) * 4.0)
+	var wall: StandardMaterial3D = _material(Color(0.075, 0.085, 0.09), 0.22, 0.88)
+	var steel: StandardMaterial3D = _material(Color(0.13, 0.145, 0.15), 0.82, 0.44)
+	var glass: StandardMaterial3D = _material(Color(0.018, 0.075, 0.09), 0.15, 0.25, Color(0.0, 0.18, 0.24))
+	for side: float in [-1.0, 1.0]:
+		for index: int in range(3):
+			var x: float = side * (7.0 + float(index) * 4.0)
 			_v17_box(root, Vector3(0.42, 8.0, 1.15), Vector3(x, 4.0, 0.42), steel, "FacadeButtress")
-		for x_offset in [7.0, 11.0, 15.0]:
+		for x_offset: float in [7.0, 11.0, 15.0]:
 			_v17_box(root, Vector3(2.3, 1.4, 0.12), Vector3(side * x_offset, 5.2, 0.48), glass, "FacadeWindow")
 		_v17_cylinder(root, 0.18, 7.0, Vector3(side * 16.2, 4.0, 0.72), steel, "DrainPipe", 6)
-	for x_value in [-12.0, -6.0, 6.0, 12.0]:
+	for x_value: float in [-12.0, -6.0, 6.0, 12.0]:
 		_v17_box(root, Vector3(4.2, 0.22, 1.8), Vector3(x_value, 8.65, -0.2), wall, "RoofParapet")
 		_v17_cylinder(root, 0.42, 1.9, Vector3(x_value, 9.8, -0.1), steel, "RoofVent", 8)
 	_v17_box(root, Vector3(9.6, 0.32, 2.2), Vector3(0.0, 7.0, 1.05), steel, "EntranceCanopy")
-	for x_value in [-3.6, 3.6]:
+	for x_value: float in [-3.6, 3.6]:
 		_v17_box(root, Vector3(0.18, 4.0, 0.18), Vector3(x_value, 5.0, 1.0), steel, "CanopySupport")
 
 func _build_s01_detail_v17(root: Node3D) -> void:
-	var steel := _material(Color(0.105, 0.12, 0.13), 0.88, 0.38)
-	var black := _material(Color(0.025, 0.032, 0.038), 0.72, 0.72)
-	var cyan := _material(Color(0.02, 0.08, 0.09), 0.05, 0.2, Color(0.0, 0.4, 0.52))
-	for side in [-1.0, 1.0]:
-		for z_value in [-6.0, -10.0, -14.0, -18.0]:
+	var steel: StandardMaterial3D = _material(Color(0.105, 0.12, 0.13), 0.88, 0.38)
+	var black: StandardMaterial3D = _material(Color(0.025, 0.032, 0.038), 0.72, 0.72)
+	var cyan: StandardMaterial3D = _material(Color(0.02, 0.08, 0.09), 0.05, 0.2, Color(0.0, 0.4, 0.52))
+	for side: float in [-1.0, 1.0]:
+		for z_value: float in [-6.0, -10.0, -14.0, -18.0]:
 			_v17_box(root, Vector3(2.8, 1.55, 1.1), Vector3(side * 12.5, 0.78, z_value), black, "S01ConsoleBank")
-			var display := _v17_box(root, Vector3(2.0, 0.08, 0.72), Vector3(side * 12.15, 1.42, z_value), cyan, "S01CRT")
+			var display: MeshInstance3D = _v17_box(root, Vector3(2.0, 0.08, 0.72), Vector3(side * 12.15, 1.42, z_value), cyan, "S01CRT")
 			display.rotation_degrees.x = -18.0
 		_v17_cylinder(root, 0.16, 14.0, Vector3(side * 15.0, 5.7, -12.0), steel, "S01CeilingConduit", 6)
-	for x_value in [-8.0, -4.0, 0.0, 4.0, 8.0]:
+	for x_value: float in [-8.0, -4.0, 0.0, 4.0, 8.0]:
 		_v17_box(root, Vector3(2.8, 0.12, 0.42), Vector3(x_value, 5.7, -11.5), _material(Color(0.24, 0.33, 0.35), 0.15, 0.3, Color(0.12, 0.48, 0.56)), "S01CeilingLight")
 	_v17_label(root, "S-01 // SENTINEL OPERATIONS", Vector3(0.0, 5.05, -19.28), 34, Color(0.35, 0.9, 0.82))
 
 func _build_corridor_detail_v17(root: Node3D) -> void:
-	var steel := _material(Color(0.11, 0.125, 0.13), 0.9, 0.36)
-	var dark := _material(Color(0.028, 0.035, 0.04), 0.7, 0.78)
-	var cable := _material(Color(0.018, 0.022, 0.026), 0.3, 0.9)
-	for z_index in range(12):
-		var z := -25.0 - float(z_index) * 10.5
-		for side in [-1.0, 1.0]:
+	var steel: StandardMaterial3D = _material(Color(0.11, 0.125, 0.13), 0.9, 0.36)
+	var dark: StandardMaterial3D = _material(Color(0.028, 0.035, 0.04), 0.7, 0.78)
+	var cable: StandardMaterial3D = _material(Color(0.018, 0.022, 0.026), 0.3, 0.9)
+	for z_index: int in range(12):
+		var z: float = -25.0 - float(z_index) * 10.5
+		for side: float in [-1.0, 1.0]:
 			_v17_box(root, Vector3(0.38, 6.5, 0.62), Vector3(side * 16.0, 3.25, z), steel, "CorridorRib")
 			_v17_box(root, Vector3(2.3, 0.18, 0.72), Vector3(side * 14.2, 5.2, z), dark, "CableTray")
-			for cable_index in range(3):
+			for cable_index: int in range(3):
 				_v17_cylinder(root, 0.055, 9.0, Vector3(side * (13.5 + float(cable_index) * 0.22), 4.95, z - 3.8), cable, "CableBundle", 6)
 		_v17_box(root, Vector3(31.0, 0.28, 0.5), Vector3(0.0, 6.3, z), steel, "CeilingRib")
 		if z_index % 3 == 0:
 			_v17_label(root, "SECTEUR %02d // PERSEUS" % (z_index + 1), Vector3(-15.65, 3.6, z - 0.4), 24, Color(0.72, 0.52, 0.18))
 
 func _build_assembly_detail_v17(root: Node3D) -> void:
-	var yellow := _material(Color(0.42, 0.27, 0.045), 0.34, 0.72)
-	var dark := _material(Color(0.035, 0.045, 0.05), 0.82, 0.52)
-	var steel := _material(Color(0.18, 0.2, 0.21), 0.92, 0.34)
-	for z_value in [-58.0, -72.0, -86.0, -100.0, -114.0]:
+	var yellow: StandardMaterial3D = _material(Color(0.42, 0.27, 0.045), 0.34, 0.72)
+	var dark: StandardMaterial3D = _material(Color(0.035, 0.045, 0.05), 0.82, 0.52)
+	var steel: StandardMaterial3D = _material(Color(0.18, 0.2, 0.21), 0.92, 0.34)
+	for z_value: float in [-58.0, -72.0, -86.0, -100.0, -114.0]:
 		_v17_box(root, Vector3(29.0, 0.16, 0.18), Vector3(0.0, 5.9, z_value), steel, "AssemblyGantry")
-		for side in [-1.0, 1.0]:
+		for side: float in [-1.0, 1.0]:
 			_v17_box(root, Vector3(0.32, 5.8, 0.32), Vector3(side * 13.8, 2.9, z_value), steel, "AssemblyPost")
 			_v17_box(root, Vector3(3.4, 2.2, 1.5), Vector3(side * 9.4, 1.1, z_value + 2.3), dark, "ToyPartsBin")
-			for toy_index in range(3):
+			for toy_index: int in range(3):
 				_build_toy_shell_v17(root, Vector3(side * (8.7 + float(toy_index) * 0.55), 2.4, z_value + 2.3), toy_index)
 		_v17_box(root, Vector3(6.4, 0.08, 0.55), Vector3(0.0, 0.08, z_value + 4.0), yellow, "HazardStripe")
 	_v17_label(root, "ASSEMBLAGE JOUETS // LIGNE A", Vector3(-15.6, 4.0, -58.0), 28, Color(0.68, 0.52, 0.2))
 
 func _build_toy_shell_v17(root: Node3D, at: Vector3, variant: int) -> void:
-	var plastic := _material(Color(0.12 + 0.035 * float(variant), 0.16, 0.17), 0.05, 0.88)
-	var dark := _material(Color(0.025, 0.03, 0.034), 0.2, 0.82)
+	var plastic: StandardMaterial3D = _material(Color(0.12 + 0.035 * float(variant), 0.16, 0.17), 0.05, 0.88)
+	var dark: StandardMaterial3D = _material(Color(0.025, 0.03, 0.034), 0.2, 0.82)
 	_v17_box(root, Vector3(0.42, 0.5, 0.3), at, plastic, "ToyShell")
 	_v17_sphere(root, 0.23, at + Vector3(0.0, 0.42, 0.0), plastic, "ToyHead", 8, 4)
 	_v17_box(root, Vector3(0.09, 0.28, 0.1), at + Vector3(-0.28, 0.0, 0.0), dark, "ToyArm")
 	_v17_box(root, Vector3(0.09, 0.28, 0.1), at + Vector3(0.28, 0.0, 0.0), dark, "ToyArm")
 
 func _build_relay_detail_v17(root: Node3D) -> void:
-	var steel := _material(Color(0.12, 0.135, 0.145), 0.9, 0.4)
-	var green := _material(Color(0.02, 0.09, 0.055), 0.05, 0.2, Color(0.02, 0.65, 0.25))
-	var red := _material(Color(0.12, 0.02, 0.015), 0.05, 0.2, Color(0.85, 0.04, 0.02))
+	var steel: StandardMaterial3D = _material(Color(0.12, 0.135, 0.145), 0.9, 0.4)
+	var green: StandardMaterial3D = _material(Color(0.02, 0.09, 0.055), 0.05, 0.2, Color(0.02, 0.65, 0.25))
+	var red: StandardMaterial3D = _material(Color(0.12, 0.02, 0.015), 0.05, 0.2, Color(0.85, 0.04, 0.02))
 	_v17_box(root, Vector3(8.6, 5.2, 0.8), Vector3(0.0, 2.6, -164.4), steel, "RelayWallFrame")
-	for row in range(3):
-		for column in range(4):
-			var mat := green if (row + column) % 3 != 0 else red
+	for row: int in range(3):
+		for column: int in range(4):
+			var mat: StandardMaterial3D = green if (row + column) % 3 != 0 else red
 			_v17_box(root, Vector3(1.3, 0.65, 0.08), Vector3(-2.4 + float(column) * 1.6, 1.6 + float(row) * 0.85, -163.92), mat, "RelayIndicator")
 	_v17_label(root, "RELAIS NORD // MATRYOSHKA", Vector3(0.0, 4.8, -163.86), 32, Color(0.82, 0.66, 0.2))
 
 func _upgrade_robot_silhouettes_v17() -> void:
-	for robot in robots:
+	for robot: CharacterBody3D in robots:
 		if not is_instance_valid(robot) or robot.get_node_or_null("V17ArmorPass"):
 			continue
-		var armor := Node3D.new()
+		var armor: Node3D = Node3D.new()
 		armor.name = "V17ArmorPass"
 		robot.add_child(armor)
-		var dark := _material(Color(0.035, 0.043, 0.048), 0.92, 0.34)
-		var steel := _material(Color(0.21, 0.23, 0.24), 0.96, 0.25)
-		var red := _material(Color(0.04, 0.01, 0.008), 0.1, 0.2, Color(0.92, 0.015, 0.008))
-		var personality := String(robot.get_meta("personality", "specter"))
+		var dark: StandardMaterial3D = _material(Color(0.035, 0.043, 0.048), 0.92, 0.34)
+		var steel: StandardMaterial3D = _material(Color(0.21, 0.23, 0.24), 0.96, 0.25)
+		var red: StandardMaterial3D = _material(Color(0.04, 0.01, 0.008), 0.1, 0.2, Color(0.92, 0.015, 0.008))
+		var personality: String = String(robot.get_meta("personality", "specter"))
 		if personality == "specter":
 			_v17_box(armor, Vector3(0.72, 0.82, 0.42), Vector3(0.0, 0.35, 0.0), dark, "ChestArmor")
 			_v17_box(armor, Vector3(0.48, 0.22, 0.34), Vector3(0.0, 0.95, -0.02), steel, "HeadArmor")
 			_v17_box(armor, Vector3(0.18, 0.09, 0.05), Vector3(0.0, 0.96, -0.2), red, "Optic")
-			for side in [-1.0, 1.0]:
+			for side: float in [-1.0, 1.0]:
 				_v17_cylinder(armor, 0.09, 0.78, Vector3(side * 0.48, 0.32, 0.0), steel, "UpperArm", 6)
 				_v17_cylinder(armor, 0.085, 0.72, Vector3(side * 0.5, -0.32, 0.0), dark, "LowerArm", 6)
 				_v17_cylinder(armor, 0.12, 0.88, Vector3(side * 0.22, -0.35, 0.0), steel, "Leg", 6)
@@ -162,26 +162,26 @@ func _upgrade_robot_silhouettes_v17() -> void:
 			_v17_box(armor, Vector3(1.2, 0.42, 1.45), Vector3(0.0, 0.25, 0.0), dark, "CrawlerArmor")
 			_v17_box(armor, Vector3(0.42, 0.24, 0.38), Vector3(0.0, 0.38, -0.82), steel, "CrawlerHead")
 			_v17_box(armor, Vector3(0.2, 0.08, 0.05), Vector3(0.0, 0.4, -1.03), red, "CrawlerOptic")
-			for side_x in [-1.0, 1.0]:
-				for side_z in [-1.0, 1.0]:
+			for side_x: float in [-1.0, 1.0]:
+				for side_z: float in [-1.0, 1.0]:
 					_v17_cylinder(armor, 0.08, 0.72, Vector3(side_x * 0.65, 0.0, side_z * 0.48), steel, "CrawlerLeg", 6)
 					_v17_box(armor, Vector3(0.36, 0.12, 0.24), Vector3(side_x * 0.82, -0.34, side_z * 0.62), dark, "CrawlerFoot")
 
 func _update_storyboard_art_v17(delta: float) -> void:
 	if not first_person_rig_v17 or not is_instance_valid(first_person_rig_v17):
 		return
-	var moving := player.velocity.length() if player else 0.0
-	var sway_weight := clampf(moving / SPRINT_SPEED, 0.0, 1.0)
-	var target := Vector3(0.43, -0.39, -0.74)
+	var moving: float = player.velocity.length() if player else 0.0
+	var sway_weight: float = clampf(moving / SPRINT_SPEED, 0.0, 1.0)
+	var target: Vector3 = Vector3(0.43, -0.39, -0.74)
 	target.x += sin(visual_overhaul_time_v17 * 7.0) * 0.012 * sway_weight
 	target.y += absf(sin(visual_overhaul_time_v17 * 7.0)) * 0.009 * sway_weight
 	first_person_rig_v17.position = first_person_rig_v17.position.lerp(target, clampf(delta * 10.0, 0.0, 1.0))
 	first_person_rig_v17.visible = game_started and not drone_active and not tablet_open
 
 func _v17_box(parent: Node3D, size_value: Vector3, at: Vector3, material: Material, node_name: String) -> MeshInstance3D:
-	var mesh_instance := MeshInstance3D.new()
+	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
 	mesh_instance.name = node_name
-	var mesh := BoxMesh.new()
+	var mesh: BoxMesh = BoxMesh.new()
 	mesh.size = size_value
 	mesh_instance.mesh = mesh
 	mesh_instance.position = at
@@ -190,9 +190,9 @@ func _v17_box(parent: Node3D, size_value: Vector3, at: Vector3, material: Materi
 	return mesh_instance
 
 func _v17_cylinder(parent: Node3D, radius: float, height: float, at: Vector3, material: Material, node_name: String, segments: int) -> MeshInstance3D:
-	var mesh_instance := MeshInstance3D.new()
+	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
 	mesh_instance.name = node_name
-	var mesh := CylinderMesh.new()
+	var mesh: CylinderMesh = CylinderMesh.new()
 	mesh.top_radius = radius
 	mesh.bottom_radius = radius
 	mesh.height = height
@@ -204,9 +204,9 @@ func _v17_cylinder(parent: Node3D, radius: float, height: float, at: Vector3, ma
 	return mesh_instance
 
 func _v17_sphere(parent: Node3D, radius: float, at: Vector3, material: Material, node_name: String, segments: int, rings: int) -> MeshInstance3D:
-	var mesh_instance := MeshInstance3D.new()
+	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
 	mesh_instance.name = node_name
-	var mesh := SphereMesh.new()
+	var mesh: SphereMesh = SphereMesh.new()
 	mesh.radius = radius
 	mesh.height = radius * 2.0
 	mesh.radial_segments = segments
@@ -218,7 +218,7 @@ func _v17_sphere(parent: Node3D, radius: float, at: Vector3, material: Material,
 	return mesh_instance
 
 func _v17_label(parent: Node3D, text_value: String, at: Vector3, size_value: int, color_value: Color) -> Label3D:
-	var label := Label3D.new()
+	var label: Label3D = Label3D.new()
 	label.text = text_value
 	label.position = at
 	label.rotation_degrees.y = 180.0
