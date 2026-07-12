@@ -1,0 +1,100 @@
+	eye_mesh.size = Vector3(0.28, 0.05, 0.04)
+	eye.mesh = eye_mesh
+	eye.position = head.position + Vector3(0, 0.03, -0.22)
+	eye.material_override = _material(Color(0.3, 0.01, 0.01), 0.2, 0.1, Color(1.0, 0.0, 0.03))
+	robot.add_child(eye)
+	for side in [-1.0, 1.0]:
+		var leg := MeshInstance3D.new()
+		var leg_mesh := CylinderMesh.new()
+		leg_mesh.top_radius = 0.09
+		leg_mesh.bottom_radius = 0.11
+		leg_mesh.height = height * 0.48 if personality == "specter" else 0.75
+		leg_mesh.radial_segments = 8
+		leg.mesh = leg_mesh
+		leg.position = Vector3(side * (0.18 if personality == "specter" else 0.36), -height * 0.28 if personality == "specter" else -0.25, 0.15 if personality == "crawler" else 0)
+		leg.rotation_degrees.z = side * 7.0
+		leg.material_override = _material(Color(0.3, 0.32, 0.33), 0.95, 0.22)
+		robot.add_child(leg)
+	add_child(robot)
+	robots.append(robot)
+	robot_data[robot] = {"home": at, "target": at, "seen": false, "reposition": 0.0}
+
+func _build_audio() -> void:
+	var generator := AudioStreamGenerator.new()
+	generator.mix_rate = 22050.0
+	generator.buffer_length = 0.5
+	audio_player = AudioStreamPlayer.new()
+	audio_player.stream = generator
+	audio_player.volume_db = -13.0
+	add_child(audio_player)
+	audio_player.play()
+	audio_playback = audio_player.get_stream_playback() as AudioStreamGeneratorPlayback
+
+func _build_ui() -> void:
+	hud_layer = CanvasLayer.new()
+	hud_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(hud_layer)
+	phase_label = _label(Vector2(18, 14), "PHASE 0 — CALIBRATION", 18, Color(0.42, 0.88, 1.0))
+	objective_label = _label(Vector2(18, 44), "OBJECTIF : atteindre le relais nord.", 14, Color(0.94, 0.97, 1.0))
+	status_label = _label(Vector2(18, 70), "", 13, Color(1.0, 0.58, 0.26))
+	health_label = _label(Vector2(18, 96), "INTÉGRITÉ 100%", 13, Color(0.5, 1.0, 0.72))
+	fear_label = _label(Vector2(18, 119), "PROFIL DE PEUR : CALIBRATION", 11, Color(0.7, 0.78, 0.84))
+	var crosshair := Label.new()
+	crosshair.text = "+"
+	crosshair.set_anchors_preset(Control.PRESET_CENTER)
+	crosshair.position = Vector2(-6, -14)
+	crosshair.add_theme_font_size_override("font_size", 22)
+	crosshair.modulate = Color(0.82, 0.95, 1.0, 0.76)
+	hud_layer.add_child(crosshair)
+	_build_start_panel()
+	_build_pause_panel()
+	_build_win_panel()
+	if is_mobile:
+		_build_mobile_controls()
+
+func _label(at: Vector2, text_value: String, font_size: int, color_value: Color) -> Label:
+	var label := Label.new()
+	label.position = at
+	label.text = text_value
+	label.add_theme_font_size_override("font_size", font_size)
+	label.modulate = color_value
+	hud_layer.add_child(label)
+	return label
+
+func _overlay(color_value: Color) -> ColorRect:
+	var overlay := ColorRect.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.color = color_value
+	overlay.process_mode = Node.PROCESS_MODE_ALWAYS
+	hud_layer.add_child(overlay)
+	return overlay
+
+func _build_start_panel() -> void:
+	start_panel = _overlay(Color(0.004, 0.008, 0.013, 0.96))
+	var box := VBoxContainer.new()
+	box.set_anchors_preset(Control.PRESET_CENTER)
+	box.position = Vector2(-330, -235)
+	box.size = Vector2(660, 470)
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	start_panel.add_child(box)
+	var title := Label.new()
+	title.text = "BLACKOUT PROTOCOL\nSTEEL ECHO"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 44)
+	title.modulate = Color(0.86, 0.95, 1.0)
+	box.add_child(title)
+	var subtitle := Label.new()
+	subtitle.text = "RONDE INDUSTRIELLE // IA ADAPTATIVE // GODOT + JOLT"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.modulate = Color(1.0, 0.43, 0.22)
+	box.add_child(subtitle)
+	var brief := Label.new()
+	brief.text = "Traversez l'usine, activez le relais nord, puis revenez à S-01.\nQuelque chose observe vos réactions. Les premières minutes ne sont pas une attaque."
+	brief.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	brief.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	brief.custom_minimum_size = Vector2(620, 90)
+	box.add_child(brief)
+	var controls := Label.new()
+	controls.text = "PC : ZQSD/WASD · souris · E saisir/interagir · clic lancer/frapper · F lampe · Échap pause\nMobile : boutons tactiles · glisser à droite pour regarder · paysage conseillé"
+	controls.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	controls.modulate = Color(0.68, 0.77, 0.81)
