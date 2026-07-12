@@ -1,0 +1,114 @@
+
+# -----------------------------------------------------------------------------
+# ATHENA PROTOCOL v12 — prologue, Sentinel tablet, contextual actions,
+# adaptive narrative director and a living ToyGuard factory.
+# -----------------------------------------------------------------------------
+
+func _build_v12_world() -> void:
+	_build_story_signage_v12()
+	_build_factory_population_v12()
+
+func _build_story_signage_v12() -> void:
+	_make_label3d_v12(
+		"TOYGUARD INDUSTRIES\nMAKING TOMORROW SAFE",
+		Vector3(0, 4.9, -0.42),
+		Vector3(0, 180, 0),
+		Color(0.3, 0.9, 1.0),
+		54
+	)
+	_make_label3d_v12(
+		"AUTHORIZED PERSONNEL ONLY\nPROJECT PERSEUS // LEVEL -2",
+		Vector3(-16.55, 3.3, -74.0),
+		Vector3(0, 90, 0),
+		Color(1.0, 0.22, 0.08),
+		42
+	)
+	_make_label3d_v12(
+		"TOY SAFETY LAB\nBEHAVIORAL LEARNING CELL",
+		Vector3(16.55, 3.0, -108.0),
+		Vector3(0, -90, 0),
+		Color(0.32, 0.84, 0.92),
+		38
+	)
+	_make_label3d_v12(
+		"MATRYOSHKA QUARANTINE\nANALOG SYSTEMS ONLY",
+		Vector3(0, 4.4, -175.55),
+		Vector3.ZERO,
+		Color(1.0, 0.12, 0.04),
+		44
+	)
+
+func _make_label3d_v12(text_value: String, at: Vector3, rotation_value: Vector3, color_value: Color, size_value: int) -> void:
+	var label := Label3D.new()
+	label.text = text_value
+	label.position = at
+	label.rotation_degrees = rotation_value
+	label.font_size = size_value
+	label.pixel_size = 0.004
+	label.modulate = color_value
+	label.outline_modulate = Color(0.0, 0.0, 0.0, 0.95)
+	label.outline_size = 10
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(label)
+
+func _build_factory_population_v12() -> void:
+	var unit_count := 6 if is_mobile else 10
+	for i in range(unit_count):
+		var lane := -1.0 if i % 2 == 0 else 1.0
+		var at := Vector3(lane * rng.randf_range(5.2, 12.0), 0.62, -27.0 - float(i) * 12.8)
+		_spawn_toy_unit_v12(i, at)
+
+func _spawn_toy_unit_v12(index: int, at: Vector3) -> void:
+	var unit := CharacterBody3D.new()
+	unit.name = "TG-UTILITY-%02d" % (index + 1)
+	unit.position = at
+	unit.set_meta("ambient_agent", true)
+	unit.set_meta("unit_id", unit.name)
+	unit.set_meta("attack_cd", 0.0)
+	var collision := CollisionShape3D.new()
+	var shape := CapsuleShape3D.new()
+	shape.radius = 0.22
+	shape.height = 0.78
+	collision.shape = shape
+	unit.add_child(collision)
+	var rig := Node3D.new()
+	rig.name = "ToyRig"
+	unit.add_child(rig)
+	var shell := _material(Color(0.08, 0.22 + float(index % 3) * 0.035, 0.28), 0.62, 0.34)
+	var steel := _material(Color(0.28, 0.31, 0.33), 0.92, 0.2)
+	var eye_material := _material(Color(0.0, 0.08, 0.09), 0.15, 0.15, Color(0.0, 0.72, 0.82))
+	_v11_box(rig, Vector3(0.46, 0.42, 0.34), Vector3(0, 0.22, 0), shell, "UtilityBody")
+	_v11_box(rig, Vector3(0.36, 0.28, 0.3), Vector3(0, 0.58, -0.02), steel, "UtilityHead")
+	_v11_box(rig, Vector3(0.22, 0.055, 0.035), Vector3(0, 0.61, -0.17), eye_material, "UtilityOptic")
+	var left_leg := Node3D.new()
+	left_leg.name = "LeftLeg"
+	left_leg.position = Vector3(-0.13, 0.05, 0)
+	rig.add_child(left_leg)
+	_v11_box(left_leg, Vector3(0.12, 0.42, 0.13), Vector3(0, -0.2, 0), steel, "ToyLeg")
+	var right_leg := Node3D.new()
+	right_leg.name = "RightLeg"
+	right_leg.position = Vector3(0.13, 0.05, 0)
+	rig.add_child(right_leg)
+	_v11_box(right_leg, Vector3(0.12, 0.42, 0.13), Vector3(0, -0.2, 0), steel, "ToyLeg")
+	for side in [-1.0, 1.0]:
+		_v11_box(rig, Vector3(0.09, 0.38, 0.09), Vector3(side * 0.29, 0.2, 0), steel, "ToyArm")
+	add_child(unit)
+	factory_agents.append(unit)
+	factory_agent_data[unit] = {
+		"home": at,
+		"target": _random_patrol_target_v12(at.z),
+		"speed": rng.randf_range(0.75, 1.25),
+		"phase": rng.randf_range(0.0, TAU),
+		"left_leg": left_leg,
+		"right_leg": right_leg,
+		"eye_material": eye_material,
+		"corrupted": false
+	}
+
+func _random_patrol_target_v12(reference_z: float) -> Vector3:
+	var lane := -1.0 if rng.randi() % 2 == 0 else 1.0
+	return Vector3(
+		lane * rng.randf_range(4.8, 12.4),
+		0.62,
+		clamp(reference_z + rng.randf_range(-18.0, 18.0), -164.0, -22.0)
+	)
