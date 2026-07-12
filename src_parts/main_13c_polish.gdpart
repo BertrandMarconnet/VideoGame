@@ -1,0 +1,181 @@
+func _update_v13_ui(delta: float) -> void:
+	hud_refresh_accumulator += delta
+	if health_progress:
+		health_progress.value = player_health
+	if athena_progress:
+		athena_progress.value = (athena_empathy + athena_discipline + athena_trust) / 3.0
+	if drone_progress:
+		drone_progress.value = drone_battery
+	if hud_round_label:
+		hud_round_label.text = "◆ RONDE %d / %d  ·  %s" % [current_round, TOTAL_ROUNDS, phase_name]
+	if hud_seed_label:
+		hud_seed_label.text = "SEED %06d  ·  PEUR %s" % [round_seed, fear_profile]
+	if drone_overlay:
+		drone_overlay.visible = game_started and drone_active and not tablet_open and not context_menu_open
+	if drone_overlay_label and drone_active:
+		var relay_distance := int(drone.global_position.distance_to(Vector3(0, 1.1, -165.0)))
+		drone_overlay_label.text = "KITE-01 // BAT %03d%% // RELAIS %03d m // LIAISON ATHENA %02d%%" % [int(drone_battery), relay_distance, int(athena_progress.value)]
+	if athena_hud_label:
+		athena_hud_label.text = "◉ ATHENA // %s\nEMP %02d  DIS %02d  CONF %02d" % [athena_stage, int(athena_empathy), int(athena_discipline), int(athena_trust)]
+	if task_hint_label:
+		task_hint_label.text = ("CLIC GAUCHE : SCAN  ·  C / CLIC DROIT : RETOUR" if drone_active else "TAB : SENTINEL  ·  CLIC DROIT : ROUE D'ACTIONS  ·  C : KITE-01")
+	if hud_refresh_accumulator >= 0.35:
+		hud_refresh_accumulator = 0.0
+		_update_control_screen_feed_v13()
+
+func _update_control_screen_feed_v13() -> void:
+	if not control_screen_status_label or not control_screen_alert_label:
+		return
+	var active_arms := mini(machine_arms.size(), maxi(current_round - 1, 0) + int(elapsed / 120.0))
+	control_screen_status_label.text = (
+		"TOYGUARD // PERSEUS OPERATIONS\n"
+		+ "RONDE %d/%d   SEED %06d\n" % [current_round, TOTAL_ROUNDS, round_seed]
+		+ "UPLINK %s   BRAS 6 AXES %d/%d   UNITÉS %d" % [("ACTIF" if objective_stage > 1 else "EN ATTENTE"), active_arms, machine_arms.size(), factory_agents.size()]
+	)
+	var alert := "SURVEILLANCE NORMALE // LIGNES À L'ARRÊT"
+	if current_round >= 5:
+		alert = "ALERTE ROUGE // ATHENA CONTRÔLE LES LIGNES"
+	elif current_round >= 4:
+		alert = "ALERTE // TRAJECTOIRES ROBOT NON CONFORMES"
+	elif _count_corrupted_agents_v12() > 0:
+		alert = "BABOUCHKA DÉTECTÉ // UNITÉS COMPROMISES %d" % _count_corrupted_agents_v12()
+	elif objective_stage == 1:
+		alert = "RELAIS NORD ACTIF // RETOUR IMMÉDIAT S-01"
+	control_screen_alert_label.text = alert
+
+func _capture_pointer_v13() -> void:
+	get_viewport().gui_release_focus()
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if is_mobile else Input.MOUSE_MODE_CAPTURED)
+
+func _force_player_view_v13(reason: String) -> void:
+	if not drone_active:
+		return
+	drone_active = false
+	if camera:
+		camera.current = true
+	if drone_camera:
+		drone_camera.current = false
+	if drone:
+		drone.velocity = Vector3.ZERO
+	_capture_pointer_v13()
+	_show_status(reason + " — contrôle joueur restauré")
+
+func _scan_drone_v13() -> void:
+	if not drone_active or not drone_camera:
+		return
+	var origin := drone_camera.global_position
+	var target := origin - drone_camera.global_transform.basis.z * 32.0
+	var query := PhysicsRayQueryParameters3D.create(origin, target)
+	query.exclude = [drone.get_rid(), player.get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		_show_status("KITE-01 // SCAN : aucune signature dans l'axe")
+		return
+	var collider := hit.get("collider") as Node
+	var hit_position: Vector3 = hit.get("position", origin) as Vector3
+	var distance: float = origin.distance_to(hit_position)
+	_show_status("KITE-01 // %s // %.1f m" % [(collider.name if collider else "SIGNATURE"), distance])
+
+func _complete_round_v13() -> void:
+	game_started = false
+	get_tree().paused = true
+	if drone_active:
+		drone_active = false
+		camera.current = true
+		drone_camera.current = false
+	win_panel.visible = true
+	if mobile_layer:
+		mobile_layer.visible = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	campaign_finished = current_round >= TOTAL_ROUNDS
+	if campaign_finished:
+		round_title_label.text = "CAMPAGNE TERMINÉE"
+		round_summary_label.text = "Les cinq uplinks sont restaurés. ATHENA atteint le stade %s.\nEmpathie %d · Discipline %d · Confiance %d\nProfil de peur final : %s" % [athena_stage, int(athena_empathy), int(athena_discipline), int(athena_trust), fear_profile]
+		round_continue_button.text = "RECOMMENCER UNE NOUVELLE CAMPAGNE"
+	else:
+		round_title_label.text = "RONDE %d TERMINÉE" % current_round
+		round_summary_label.text = "L'uplink est restauré. ATHENA a mémorisé vos décisions.\nLa ronde suivante modifiera l'éclairage, les lignes d'assemblage, les jouets et l'activité des bras 6 axes.\nProfil observé : %s" % fear_profile
+		round_continue_button.text = "LANCER LA RONDE %d" % (current_round + 1)
+
+func _continue_campaign_v13() -> void:
+	if campaign_finished:
+		get_tree().reload_current_scene()
+		return
+	current_round += 1
+	_reset_round_v13()
+
+func _restart_current_round_v13() -> void:
+	_reset_round_v13()
+
+func _reset_round_v13() -> void:
+	intro_active = false
+	intro_completed = true
+	win_panel.visible = false
+	pause_panel.visible = false
+	tablet_panel.visible = false
+	context_menu.visible = false
+	tablet_open = false
+	context_menu_open = false
+	paused_from_menu = false
+	campaign_finished = false
+	if held_body:
+		held_body.gravity_scale = 1.0
+		held_body = null
+	objective_stage = 0
+	elapsed = 0.0
+	player_health = 100.0
+	fear_turns = 0.0
+	fear_sprint = 0.0
+	fear_flash = 0.0
+	fear_still = 0.0
+	fear_profile = "CALIBRATION"
+	phase_name = "CALIBRATION"
+	player.position = Vector3(0, 1.1, -10.5)
+	player.rotation = Vector3.ZERO
+	player.velocity = Vector3.ZERO
+	camera.rotation = Vector3.ZERO
+	drone_active = false
+	drone.position = drone_home
+	drone.rotation = Vector3.ZERO
+	drone.velocity = Vector3.ZERO
+	drone_battery = 100.0
+	camera.current = true
+	drone_camera.current = false
+	for robot in robots:
+		if not is_instance_valid(robot):
+			continue
+		robot.visible = true
+		robot.set_meta("health", 100.0 + float(current_round - 1) * 12.0)
+		robot.set_meta("stun", 0.0)
+		robot.set_meta("attack_cd", 0.0)
+		robot.velocity = Vector3.ZERO
+		if robot_data.has(robot):
+			var robot_state: Dictionary = robot_data[robot]
+			robot.global_position = robot_state["home"]
+	for unit in factory_agents:
+		if not is_instance_valid(unit) or not factory_agent_data.has(unit):
+			continue
+		var unit_state: Dictionary = factory_agent_data[unit]
+		unit.global_position = unit_state["home"]
+		unit.velocity = Vector3.ZERO
+		unit_state["target"] = _random_patrol_target_v12(unit.global_position.z)
+		unit_state["corrupted"] = false
+		var eye_material := unit_state["eye_material"] as StandardMaterial3D
+		if eye_material:
+			eye_material.emission = Color(0.0, 0.72, 0.82)
+		factory_agent_data[unit] = unit_state
+	round_seed = _calculate_round_seed_v13()
+	_apply_round_environment_v13()
+	objective_label.text = "OBJECTIF RONDE %d/%d : atteindre le relais nord." % [current_round, TOTAL_ROUNDS]
+	phase_label.text = "PHASE — CALIBRATION"
+	next_scare_time = 15.0
+	next_narrative_event = max(14.0, 28.0 - float(current_round) * 2.5)
+	athena_trust = clamp(athena_trust + 3.0, 0.0, 100.0)
+	_update_athena_stage_v12()
+	game_started = true
+	get_tree().paused = false
+	_capture_pointer_v13()
+	if mobile_layer:
+		mobile_layer.visible = true
+	_show_status("RONDE %d/%d — configuration procédurale %06d chargée" % [current_round, TOTAL_ROUNDS, round_seed])
+	_athena_speak_v12("start")

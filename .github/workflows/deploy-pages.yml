@@ -43,12 +43,21 @@ jobs:
           grep -q 'func _open_context_menu_v12' scripts/main.gd
           grep -q 'func _update_factory_population_v12' scripts/main.gd
           grep -q 'func _athena_speak_v12' scripts/main.gd
+          grep -q 'func _update_suno_audio_v14' scripts/main.gd
+          grep -q 'BLACKOUT_RUNTIME_READY' scripts/main.gd
 
       - name: Install validation tools
         run: python -m pip install --quiet --disable-pip-version-check gdtoolkit
 
       - name: Validate GDScript
-        run: gdlint scripts/main.gd
+        shell: bash
+        run: |
+          set +e
+          gdlint scripts/main.gd > gdlint.log 2>&1
+          status=$?
+          set -e
+          cat gdlint.log
+          exit "$status"
 
       - name: Download Godot 4.7 stable and official export templates
         shell: bash
@@ -84,6 +93,23 @@ jobs:
           tail -n 30 godot-import.log
           test -d .godot
 
+      - name: Run startup smoke test
+        shell: bash
+        run: |
+          set +e
+          timeout 35 "$GODOT_BIN" --headless --path . --quit-after 8 > godot-runtime.log 2>&1
+          status=$?
+          set -e
+          cat godot-runtime.log
+          if [ "$status" -ne 0 ]; then
+            exit "$status"
+          fi
+          grep -q 'BLACKOUT_RUNTIME_READY' godot-runtime.log
+          if grep -Eqi 'SCRIPT ERROR|Invalid call|Invalid get index|Attempt to call|ERROR:' godot-runtime.log; then
+            echo 'Runtime errors detected.'
+            exit 1
+          fi
+
       - name: Export Web
         shell: bash
         run: |
@@ -109,7 +135,9 @@ jobs:
         with:
           name: godot-diagnostics-${{ github.run_id }}
           path: |
+            gdlint.log
             godot-import.log
+            godot-runtime.log
             godot-export.log
           if-no-files-found: warn
 

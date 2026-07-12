@@ -1,0 +1,119 @@
+# -----------------------------------------------------------------------------
+# SUNO SOUNDTRACK v14 — compact Web loops selected from the supplied masters.
+# The full masters can replace these files later without changing the director.
+# -----------------------------------------------------------------------------
+
+func _enter_tree() -> void:
+	call_deferred("_build_suno_audio_v14")
+
+func _build_suno_audio_v14() -> void:
+	if get_node_or_null("SunoMusic"):
+		return
+	var music := AudioStreamPlayer.new()
+	music.name = "SunoMusic"
+	music.process_mode = Node.PROCESS_MODE_ALWAYS
+	music.volume_db = -11.0
+	add_child(music)
+	var chase := AudioStreamPlayer.new()
+	chase.name = "SunoChase"
+	chase.process_mode = Node.PROCESS_MODE_ALWAYS
+	chase.volume_db = -80.0
+	chase.stream = _load_suno_stream_v14("res://audio/suno/03_factory_hunts.mp3")
+	add_child(chase)
+	if chase.stream:
+		chase.play()
+	set_meta("suno_music_key", "")
+	_play_suno_music_v14("main")
+	if audio_player:
+		audio_player.volume_db = -25.0
+
+func _load_suno_stream_v14(path: String) -> AudioStream:
+	var resource := load(path)
+	if not resource is AudioStream:
+		push_warning("Suno stream unavailable: " + path)
+		return null
+	var stream := resource as AudioStream
+	if stream is AudioStreamMP3:
+		(stream as AudioStreamMP3).loop = true
+	return stream
+
+func _suno_path_v14(key: String) -> String:
+	var path := "res://audio/suno/01_main_theme.mp3"
+	match key:
+		"intro":
+			path = "res://audio/suno/02_introduction.mp3"
+		"surveillance":
+			path = "res://audio/suno/04_surveillance_loop.mp3"
+		"daedalus":
+			path = "res://audio/suno/05_daedalus_entity.mp3"
+		"crawler":
+			path = "res://audio/suno/07_crawler.mp3"
+		"first_skin":
+			path = "res://audio/suno/08_first_skin.mp3"
+		"final":
+			path = "res://audio/suno/09_delta00_final.mp3"
+		"credits":
+			path = "res://audio/suno/10_credits.mp3"
+		_:
+			pass
+	return path
+
+func _round_music_key_v14() -> String:
+	match current_round:
+		1:
+			return "daedalus"
+		2:
+			return "surveillance"
+		3:
+			return "crawler"
+		4:
+			return "first_skin"
+		_:
+			return "final"
+
+func _play_suno_music_v14(key: String) -> void:
+	var music := get_node_or_null("SunoMusic") as AudioStreamPlayer
+	if not music:
+		return
+	if String(get_meta("suno_music_key", "")) == key and music.playing:
+		return
+	var stream := _load_suno_stream_v14(_suno_path_v14(key))
+	if not stream:
+		return
+	set_meta("suno_music_key", key)
+	music.stop()
+	music.stream = stream
+	music.play()
+
+func _update_suno_audio_v14(delta: float) -> void:
+	var music := get_node_or_null("SunoMusic") as AudioStreamPlayer
+	var chase := get_node_or_null("SunoChase") as AudioStreamPlayer
+	if not music or not chase:
+		return
+	var desired_key := "main"
+	if intro_active:
+		desired_key = "intro"
+	elif campaign_finished:
+		desired_key = "credits"
+	elif game_started or (win_panel and win_panel.visible):
+		desired_key = _round_music_key_v14()
+	_play_suno_music_v14(desired_key)
+	var base_volume := -13.0
+	if volume_slider:
+		base_volume = float(volume_slider.value)
+	var chase_amount := 0.0
+	if game_started and not intro_active:
+		for robot in robots:
+			if is_instance_valid(robot) and robot.visible:
+				var distance: float = robot.global_position.distance_to(player.global_position)
+				chase_amount = maxf(chase_amount, clampf(1.0 - distance / 24.0, 0.0, 1.0))
+		if objective_stage == 1:
+			chase_amount = maxf(chase_amount, 0.22 + float(current_round - 1) * 0.1)
+		if player_health < 45.0:
+			chase_amount = maxf(chase_amount, 0.55)
+	var target_chase_db := lerpf(-48.0, base_volume + 2.0, chase_amount)
+	var target_music_db := base_volume - chase_amount * 8.0
+	chase.volume_db = move_toward(chase.volume_db, target_chase_db, delta * 22.0)
+	music.volume_db = move_toward(music.volume_db, target_music_db, delta * 12.0)
+	if not chase.playing and chase.stream:
+		chase.play()

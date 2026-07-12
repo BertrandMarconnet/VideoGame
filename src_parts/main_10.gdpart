@@ -3,7 +3,7 @@
 	var sequence := PackedFloat32Array([55.0, 55.0, 65.41, 55.0, 73.42, 65.41, 49.0, 55.0])
 	var threat := 0.0
 	if game_started and robots.size() > 0:
-		threat = clamp(1.0 - robots[0].global_position.distance_to(player.global_position) / 28.0, 0.0, 1.0)
+		threat = clampf(1.0 - robots[0].global_position.distance_to(player.global_position) / 28.0, 0.0, 1.0)
 	var round_energy := float(current_round - 1) / float(maxi(TOTAL_ROUNDS - 1, 1))
 	for i in range(frames):
 		var t := audio_phase + float(i) / mix_rate
@@ -26,9 +26,9 @@
 		var threat_tone := sin(t * TAU * (92.0 + threat * 44.0)) * threat * 0.025
 		var status_beep := 0.0
 		if status_beep_remaining > 0.0:
-			status_beep = sin(t * TAU * status_beep_frequency) * min(status_beep_remaining * 5.0, 1.0) * 0.055
-			status_beep_remaining = max(status_beep_remaining - 1.0 / mix_rate, 0.0)
-		var sample := clamp(machine_hum + pad + bass + kick + metallic_tick + threat_tone + status_beep, -0.22, 0.22)
+			status_beep = sin(t * TAU * status_beep_frequency) * minf(status_beep_remaining * 5.0, 1.0) * 0.055
+			status_beep_remaining = maxf(status_beep_remaining - 1.0 / mix_rate, 0.0)
+		var sample: float = clampf(machine_hum + pad + bass + kick + metallic_tick + threat_tone + status_beep, -0.22, 0.22)
 		audio_playback.push_frame(Vector2(sample, sample * 0.97))
 	audio_phase += float(frames) / mix_rate
 
