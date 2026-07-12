@@ -1,13 +1,22 @@
 
 func _material(color: Color, metallic := 0.0, roughness := 0.8, emission := Color.BLACK) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
-	material.albedo_color = color
+	var color_levels := 31.0
+	material.albedo_color = Color(
+		round(color.r * color_levels) / color_levels,
+		round(color.g * color_levels) / color_levels,
+		round(color.b * color_levels) / color_levels,
+		color.a
+	)
 	material.metallic = metallic
-	material.roughness = roughness
+	material.roughness = maxf(roughness, 0.58)
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	if emission != Color.BLACK:
 		material.emission_enabled = true
 		material.emission = emission
 		material.emission_energy_multiplier = 1.3
+	else:
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_PER_VERTEX
 	return material
 
 func _create_prop(at: Vector3, size: Vector3, mass_value: float, color: Color) -> RigidBody3D:
@@ -90,8 +99,8 @@ func _create_robot(label: String, at: Vector3, color: Color, height: float, pers
 	var head_mesh := SphereMesh.new()
 	head_mesh.radius = 0.24 if personality == "specter" else 0.2
 	head_mesh.height = 0.44
-	head_mesh.radial_segments = 10
-	head_mesh.rings = 6
+	head_mesh.radial_segments = 8
+	head_mesh.rings = 4
 	head.mesh = head_mesh
 	head.position = Vector3(0, height * 0.44, -0.08 if personality == "specter" else -0.55)
 	head.material_override = _material(Color(0.34, 0.36, 0.37), 0.95, 0.2)
