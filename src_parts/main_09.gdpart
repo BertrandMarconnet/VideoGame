@@ -1,0 +1,100 @@
+		pause_panel.visible = true
+
+func _activate_terminal(terminal_id: String) -> void:
+	if terminal_id == "relay" and objective_stage == 0:
+		objective_stage = 1
+		objective_label.text = "OBJECTIF : revenir à S-01 et lancer l'uplink."
+		_show_status("RELAIS NORD ACTIF — une seconde unité vient de s'éveiller.")
+		next_scare_time = elapsed + 8.0
+	elif terminal_id == "uplink" and objective_stage == 1:
+		objective_stage = 2
+		_win_game()
+	elif terminal_id == "uplink":
+		_show_status("UPLINK INCOMPLET — le relais nord ne répond pas.")
+
+func _win_game() -> void:
+	game_started = false
+	get_tree().paused = true
+	win_panel.visible = true
+	if mobile_layer:
+		mobile_layer.visible = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+func _update_fear(_delta: float) -> void:
+	if int(elapsed) % 5 != 0:
+		return
+	var new_profile := "SURVEILLANCE"
+	if fear_sprint > fear_turns * 0.7 and fear_sprint > fear_flash:
+		new_profile = "POURSUITE"
+	elif fear_flash > fear_turns and fear_flash > 4.0:
+		new_profile = "OBSCURITÉ"
+	elif fear_still > 32.0 and fear_still > fear_sprint * 2.0:
+		new_profile = "BRUIT"
+	if new_profile != fear_profile:
+		fear_profile = new_profile
+		fear_label.text = "PROFIL DE PEUR : " + fear_profile
+
+func _update_phase() -> void:
+	var new_phase := phase_name
+	if elapsed < 45.0:
+		new_phase = "CALIBRATION"
+	elif elapsed < 150.0 and objective_stage == 0:
+		new_phase = "OBSERVATION"
+	elif objective_stage == 0:
+		new_phase = "INFILTRATION"
+	elif objective_stage == 1:
+		new_phase = "RETOUR"
+	else:
+		new_phase = "TERMINÉ"
+	if new_phase != phase_name:
+		phase_name = new_phase
+		phase_label.text = "PHASE — " + phase_name
+		_show_status("LE DIRECTEUR DE PEUR MODIFIE SON COMPORTEMENT.")
+
+func _update_scares() -> void:
+	if elapsed < next_scare_time or not game_started:
+		return
+	next_scare_time = elapsed + rng.randf_range(14.0, 27.0)
+	var event := rng.randi_range(0, 3)
+	if event == 0:
+		_flicker()
+		_show_status("BAISSE DE TENSION DANS LE SECTEUR NORD")
+	elif event == 1:
+		_reposition_specter()
+		_show_status("MOUVEMENT DÉTECTÉ HORS DU CHAMP DE VISION")
+	elif event == 2:
+		_show_status("BRUIT MÉTALLIQUE — SOURCE NON IDENTIFIÉE")
+	else:
+		var nearest := robots[0].global_position.distance_to(player.global_position)
+		if nearest > 18.0:
+			_reposition_specter()
+
+func _flicker() -> void:
+	for light in flicker_lights:
+		if is_instance_valid(light):
+			light.light_energy *= 0.15
+	get_tree().create_timer(0.35).timeout.connect(_restore_lights)
+
+func _restore_lights() -> void:
+	for light in flicker_lights:
+		if is_instance_valid(light):
+			light.light_energy = clamp(light.light_energy * 6.6, 0.7, 2.4)
+
+func _reposition_specter() -> void:
+	var specter := robots[0]
+	if _is_observed(specter):
+		return
+	var best := observation_points[rng.randi_range(0, observation_points.size() - 1)]
+	for point in observation_points:
+		var distance := point.distance_to(player.global_position)
+		if distance > 12.0 and distance < 30.0:
+			best = point
+			break
+	specter.global_position = best
+
+func _update_audio(delta: float) -> void:
+	audio_phase += delta * (1.0 + clamp((150.0 - robots[0].global_position.distance_to(player.global_position)) / 150.0, 0.0, 0.55))
+
+func _fill_audio(_delta: float) -> void:
+	if not audio_playback:
+		return
