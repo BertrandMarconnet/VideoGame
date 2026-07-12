@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -78,7 +78,7 @@ jobs:
           tail -n 30 godot-import.log
           test -d .godot
 
-      - name: Export Web PWA
+      - name: Export Web
         shell: bash
         run: |
           set +e
@@ -126,7 +126,63 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  smoke-test:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - name: Checkout main for deployment certificate
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Verify the public game files
+        shell: bash
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          test -n "$PAGE_URL"
+          base="${PAGE_URL%/}"
+          for attempt in $(seq 1 12); do
+            if curl -fsSL --max-time 40 "$PAGE_URL" -o deployed-index.html; then
+              break
+            fi
+            if [ "$attempt" -eq 12 ]; then
+              echo "The deployed index page is not reachable."
+              exit 1
+            fi
+            sleep 10
+          done
+          grep -qi 'Blackout Protocol' deployed-index.html
+          curl -fsSL --max-time 60 --range 0-63 "$base/index.wasm" -o /dev/null
+          curl -fsSL --max-time 60 --range 0-63 "$base/index.pck" -o /dev/null
+
+      - name: Record successful deployment
+        shell: bash
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          cat > DEPLOYMENT_STATUS.md <<EOF
+          # Déploiement vérifié
+
+          - **État :** jeu Web accessible
+          - **URL :** ${PAGE_URL}
+          - **Commit déployé :** ${GITHUB_SHA}
+          - **Contrôles :** index.html, index.wasm et index.pck accessibles
+          - **Vérifié le :** $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
+          git add DEPLOYMENT_STATUS.md
+          git commit -m "Record successful Pages smoke test [skip ci]"
+          git push origin HEAD:main
