@@ -1,6 +1,6 @@
 	box.add_child(controls)
 	var start_button := Button.new()
-	start_button.text = "COMMENCER LA RONDE"
+	start_button.text = "COMMENCER LA CAMPAGNE"
 	start_button.custom_minimum_size = Vector2(320, 54)
 	start_button.pressed.connect(_start_game)
 	box.add_child(start_button)
@@ -30,7 +30,7 @@ func _build_pause_panel() -> void:
 	volume_slider.min_value = -36.0
 	volume_slider.max_value = 0.0
 	volume_slider.step = 1.0
-	volume_slider.value = -13.0
+	volume_slider.value = -9.0
 	volume_slider.value_changed.connect(_set_volume)
 	box.add_child(_setting_row("Volume", volume_slider))
 	var resume := Button.new()
@@ -42,8 +42,8 @@ func _build_pause_panel() -> void:
 	fullscreen.pressed.connect(_toggle_fullscreen)
 	box.add_child(fullscreen)
 	var restart := Button.new()
-	restart.text = "RECOMMENCER"
-	restart.pressed.connect(func(): get_tree().reload_current_scene())
+	restart.text = "RECOMMENCER LA RONDE"
+	restart.pressed.connect(_restart_current_round_v13)
 	box.add_child(restart)
 	var menu := Button.new()
 	menu.text = "MENU PRINCIPAL"
@@ -66,30 +66,32 @@ func _setting_row(label_text: String, control: Control) -> HBoxContainer:
 	return row
 
 func _build_win_panel() -> void:
-	win_panel = _overlay(Color(0.0, 0.02, 0.025, 0.94))
+	win_panel = _overlay(Color(0.0, 0.02, 0.025, 0.95))
 	win_panel.visible = false
 	var box := VBoxContainer.new()
 	box.set_anchors_preset(Control.PRESET_CENTER)
-	box.position = Vector2(-310, -170)
-	box.size = Vector2(620, 340)
+	box.position = Vector2(-350, -210)
+	box.size = Vector2(700, 420)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	win_panel.add_child(box)
-	var title := Label.new()
-	title.text = "UPLINK RESTAURÉ"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 42)
-	title.modulate = Color(0.45, 1.0, 0.72)
-	box.add_child(title)
-	var text := Label.new()
-	text.text = "La ronde est terminée. Le système a enregistré votre profil de peur : " + fear_profile
-	text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	text.custom_minimum_size = Vector2(580, 90)
-	box.add_child(text)
-	var restart := Button.new()
-	restart.text = "REJOUER AVEC UNE NOUVELLE GRAINE"
-	restart.pressed.connect(func(): get_tree().reload_current_scene())
-	box.add_child(restart)
+	round_title_label = Label.new()
+	round_title_label.text = "RONDE TERMINÉE"
+	round_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	round_title_label.add_theme_font_size_override("font_size", 42)
+	round_title_label.modulate = Color(0.45, 1.0, 0.72)
+	box.add_child(round_title_label)
+	round_summary_label = Label.new()
+	round_summary_label.text = "L'uplink est restauré."
+	round_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	round_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	round_summary_label.custom_minimum_size = Vector2(650, 150)
+	round_summary_label.add_theme_font_size_override("font_size", 18)
+	box.add_child(round_summary_label)
+	round_continue_button = Button.new()
+	round_continue_button.text = "LANCER LA RONDE SUIVANTE"
+	round_continue_button.custom_minimum_size = Vector2(380, 56)
+	round_continue_button.pressed.connect(_continue_campaign_v13)
+	box.add_child(round_continue_button)
 
 func _build_mobile_controls() -> void:
 	mobile_layer = Control.new()
