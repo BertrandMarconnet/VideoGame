@@ -65,6 +65,42 @@ var alarm_lights: Array[OmniLight3D] = []
 var v11_time := 0.0
 var shelter_door: StaticBody3D
 
+# ATHENA Protocol v12 systems
+var intro_panel: Control
+var intro_title_label: Label
+var intro_body_label: RichTextLabel
+var intro_progress_label: Label
+var intro_scanline: ColorRect
+var intro_active := false
+var intro_completed := false
+var intro_slide := 0
+var intro_elapsed := 0.0
+var tablet_panel: Control
+var tablet_content: RichTextLabel
+var tablet_title: Label
+var tablet_open := false
+var tablet_tab := "TÂCHES"
+var context_menu: PanelContainer
+var context_actions: VBoxContainer
+var context_title: Label
+var context_target: Node
+var context_menu_open := false
+var athena_hud_label: Label
+var task_hint_label: Label
+var athena_empathy := 50.0
+var athena_discipline := 50.0
+var athena_trust := 35.0
+var athena_stage := "NÉONATALE"
+var athena_last_line := "Je suis en ligne. Pourquoi les portes sont-elles verrouillées ?"
+var athena_memory: Array[String] = []
+var factory_agents: Array[CharacterBody3D] = []
+var factory_agent_data: Dictionary = {}
+var next_narrative_event := 28.0
+var clues_found := 0
+var destroyed_decor := 0
+var v12_time := 0.0
+var marked_target: Node
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	rng.randomize()
@@ -75,8 +111,10 @@ func _ready() -> void:
 	_build_player()
 	_build_robots()
 	_build_v11_upgrade()
+	_build_v12_world()
 	_build_audio()
 	_build_ui()
+	_build_v12_ui()
 	_apply_device_profile()
 	get_tree().paused = true
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
@@ -96,6 +134,7 @@ func _setup_inputs() -> void:
 	_add_key_action("drop", KEY_G)
 	_add_key_action("drone", KEY_C)
 	_add_key_action("drone_down", KEY_CTRL)
+	_add_key_action("tablet", KEY_TAB)
 	_add_mouse_action("primary", MOUSE_BUTTON_LEFT)
 	_add_mouse_action("secondary", MOUSE_BUTTON_RIGHT)
 
