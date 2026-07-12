@@ -45,6 +45,9 @@ func _apply_device_profile() -> void:
 		get_viewport().scaling_3d_scale = 0.82
 
 func _start_game() -> void:
+	# Build the storyboard exterior before the unique prologue gives control back
+	# to the player. Existing combat, drone and Jolt systems remain unchanged.
+	_ensure_storyboard_act1_v16()
 	# Browser audio must be initialized from a real user gesture. This also keeps
 	# Firefox from decoding MP3 resources while the procedural scene is booting.
 	_ensure_suno_audio_v14()
@@ -61,8 +64,11 @@ func _start_game() -> void:
 		audio_player.play()
 		audio_playback = audio_player.get_stream_playback() as AudioStreamGeneratorPlayback
 	_play_suno_music_v14(_round_music_key_v14())
-	_show_status("RONDE %d/%d — TAB ouvre Sentinel, clic droit affiche la roue d'actions." % [current_round, TOTAL_ROUNDS])
-	_athena_speak_v12("start")
+	if current_round == 1:
+		_show_status("22:37 // pluie sur New Halcyon — rejoignez l'accès S-01.")
+	else:
+		_show_status("RONDE %d/%d — TAB ouvre Sentinel, clic droit affiche la roue d'actions." % [current_round, TOTAL_ROUNDS])
+		_athena_speak_v12("start")
 	if mobile_layer:
 		mobile_layer.visible = true
 
