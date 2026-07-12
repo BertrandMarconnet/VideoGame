@@ -38,25 +38,25 @@ func _load_suno_stream_v14(path: String) -> AudioStream:
 	return stream
 
 func _suno_path_v14(key: String) -> String:
+	var path := "res://audio/suno/01_main_theme.mp3"
 	match key:
-		"main":
-			return "res://audio/suno/01_main_theme.mp3"
 		"intro":
-			return "res://audio/suno/02_introduction.mp3"
+			path = "res://audio/suno/02_introduction.mp3"
 		"surveillance":
-			return "res://audio/suno/04_surveillance_loop.mp3"
+			path = "res://audio/suno/04_surveillance_loop.mp3"
 		"daedalus":
-			return "res://audio/suno/05_daedalus_entity.mp3"
+			path = "res://audio/suno/05_daedalus_entity.mp3"
 		"crawler":
-			return "res://audio/suno/07_crawler.mp3"
+			path = "res://audio/suno/07_crawler.mp3"
 		"first_skin":
-			return "res://audio/suno/08_first_skin.mp3"
+			path = "res://audio/suno/08_first_skin.mp3"
 		"final":
-			return "res://audio/suno/09_delta00_final.mp3"
+			path = "res://audio/suno/09_delta00_final.mp3"
 		"credits":
-			return "res://audio/suno/10_credits.mp3"
+			path = "res://audio/suno/10_credits.mp3"
 		_:
-			return "res://audio/suno/01_main_theme.mp3"
+			pass
+	return path
 
 func _round_music_key_v14() -> String:
 	match current_round:
