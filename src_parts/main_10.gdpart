@@ -1,0 +1,53 @@
+	var frames := audio_playback.get_frames_available()
+	for i in range(frames):
+		var t := audio_phase + float(i) / 22050.0
+		var hum := sin(t * TAU * 43.0) * 0.035 + sin(t * TAU * 86.0) * 0.016
+		var pulse := 0.0
+		if fmod(t, 1.75) < 0.055:
+			pulse = sin(t * TAU * 118.0) * 0.055
+		var threat := 0.0
+		if game_started and robots.size() > 0:
+			threat = clamp(1.0 - robots[0].global_position.distance_to(player.global_position) / 26.0, 0.0, 1.0)
+		var sample := hum + pulse * (0.5 + threat)
+		audio_playback.push_frame(Vector2(sample, sample))
+	audio_phase += float(frames) / 22050.0
+
+func _update_hud() -> void:
+	health_label.text = "INTÉGRITÉ %d%%" % int(player_health)
+	if last_status_time > 0.0 and Time.get_ticks_msec() / 1000.0 - last_status_time > 4.0:
+		status_label.text = ""
+
+func _show_status(text_value: String) -> void:
+	if status_label:
+		status_label.text = text_value
+	last_status_time = Time.get_ticks_msec() / 1000.0
+
+func _toggle_pause() -> void:
+	if not game_started:
+		return
+	paused_from_menu = not get_tree().paused
+	get_tree().paused = paused_from_menu
+	pause_panel.visible = paused_from_menu
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if paused_from_menu or is_mobile else Input.MOUSE_MODE_CAPTURED)
+	if mobile_layer:
+		mobile_layer.visible = not paused_from_menu
+
+func _set_brightness(value: float) -> void:
+	if world_env and world_env.environment:
+		world_env.environment.tonemap_exposure = value
+
+func _set_volume(value: float) -> void:
+	if audio_player:
+		audio_player.volume_db = value
+
+func _toggle_fullscreen() -> void:
+	if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	else:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+
+func _quit_game() -> void:
+	if OS.has_feature("web"):
+		_show_status("Sur navigateur : fermez cet onglet pour quitter.")
+	else:
+		get_tree().quit()
