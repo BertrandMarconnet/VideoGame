@@ -1,0 +1,99 @@
+extends Node3D
+
+const MAP_LENGTH := 176.0
+const MAP_WIDTH := 34.0
+const PLAYER_SPEED := 5.2
+const SPRINT_SPEED := 8.1
+const GRAVITY := 18.0
+const MAX_DEBRIS := 56
+
+var player: CharacterBody3D
+var camera: Camera3D
+var flashlight: SpotLight3D
+var world_env: WorldEnvironment
+var hud_layer: CanvasLayer
+var objective_label: Label
+var status_label: Label
+var health_label: Label
+var phase_label: Label
+var fear_label: Label
+var start_panel: Control
+var pause_panel: Control
+var win_panel: Control
+var mobile_layer: Control
+var brightness_slider: HSlider
+var volume_slider: HSlider
+var mouse_sensitivity := 0.0022
+var player_health := 100.0
+var game_started := false
+var elapsed := 0.0
+var objective_stage := 0
+var held_body: RigidBody3D
+var held_distance := 3.0
+var debris: Array[RigidBody3D] = []
+var robots: Array[CharacterBody3D] = []
+var robot_data: Dictionary = {}
+var last_status_time := 0.0
+var fear_profile := "CALIBRATION"
+var fear_turns := 0.0
+var fear_sprint := 0.0
+var fear_flash := 0.0
+var fear_still := 0.0
+var phase_name := "CALIBRATION"
+var is_mobile := false
+var audio_player: AudioStreamPlayer
+var audio_playback: AudioStreamGeneratorPlayback
+var audio_phase := 0.0
+var relay_terminal: StaticBody3D
+var uplink_terminal: StaticBody3D
+var rng := RandomNumberGenerator.new()
+var observation_points: Array[Vector3] = []
+var flicker_lights: Array[OmniLight3D] = []
+var next_scare_time := 18.0
+var look_touch_id := -1
+var paused_from_menu := false
+
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	rng.randomize()
+	_setup_inputs()
+	is_mobile = OS.has_feature("mobile") or OS.has_feature("web_android") or OS.has_feature("web_ios") or DisplayServer.is_touchscreen_available()
+	_build_world_environment()
+	_build_factory()
+	_build_player()
+	_build_robots()
+	_build_audio()
+	_build_ui()
+	_apply_device_profile()
+	get_tree().paused = true
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+func _setup_inputs() -> void:
+	_add_key_action("move_forward", KEY_W)
+	_add_key_action("move_forward", KEY_Z)
+	_add_key_action("move_back", KEY_S)
+	_add_key_action("move_left", KEY_A)
+	_add_key_action("move_left", KEY_Q)
+	_add_key_action("move_right", KEY_D)
+	_add_key_action("sprint", KEY_SHIFT)
+	_add_key_action("jump", KEY_SPACE)
+	_add_key_action("flashlight", KEY_F)
+	_add_key_action("interact", KEY_E)
+	_add_key_action("pause", KEY_ESCAPE)
+	_add_key_action("drop", KEY_G)
+	_add_mouse_action("primary", MOUSE_BUTTON_LEFT)
+	_add_mouse_action("secondary", MOUSE_BUTTON_RIGHT)
+
+func _add_key_action(action: StringName, keycode: Key) -> void:
+	if not InputMap.has_action(action):
+		InputMap.add_action(action)
+	var event := InputEventKey.new()
+	event.physical_keycode = keycode
+	InputMap.action_add_event(action, event)
+
+func _add_mouse_action(action: StringName, button: MouseButton) -> void:
+	if not InputMap.has_action(action):
+		InputMap.add_action(action)
+	var event := InputEventMouseButton.new()
+	event.button_index = button
+	InputMap.action_add_event(action, event)
