@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -30,13 +30,19 @@ jobs:
           mkdir -p scripts build/web
           cat src_parts/main_*.gdpart > scripts/main.gd
           test -s scripts/main.gd
-          test "$(grep -c '^func ' scripts/main.gd)" -ge 45
+          test "$(grep -c '^func ' scripts/main.gd)" -ge 70
           grep -q 'func _build_factory' scripts/main.gd
           grep -q 'func _build_mobile_controls' scripts/main.gd
           grep -q 'func _update_specter' scripts/main.gd
           grep -q 'func _update_crawler' scripts/main.gd
           grep -q 'func _break_destructible' scripts/main.gd
           grep -q 'func _activate_terminal' scripts/main.gd
+          grep -q 'func _build_v12_ui' scripts/main.gd
+          grep -q 'func _start_intro_v12' scripts/main.gd
+          grep -q 'func _toggle_tablet_v12' scripts/main.gd
+          grep -q 'func _open_context_menu_v12' scripts/main.gd
+          grep -q 'func _update_factory_population_v12' scripts/main.gd
+          grep -q 'func _athena_speak_v12' scripts/main.gd
 
       - name: Install validation tools
         run: python -m pip install --quiet --disable-pip-version-check gdtoolkit
@@ -138,11 +144,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: deploy
     steps:
-      - name: Checkout main for deployment certificate
-        uses: actions/checkout@v4
-        with:
-          ref: main
-
       - name: Verify the public game files
         shell: bash
         env:
@@ -164,25 +165,10 @@ jobs:
           grep -qi 'Blackout Protocol' deployed-index.html
           curl -fsSL --max-time 60 --range 0-63 "$base/index.wasm" -o /dev/null
           curl -fsSL --max-time 60 --range 0-63 "$base/index.pck" -o /dev/null
-
-      - name: Record successful deployment
-        shell: bash
-        env:
-          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
-        run: |
-          set -euo pipefail
-          cat > DEPLOYMENT_STATUS.md <<EOF
-          # Déploiement vérifié
-
-          - **État :** jeu Web accessible
-          - **URL :** ${PAGE_URL}
-          - **Commit déployé :** ${GITHUB_SHA}
-          - **Contrôles :** index.html, index.wasm et index.pck accessibles
-          - **Vérifié le :** $(date -u +'%Y-%m-%d %H:%M:%S UTC')
-          EOF
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin main
-          git add DEPLOYMENT_STATUS.md
-          git commit -m "Record successful Pages smoke test [skip ci]"
-          git push origin HEAD:main
+          {
+            echo '## Déploiement vérifié'
+            echo
+            echo "- Jeu Web accessible : $PAGE_URL"
+            echo "- Commit déployé : $GITHUB_SHA"
+            echo '- index.html, index.wasm et index.pck accessibles'
+          } >> "$GITHUB_STEP_SUMMARY"
