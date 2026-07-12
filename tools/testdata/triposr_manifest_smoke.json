@@ -1,0 +1,21 @@
+{
+  "asset_name": "pipeline-smoke",
+  "source_image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl5Z4kAAAAASUVORK5CYII=",
+  "generation": {
+    "foreground_ratio": 0.85,
+    "mc_resolution": 128,
+    "texture_resolution": 512,
+    "target_faces": 1500,
+    "target_height_m": 1.0,
+    "bake_texture": false,
+    "create_collision": true,
+    "device": "cuda:0"
+  },
+  "quality": {
+    "max_glb_mb": 10
+  },
+  "provenance": {
+    "author": "pipeline test",
+    "source_license": "generated test fixture"
+  }
+}
