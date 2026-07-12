@@ -38,11 +38,8 @@ jobs:
           grep -q 'func _break_destructible' scripts/main.gd
           grep -q 'func _activate_terminal' scripts/main.gd
 
-      - name: Install validation and archive tools
-        run: |
-          python -m pip install --disable-pip-version-check gdtoolkit
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends curl unzip
+      - name: Install validation tools
+        run: python -m pip install --quiet --disable-pip-version-check gdtoolkit
 
       - name: Validate GDScript
         run: gdlint scripts/main.gd
@@ -52,8 +49,8 @@ jobs:
         run: |
           set -euo pipefail
           GODOT_TAG="4.7-stable"
-          curl -fL --retry 5 --retry-delay 3 -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_TAG}/Godot_v${GODOT_TAG}_linux.x86_64.zip"
-          curl -fL --retry 5 --retry-delay 3 -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_TAG}/Godot_v${GODOT_TAG}_export_templates.tpz"
+          curl -fsSL --retry 5 --retry-delay 3 -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_TAG}/Godot_v${GODOT_TAG}_linux.x86_64.zip"
+          curl -fsSL --retry 5 --retry-delay 3 -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_TAG}/Godot_v${GODOT_TAG}_export_templates.tpz"
           mkdir -p .godot-bin .templates
           unzip -q godot.zip -d .godot-bin
           unzip -q templates.tpz -d .templates
@@ -70,15 +67,29 @@ jobs:
       - name: Import project and validate Godot resources
         shell: bash
         run: |
-          set -euo pipefail
-          timeout 180 "$GODOT_BIN" --headless --editor --path . --quit-after 8
+          set +e
+          timeout 180 "$GODOT_BIN" --headless --editor --path . --quit-after 8 > godot-import.log 2>&1
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ]; then
+            tail -n 160 godot-import.log
+            exit "$status"
+          fi
+          tail -n 30 godot-import.log
           test -d .godot
 
       - name: Export Web PWA
         shell: bash
         run: |
-          set -euo pipefail
-          "$GODOT_BIN" --headless --path . --export-release Web build/web/index.html
+          set +e
+          "$GODOT_BIN" --headless --path . --export-release Web build/web/index.html > godot-export.log 2>&1
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ]; then
+            tail -n 200 godot-export.log
+            exit "$status"
+          fi
+          tail -n 50 godot-export.log
           touch build/web/.nojekyll
           test -s build/web/index.html
           test -s build/web/index.wasm
@@ -86,14 +97,24 @@ jobs:
           printf 'User-agent: *\nAllow: /\n' > build/web/robots.txt
           find build/web -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
 
+      - name: Upload Godot diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-diagnostics-${{ github.run_id }}
+          path: |
+            godot-import.log
+            godot-export.log
+          if-no-files-found: warn
+
       - name: Configure GitHub Pages
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && success()
         uses: actions/configure-pages@v5
         with:
           enablement: true
 
       - name: Upload GitHub Pages artifact
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && success()
         uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
