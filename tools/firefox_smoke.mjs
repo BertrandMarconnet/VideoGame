@@ -7,10 +7,13 @@ const headless = process.env.BLACKOUT_FIREFOX_HEADLESS !== "0";
 const consoleLines = [];
 const runtimeErrors = [];
 let storyboardReady = false;
+let storyboardArtReady = false;
 let mobileControlsReady = false;
 let gameplayStarted = false;
 let mobileForwardPressed = false;
 let mobileFlashlightPressed = false;
+let mobileLookActive = false;
+let mobileLookReleased = false;
 let markReady;
 let markFailed;
 const runtimeReady = new Promise((resolve, reject) => {
@@ -45,6 +48,50 @@ function analyzeFrame(buffer, label) {
   }
 }
 
+async function dispatchTouchLook(page, startX, startY, endX, endY) {
+  await page.evaluate(({ startX, startY, endX, endY }) => {
+    const canvas = document.querySelector("canvas");
+    if (!canvas) throw new Error("Godot canvas missing during touch sequence");
+    const makeTouch = (x, y) => new Touch({
+      identifier: 71,
+      target: canvas,
+      clientX: x,
+      clientY: y,
+      pageX: x,
+      pageY: y,
+      screenX: x,
+      screenY: y,
+      radiusX: 8,
+      radiusY: 8,
+      rotationAngle: 0,
+      force: 0.7,
+    });
+    const start = makeTouch(startX, startY);
+    canvas.dispatchEvent(new TouchEvent("touchstart", {
+      touches: [start],
+      targetTouches: [start],
+      changedTouches: [start],
+      bubbles: true,
+      cancelable: true,
+    }));
+    const moved = makeTouch(endX, endY);
+    canvas.dispatchEvent(new TouchEvent("touchmove", {
+      touches: [moved],
+      targetTouches: [moved],
+      changedTouches: [moved],
+      bubbles: true,
+      cancelable: true,
+    }));
+    canvas.dispatchEvent(new TouchEvent("touchend", {
+      touches: [],
+      targetTouches: [],
+      changedTouches: [moved],
+      bubbles: true,
+      cancelable: true,
+    }));
+  }, { startX, startY, endX, endY });
+}
+
 const browser = await firefox.launch({
   headless,
   env: {
@@ -73,10 +120,13 @@ page.on("console", (message) => {
     markReady();
   }
   if (text.includes("BLACKOUT_STORYBOARD_ACT1_READY")) storyboardReady = true;
+  if (text.includes("BLACKOUT_STORYBOARD_ART_V17_READY")) storyboardArtReady = true;
   if (text.includes("BLACKOUT_MOBILE_CONTROLS_READY")) mobileControlsReady = true;
   if (text.includes("BLACKOUT_GAMEPLAY_STARTED")) gameplayStarted = true;
   if (text.includes("BLACKOUT_MOBILE_ACTION_DOWN move_forward")) mobileForwardPressed = true;
   if (text.includes("BLACKOUT_MOBILE_ACTION_DOWN flashlight")) mobileFlashlightPressed = true;
+  if (text.includes("BLACKOUT_MOBILE_LOOK_ACTIVE")) mobileLookActive = true;
+  if (text.includes("BLACKOUT_MOBILE_LOOK_RELEASED")) mobileLookReleased = true;
   const fatalPatterns = [
     "The following features required to run Godot projects",
     "SCRIPT ERROR",
@@ -146,6 +196,7 @@ try {
   await page.mouse.click(bounds.x + bounds.width * 0.5, bounds.y + bounds.height * 0.71);
   await page.waitForTimeout(1_000);
   if (!storyboardReady) throw new Error("Act I exterior initialization marker was not emitted after campaign start");
+  if (!storyboardArtReady) throw new Error("Storyboard art pass v17 was not initialized after campaign start");
 
   const introSkipPositions = [
     [0.59, 0.77],
@@ -162,13 +213,24 @@ try {
   await page.touchscreen.tap(bounds.x + bounds.width * 0.105, bounds.y + bounds.height * 0.749);
   await page.waitForTimeout(250);
   await page.touchscreen.tap(bounds.x + bounds.width * 0.942, bounds.y + bounds.height * 0.821);
-  await page.waitForTimeout(750);
+  await page.waitForTimeout(500);
   if (!mobileForwardPressed) throw new Error("The direct mobile move_forward control did not emit a touch action");
   if (!mobileFlashlightPressed) throw new Error("The direct mobile flashlight control did not emit a touch action");
 
+  await dispatchTouchLook(
+    page,
+    bounds.x + bounds.width * 0.89,
+    bounds.y + bounds.height * 0.50,
+    bounds.x + bounds.width * 0.94,
+    bounds.y + bounds.height * 0.44,
+  );
+  await page.waitForTimeout(800);
+  if (!mobileLookActive) throw new Error("The right mobile look joystick did not capture its touch identifier");
+  if (!mobileLookReleased) throw new Error("The right mobile look joystick did not release its touch identifier");
+
   const startFrame = await page.screenshot({ path: "build/firefox-after-start.png", fullPage: true });
-  analyzeFrame(startFrame, "after-start-mobile-controls");
-  consoleLines.push("[interaction] direct touchscreen movement and flashlight controls emitted successfully");
+  analyzeFrame(startFrame, "after-start-mobile-controls-and-art");
+  consoleLines.push("[interaction] movement, flashlight, right look joystick and storyboard art initialized successfully");
 
   if (runtimeErrors.length > 0) {
     throw new Error(`Firefox emitted runtime errors:\n${runtimeErrors.join("\n")}`);
