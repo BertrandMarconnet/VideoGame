@@ -1,13 +1,3 @@
-		return
-	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		_rotate_view(event.relative)
-		if abs(event.relative.x) > 38.0:
-			fear_turns += abs(event.relative.x) / 120.0
-	if event is InputEventScreenDrag:
-		if event.position.x > get_viewport().get_visible_rect().size.x * 0.44:
-			_rotate_view(event.relative * 0.65)
-			fear_turns += abs(event.relative.x) / 160.0
-
 func _rotate_view(relative: Vector2) -> void:
 	if drone_active and drone and drone_camera:
 		drone.rotate_y(-relative.x * mouse_sensitivity)
@@ -29,34 +19,51 @@ func _interact() -> void:
 	if collider is RigidBody3D and collider.get_meta("grabbable", false):
 		held_body = collider
 		held_body.gravity_scale = 0.0
-		_show_status("OBJET SAISI — clic pour lancer")
+		_show_status("OBJET SAISI — clic gauche pour lancer")
 		return
 	if collider and collider.has_meta("terminal"):
 		_activate_terminal(String(collider.get_meta("terminal")))
+		return
+	if collider and collider.get_meta("ambient_agent", false):
+		_inspect_agent_v12(collider as CharacterBody3D)
 
 func _primary_action() -> void:
 	if held_body:
-		var forward := -camera.global_transform.basis.z
+		var active_camera := drone_camera if drone_active and drone_camera else camera
+		var forward := -active_camera.global_transform.basis.z
 		held_body.gravity_scale = 1.0
 		held_body.linear_velocity = player.velocity
 		held_body.apply_central_impulse(forward * clamp(held_body.mass * 3.2, 18.0, 70.0))
 		held_body = null
 		_show_status("OBJET LANCÉ")
 		return
-	var hit := _raycast(3.0)
+	var hit := _raycast(4.2)
 	if hit.is_empty():
+		_show_status("AUCUNE INTERACTION À PORTÉE")
 		return
 	var collider := hit.get("collider") as Node
-	if collider and collider.get_meta("destructible", false):
+	if collider is RigidBody3D and collider.get_meta("grabbable", false):
+		_interact()
+	elif collider and collider.has_meta("terminal"):
+		_activate_terminal(String(collider.get_meta("terminal")))
+	elif collider and collider.get_meta("ambient_agent", false):
+		_inspect_agent_v12(collider as CharacterBody3D)
+	elif collider and collider.get_meta("destructible", false):
 		_damage_destructible(collider, 18.0, hit.get("position", Vector3.ZERO))
 	elif collider and collider.get_meta("robot", false):
 		_damage_robot(collider as CharacterBody3D, 6.0, 0.4)
+	else:
+		_show_status("ÉLÉMENT STRUCTUREL — utilisez le clic droit pour l'analyser.")
 
 func _raycast(distance: float) -> Dictionary:
-	var origin := camera.global_position
-	var target := origin - camera.global_transform.basis.z * distance
+	var active_camera := drone_camera if drone_active and drone_camera else camera
+	var origin := active_camera.global_position
+	var target := origin - active_camera.global_transform.basis.z * distance
 	var query := PhysicsRayQueryParameters3D.create(origin, target)
-	query.exclude = [player.get_rid()]
+	var excluded: Array[RID] = [player.get_rid()]
+	if drone:
+		excluded.append(drone.get_rid())
+	query.exclude = excluded
 	return get_world_3d().direct_space_state.intersect_ray(query)
 
 func _update_held_object(_delta: float) -> void:
@@ -81,17 +88,25 @@ func _on_prop_body_entered(other: Node, prop: RigidBody3D) -> void:
 		_damage_destructible(other, clamp(impact * 0.22, 8.0, 52.0), prop.global_position)
 
 func _damage_destructible(body: Node, amount: float, at: Vector3) -> void:
-	var hp := float(body.get_meta("health", 75.0)) - amount
+	var max_health := float(body.get_meta("max_health", body.get_meta("health", 75.0)))
+	if not body.has_meta("max_health"):
+		body.set_meta("max_health", max_health)
+	var hp := float(body.get_meta("health", max_health)) - amount
 	body.set_meta("health", hp)
-	_show_status("STRUCTURE ENDOMMAGÉE — %d%%" % int(max(hp, 0.0) / 75.0 * 100.0))
+	_show_status("STRUCTURE ENDOMMAGÉE — %d%%" % int(max(hp, 0.0) / max(max_health, 1.0) * 100.0))
 	if hp <= 0.0:
 		_break_destructible(body as StaticBody3D, at)
 
 func _break_destructible(body: StaticBody3D, at: Vector3) -> void:
+	if not is_instance_valid(body):
+		return
 	var size := body.get_meta("size", Vector3(3, 3, 0.4)) as Vector3
 	var origin := body.global_position
 	body.queue_free()
-	for i in range(8):
+	destroyed_decor += 1
+	_athena_observe_v12("destruction")
+	var piece_count := 5 if is_mobile else 8
+	for i in range(piece_count):
 		var piece_size := Vector3(max(size.x / 4.2, 0.35), max(size.y / 3.5, 0.35), max(size.z * 0.8, 0.25))
 		var piece := _create_prop(origin + Vector3(rng.randf_range(-size.x * 0.35, size.x * 0.35), rng.randf_range(-size.y * 0.35, size.y * 0.35), rng.randf_range(-0.25, 0.25)), piece_size, 5.0, Color(0.2, 0.21, 0.22))
 		piece.set_meta("grabbable", true)
@@ -102,3 +117,4 @@ func _break_destructible(body: StaticBody3D, at: Vector3) -> void:
 		var oldest: RigidBody3D = debris.pop_front()
 		if is_instance_valid(oldest):
 			oldest.freeze = true
+	_show_status("BRÈCHE OUVERTE — l'usine mémorise votre violence.")
