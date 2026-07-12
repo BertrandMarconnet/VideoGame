@@ -10,10 +10,10 @@ func _build_v12_ui() -> void:
 	hud_layer.add_child(athena_hud_label)
 	task_hint_label = Label.new()
 	task_hint_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	task_hint_label.position = Vector2(-430, -48)
-	task_hint_label.size = Vector2(410, 32)
+	task_hint_label.position = Vector2(-470, -48)
+	task_hint_label.size = Vector2(450, 32)
 	task_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	task_hint_label.text = "TAB : TABLETTE SENTINEL  ·  CLIC DROIT : ACTIONS"
+	task_hint_label.text = "TAB : SENTINEL  ·  CLIC DROIT : ROUE D'ACTIONS  ·  C : KITE-01"
 	task_hint_label.add_theme_font_size_override("font_size", 12)
 	task_hint_label.modulate = Color(0.68, 0.8, 0.86, 0.82)
 	task_hint_label.visible = false
@@ -30,7 +30,8 @@ func _build_v12_ui() -> void:
 		tablet_button.pressed.connect(_toggle_tablet_v12)
 		mobile_layer.add_child(tablet_button)
 		var actions_button := Button.new()
-		actions_button.text = "⋮"
+		actions_button.text = "◉"
+		actions_button.tooltip_text = "Roue d'actions"
 		actions_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 		actions_button.position = Vector2(-214, 16)
 		actions_button.custom_minimum_size = Vector2(62, 48)
@@ -146,31 +147,46 @@ func _build_context_menu_v12() -> void:
 	context_menu.process_mode = Node.PROCESS_MODE_ALWAYS
 	context_menu.visible = false
 	context_menu.set_anchors_preset(Control.PRESET_CENTER)
-	context_menu.position = Vector2(160, -190)
-	context_menu.custom_minimum_size = Vector2(320, 380)
+	context_menu.position = Vector2(-250, -250)
+	context_menu.custom_minimum_size = Vector2(500, 500)
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.015, 0.035, 0.045, 0.98)
-	style.border_color = Color(0.0, 0.62, 0.76, 0.9)
-	style.set_border_width_all(2)
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
+	style.bg_color = Color(0.006, 0.018, 0.026, 0.94)
+	style.border_color = Color(0.0, 0.68, 0.82, 0.95)
+	style.set_border_width_all(3)
+	style.corner_radius_top_left = 250
+	style.corner_radius_top_right = 250
+	style.corner_radius_bottom_left = 250
+	style.corner_radius_bottom_right = 250
+	style.shadow_color = Color(0, 0, 0, 0.65)
+	style.shadow_size = 18
 	context_menu.add_theme_stylebox_override("panel", style)
 	hud_layer.add_child(context_menu)
-	var box := VBoxContainer.new()
-	box.custom_minimum_size = Vector2(300, 350)
-	context_menu.add_child(box)
+	var wheel := Control.new()
+	wheel.custom_minimum_size = Vector2(500, 500)
+	context_menu.add_child(wheel)
 	context_title = Label.new()
-	context_title.text = "ACTIONS DISPONIBLES"
+	context_title.position = Vector2(55, 24)
+	context_title.size = Vector2(390, 52)
+	context_title.text = "ROUE D'ACTIONS"
 	context_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	context_title.add_theme_font_size_override("font_size", 19)
+	context_title.add_theme_font_size_override("font_size", 18)
 	context_title.modulate = Color(0.42, 0.92, 1.0)
-	box.add_child(context_title)
-	context_actions = VBoxContainer.new()
-	context_actions.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	box.add_child(context_actions)
+	wheel.add_child(context_title)
+	context_actions = Control.new()
+	context_actions.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	wheel.add_child(context_actions)
+	context_center_label = Label.new()
+	context_center_label.position = Vector2(165, 205)
+	context_center_label.size = Vector2(170, 56)
+	context_center_label.text = "ANNULER"
+	context_center_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	context_center_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	context_center_label.add_theme_font_size_override("font_size", 15)
+	context_center_label.modulate = Color(0.75, 0.85, 0.9)
+	wheel.add_child(context_center_label)
 	var close_button := Button.new()
-	close_button.text = "ANNULER"
+	close_button.position = Vector2(190, 264)
+	close_button.size = Vector2(120, 44)
+	close_button.text = "FERMER"
 	close_button.pressed.connect(_close_context_menu_v12)
-	box.add_child(close_button)
+	wheel.add_child(close_button)
