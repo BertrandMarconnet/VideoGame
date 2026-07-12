@@ -1,7 +1,7 @@
 
 # -----------------------------------------------------------------------------
 # STORYBOARD v16 — Act I exterior arrival and PS1 industrial visual profile.
-# This module extends the existing procedural world without replacing gameplay.
+# This module extends the current vertical slice without replacing its systems.
 # -----------------------------------------------------------------------------
 
 func _ensure_storyboard_act1_v16() -> void:
@@ -17,11 +17,9 @@ func _ensure_storyboard_act1_v16() -> void:
 	_lock_act1_threats_v16()
 	player.global_position = Vector3(0.0, 1.15, 35.0)
 	player.rotation = Vector3.ZERO
-	if objective_label:
-		objective_label.text = "OBJECTIF : rejoindre l'entrée S-01 de ToyGuard."
-	if phase_label:
-		phase_label.text = "ACTE I — ARRIVÉE"
-	var story_timer := Timer.new()
+	objective_label.text = "OBJECTIF : rejoindre l'entrée S-01 de ToyGuard."
+	phase_label.text = "ACTE I — ARRIVÉE"
+	var story_timer: Timer = Timer.new()
 	story_timer.name = "StoryboardAct1Timer"
 	story_timer.wait_time = 0.08 if not is_mobile else 0.14
 	story_timer.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -31,90 +29,81 @@ func _ensure_storyboard_act1_v16() -> void:
 	print("BLACKOUT_STORYBOARD_ACT1_READY")
 
 func _build_exterior_toyguard_v16() -> void:
-	var previous_shell := get_node_or_null("SouthShell")
+	var previous_shell: Node = get_node_or_null("SouthShell")
 	if previous_shell:
 		previous_shell.queue_free()
-	var root := Node3D.new()
+	var root: Node3D = Node3D.new()
 	root.name = "StoryboardExterior"
 	add_child(root)
-	var asphalt := _material(Color(0.045, 0.055, 0.062), 0.05, 0.94)
-	var concrete := _material(Color(0.12, 0.13, 0.135), 0.05, 0.92)
-	var wall := _material(Color(0.105, 0.115, 0.12), 0.18, 0.88)
-	var steel := _material(Color(0.14, 0.16, 0.17), 0.72, 0.42)
-	var amber := _material(Color(0.24, 0.14, 0.035), 0.1, 0.8, Color(0.95, 0.42, 0.045))
-	var red := _material(Color(0.24, 0.025, 0.018), 0.1, 0.72, Color(0.95, 0.035, 0.018))
+	var asphalt: StandardMaterial3D = _material(Color(0.045, 0.055, 0.062), 0.05, 0.94)
+	var concrete: StandardMaterial3D = _material(Color(0.12, 0.13, 0.135), 0.05, 0.92)
+	var wall: StandardMaterial3D = _material(Color(0.105, 0.115, 0.12), 0.18, 0.88)
+	var steel: StandardMaterial3D = _material(Color(0.14, 0.16, 0.17), 0.72, 0.42)
+	var amber: StandardMaterial3D = _material(Color(0.24, 0.14, 0.035), 0.1, 0.8, Color(0.95, 0.42, 0.045))
+	var red: StandardMaterial3D = _material(Color(0.24, 0.025, 0.018), 0.1, 0.72, Color(0.95, 0.035, 0.018))
 	_static_box(Vector3(42.0, 0.45, 46.0), Vector3(0.0, -0.22, 22.0), asphalt, "ExteriorGround")
 	_static_box(Vector3(8.0, 0.08, 43.0), Vector3(0.0, 0.05, 22.0), concrete, "ExteriorApproach")
 	_static_box(Vector3(13.0, 9.0, 0.7), Vector3(-10.5, 4.2, 0.0), wall, "SouthShellLeft")
 	_static_box(Vector3(13.0, 9.0, 0.7), Vector3(10.5, 4.2, 0.0), wall, "SouthShellRight")
 	_static_box(Vector3(8.0, 2.0, 0.7), Vector3(0.0, 7.7, 0.0), wall, "SouthShellHeader")
-	for side in [-1.0, 1.0]:
+	for side: float in [-1.0, 1.0]:
 		_static_box(Vector3(0.55, 6.8, 0.8), Vector3(side * 4.2, 3.4, 0.05), steel, "ExteriorDoorFrame")
 		_static_box(Vector3(0.22, 3.0, 38.0), Vector3(side * 19.0, 1.5, 22.0), steel, "ExteriorFence")
-		for z_value in [5.0, 13.0, 21.0, 29.0, 37.0]:
+		for z_value: float in [5.0, 13.0, 21.0, 29.0, 37.0]:
 			_static_box(Vector3(0.35, 3.4, 0.35), Vector3(side * 18.8, 1.7, z_value), steel, "FencePost")
 	_static_box(Vector3(38.0, 3.0, 0.22), Vector3(0.0, 1.5, 44.0), steel, "ExteriorRearFence")
 	_static_box(Vector3(4.8, 2.8, 4.2), Vector3(-12.8, 1.4, 31.0), wall, "SecurityBooth")
 	_visual_box(Vector3(3.7, 1.1, 0.06), Vector3(-12.8, 1.65, 28.86), _material(Color(0.02, 0.11, 0.13), 0.05, 0.25, Color(0.0, 0.24, 0.3)), "BoothWindow")
-	for z_value in [9.0, 23.0, 37.0]:
-		for side in [-1.0, 1.0]:
-			var pole_x := side * 9.5
+	for z_value: float in [9.0, 23.0, 37.0]:
+		for side: float in [-1.0, 1.0]:
+			var pole_x: float = side * 9.5
 			_static_box(Vector3(0.18, 5.8, 0.18), Vector3(pole_x, 2.9, z_value), steel, "ExteriorLampPole")
 			_visual_box(Vector3(1.8, 0.18, 0.55), Vector3(pole_x, 5.65, z_value), steel, "ExteriorLampHead")
-			var lamp := OmniLight3D.new()
+			var lamp: OmniLight3D = OmniLight3D.new()
 			lamp.position = Vector3(pole_x, 5.25, z_value)
 			lamp.light_color = Color(0.48, 0.68, 0.86)
 			lamp.light_energy = 1.15
 			lamp.omni_range = 10.0
 			lamp.shadow_enabled = false
 			root.add_child(lamp)
-	for puddle in [Vector3(-5.5, 0.09, 31.0), Vector3(4.0, 0.09, 18.0), Vector3(-3.0, 0.09, 8.0), Vector3(9.5, 0.09, 39.0)]:
-		var puddle_mesh := _visual_box(Vector3(4.2, 0.025, 2.0), puddle, _material(Color(0.025, 0.06, 0.085), 0.32, 0.18), "RainPuddle")
+	var puddles: Array[Vector3] = [Vector3(-5.5, 0.09, 31.0), Vector3(4.0, 0.09, 18.0), Vector3(-3.0, 0.09, 8.0), Vector3(9.5, 0.09, 39.0)]
+	for puddle: Vector3 in puddles:
+		var puddle_mesh: MeshInstance3D = _visual_box(Vector3(4.2, 0.025, 2.0), puddle, _material(Color(0.025, 0.06, 0.085), 0.32, 0.18), "RainPuddle")
 		puddle_mesh.rotation_degrees.y = float(int(abs(puddle.z * 7.0)) % 28) - 14.0
-	var facade_sign := Label3D.new()
-	facade_sign.name = "ToyGuardFacadeSign"
-	facade_sign.text = "TOYGUARD INDUSTRIES"
-	facade_sign.font_size = 58
-	facade_sign.modulate = Color(0.82, 0.67, 0.28)
-	facade_sign.outline_size = 8
-	facade_sign.position = Vector3(0.0, 6.5, 0.55)
-	facade_sign.rotation_degrees.y = 180.0
-	root.add_child(facade_sign)
-	var bunker_sign := Label3D.new()
-	bunker_sign.text = "S-01 // ACCÈS PERSONNEL"
-	bunker_sign.font_size = 34
-	bunker_sign.modulate = Color(0.35, 0.92, 0.82)
-	bunker_sign.position = Vector3(0.0, 4.8, 0.62)
-	bunker_sign.rotation_degrees.y = 180.0
-	root.add_child(bunker_sign)
-	var warning_sign := Label3D.new()
-	warning_sign.text = "PERSEUS // ZONE RESTREINTE"
-	warning_sign.font_size = 28
-	warning_sign.modulate = Color(0.94, 0.28, 0.12)
-	warning_sign.position = Vector3(-12.8, 2.6, 28.82)
-	warning_sign.rotation_degrees.y = 180.0
-	root.add_child(warning_sign)
+	_build_exterior_sign_v16(root, "TOYGUARD INDUSTRIES", Vector3(0.0, 6.5, 0.55), 58, Color(0.82, 0.67, 0.28))
+	_build_exterior_sign_v16(root, "S-01 // ACCÈS PERSONNEL", Vector3(0.0, 4.8, 0.62), 34, Color(0.35, 0.92, 0.82))
+	_build_exterior_sign_v16(root, "PERSEUS // ZONE RESTREINTE", Vector3(-12.8, 2.6, 28.82), 28, Color(0.94, 0.28, 0.12))
 	_visual_box(Vector3(0.55, 0.16, 0.14), Vector3(-3.25, 3.7, 0.55), red, "EntranceAlarm")
 	_visual_box(Vector3(0.55, 0.16, 0.14), Vector3(3.25, 3.7, 0.55), amber, "EntranceStatus")
 	_build_rain_field_v16(root)
 
+func _build_exterior_sign_v16(root: Node3D, text_value: String, at: Vector3, size_value: int, color_value: Color) -> void:
+	var sign_label: Label3D = Label3D.new()
+	sign_label.text = text_value
+	sign_label.font_size = size_value
+	sign_label.modulate = color_value
+	sign_label.outline_size = 6
+	sign_label.position = at
+	sign_label.rotation_degrees.y = 180.0
+	root.add_child(sign_label)
+
 func _build_rain_field_v16(root: Node3D) -> void:
-	var rain := MultiMeshInstance3D.new()
+	var rain: MultiMeshInstance3D = MultiMeshInstance3D.new()
 	rain.name = "RainField"
-	var streak := BoxMesh.new()
+	var streak: BoxMesh = BoxMesh.new()
 	streak.size = Vector3(0.025, 0.7, 0.025)
-	var streak_material := StandardMaterial3D.new()
+	var streak_material: StandardMaterial3D = StandardMaterial3D.new()
 	streak_material.albedo_color = Color(0.38, 0.58, 0.72, 0.52)
 	streak_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	streak_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	streak.material = streak_material
-	var multi := MultiMesh.new()
+	var multi: MultiMesh = MultiMesh.new()
 	multi.transform_format = MultiMesh.TRANSFORM_3D
 	multi.mesh = streak
 	multi.instance_count = 26 if is_mobile else 54
-	var positions: Array = []
-	for index in range(multi.instance_count):
-		var position := Vector3(rng.randf_range(-18.0, 18.0), rng.randf_range(1.0, 10.0), rng.randf_range(1.0, 43.0))
+	var positions: Array[Vector3] = []
+	for index: int in range(multi.instance_count):
+		var position: Vector3 = Vector3(rng.randf_range(-18.0, 18.0), rng.randf_range(1.0, 10.0), rng.randf_range(1.0, 43.0))
 		positions.append(position)
 		multi.set_instance_transform(index, Transform3D(Basis.IDENTITY, position))
 	rain.multimesh = multi
@@ -124,15 +113,15 @@ func _build_rain_field_v16(root: Node3D) -> void:
 func _build_first_person_tool_v16() -> void:
 	if not camera or camera.get_node_or_null("FirstPersonFlashlight"):
 		return
-	var tool := Node3D.new()
+	var tool: Node3D = Node3D.new()
 	tool.name = "FirstPersonFlashlight"
 	tool.position = Vector3(0.42, -0.34, -0.78)
 	tool.rotation_degrees = Vector3(-6.0, -7.0, -8.0)
 	camera.add_child(tool)
-	var dark := _material(Color(0.035, 0.042, 0.046), 0.48, 0.72)
-	var steel := _material(Color(0.19, 0.21, 0.22), 0.72, 0.38)
-	var body := MeshInstance3D.new()
-	var body_mesh := CylinderMesh.new()
+	var dark: StandardMaterial3D = _material(Color(0.035, 0.042, 0.046), 0.48, 0.72)
+	var steel: StandardMaterial3D = _material(Color(0.19, 0.21, 0.22), 0.72, 0.38)
+	var body: MeshInstance3D = MeshInstance3D.new()
+	var body_mesh: CylinderMesh = CylinderMesh.new()
 	body_mesh.top_radius = 0.09
 	body_mesh.bottom_radius = 0.11
 	body_mesh.height = 0.52
@@ -141,8 +130,8 @@ func _build_first_person_tool_v16() -> void:
 	body.rotation_degrees.x = 90.0
 	body.material_override = dark
 	tool.add_child(body)
-	var head := MeshInstance3D.new()
-	var head_mesh := CylinderMesh.new()
+	var head: MeshInstance3D = MeshInstance3D.new()
+	var head_mesh: CylinderMesh = CylinderMesh.new()
 	head_mesh.top_radius = 0.17
 	head_mesh.bottom_radius = 0.12
 	head_mesh.height = 0.2
@@ -152,8 +141,8 @@ func _build_first_person_tool_v16() -> void:
 	head.rotation_degrees.x = 90.0
 	head.material_override = steel
 	tool.add_child(head)
-	var hand := MeshInstance3D.new()
-	var hand_mesh := BoxMesh.new()
+	var hand: MeshInstance3D = MeshInstance3D.new()
+	var hand_mesh: BoxMesh = BoxMesh.new()
 	hand_mesh.size = Vector3(0.22, 0.18, 0.34)
 	hand.mesh = hand_mesh
 	hand.position = Vector3(0.02, -0.1, 0.17)
@@ -161,28 +150,28 @@ func _build_first_person_tool_v16() -> void:
 	tool.add_child(hand)
 
 func _build_ps1_visual_profile_v16() -> void:
-	for candidate in find_children("*", "MeshInstance3D", true, false):
-		var mesh_instance := candidate as MeshInstance3D
-		var material := mesh_instance.material_override
+	for candidate: Node in find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance: MeshInstance3D = candidate as MeshInstance3D
+		var material: Material = mesh_instance.material_override
 		if material is StandardMaterial3D:
-			var standard := material as StandardMaterial3D
-			var color := standard.albedo_color
-			var levels := 31.0
-			standard.albedo_color = Color(round(color.r * levels) / levels, round(color.g * levels) / levels, round(color.b * levels) / levels, color.a)
+			var standard: StandardMaterial3D = material as StandardMaterial3D
+			var source_color: Color = standard.albedo_color
+			var levels: float = 31.0
+			standard.albedo_color = Color(round(source_color.r * levels) / levels, round(source_color.g * levels) / levels, round(source_color.b * levels) / levels, source_color.a)
 			standard.roughness = maxf(standard.roughness, 0.58)
 			standard.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 			if not standard.emission_enabled:
 				standard.shading_mode = BaseMaterial3D.SHADING_MODE_PER_VERTEX
-	var layer := CanvasLayer.new()
+	var layer: CanvasLayer = CanvasLayer.new()
 	layer.name = "PS1VisualLayer"
 	layer.layer = -1
 	layer.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(layer)
-	var overlay := ColorRect.new()
+	var overlay: ColorRect = ColorRect.new()
 	overlay.name = "PS1PostProcess"
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var shader := Shader.new()
+	var shader: Shader = Shader.new()
 	shader.code = """
 shader_type canvas_item;
 render_mode unshaded;
@@ -204,7 +193,7 @@ void fragment() {
 	COLOR = vec4(mix(original, retro, intensity), 1.0);
 }
 """
-	var shader_material := ShaderMaterial.new()
+	var shader_material: ShaderMaterial = ShaderMaterial.new()
 	shader_material.shader = shader
 	shader_material.set_shader_parameter("intensity", 0.46 if is_mobile else 0.64)
 	shader_material.set_shader_parameter("pixel_size", 1.5 if is_mobile else 2.0)
@@ -214,11 +203,11 @@ void fragment() {
 func _add_retro_accessibility_control_v16() -> void:
 	if not pause_panel:
 		return
-	var containers := pause_panel.find_children("*", "VBoxContainer", true, false)
+	var containers: Array[Node] = pause_panel.find_children("*", "VBoxContainer", true, false)
 	if containers.is_empty():
 		return
-	var box := containers[0] as VBoxContainer
-	var slider := HSlider.new()
+	var box: VBoxContainer = containers[0] as VBoxContainer
+	var slider: HSlider = HSlider.new()
 	slider.name = "RetroIntensitySlider"
 	slider.min_value = 0.0
 	slider.max_value = 1.0
@@ -228,21 +217,21 @@ func _add_retro_accessibility_control_v16() -> void:
 	box.add_child(_setting_row("Filtre rétro", slider))
 
 func _set_retro_intensity_v16(value: float) -> void:
-	var overlay := get_node_or_null("PS1VisualLayer/PS1PostProcess") as ColorRect
+	var overlay: ColorRect = get_node_or_null("PS1VisualLayer/PS1PostProcess") as ColorRect
 	if overlay and overlay.material is ShaderMaterial:
 		(overlay.material as ShaderMaterial).set_shader_parameter("intensity", value)
 
 func _lock_act1_threats_v16() -> void:
 	if current_round != 1:
 		return
-	for robot in robots:
+	for robot: CharacterBody3D in robots:
 		robot.set_meta("v16_previous_stun", float(robot.get_meta("stun", 0.0)))
 		robot.set_meta("stun", 99999.0)
 		robot.visible = false
 	next_scare_time = 99999.0
 
 func _release_act1_threats_v16() -> void:
-	for robot in robots:
+	for robot: CharacterBody3D in robots:
 		robot.set_meta("stun", float(robot.get_meta("v16_previous_stun", 0.0)))
 	next_scare_time = elapsed + 32.0
 
@@ -250,10 +239,9 @@ func _update_storyboard_act1_v16() -> void:
 	_update_rain_v16()
 	if not game_started or current_round != 1 or not player:
 		return
-	var stage := int(get_meta("v16_act1_stage", 0))
+	var stage: int = int(get_meta("v16_act1_stage", 0))
 	if stage == 0 and player.global_position.z < 4.0:
-		stage = 1
-		set_meta("v16_act1_stage", stage)
+		set_meta("v16_act1_stage", 1)
 		phase_label.text = "ACTE I — ACCÈS S-01"
 		objective_label.text = "OBJECTIF : entrer dans S-01 puis ouvrir Sentinel OS avec TAB."
 		_show_status("TOYGUARD // ACCÈS DE SERVICE OUVERT — aucun personnel détecté.")
@@ -261,34 +249,31 @@ func _update_storyboard_act1_v16() -> void:
 		if tablet_open:
 			set_meta("v16_tablet_seen", true)
 		if bool(get_meta("v16_tablet_seen", false)) and player.global_position.z < 0.0:
-			stage = 2
-			set_meta("v16_act1_stage", stage)
+			set_meta("v16_act1_stage", 2)
 			phase_label.text = "ACTE I — PREMIÈRE PATROUILLE"
 			objective_label.text = "OBJECTIF : rétablir l'alimentation du relais nord."
 			_release_act1_threats_v16()
 			_athena_speak_v12("start")
 			_show_status("SENTINEL OS // itinéraire chargé vers le secteur assemblage.")
 	elif stage == 2 and player.global_position.z < -25.0:
-		stage = 3
-		set_meta("v16_act1_stage", stage)
+		set_meta("v16_act1_stage", 3)
 		_show_status("ASSEMBLAGE JOUETS // activité mécanique résiduelle détectée.")
 	elif stage == 3 and drone_active:
-		stage = 4
-		set_meta("v16_act1_stage", stage)
+		set_meta("v16_act1_stage", 4)
 		_show_status("KITE-01 // reconnaissance distante autorisée.")
 	elif stage == 4 and player.global_position.z < -58.0:
-		stage = 5
-		set_meta("v16_act1_stage", stage)
+		set_meta("v16_act1_stage", 5)
 		_show_status("ANOMALIE : une mascotte ToyGuard suit votre déplacement optique.")
 
 func _update_rain_v16() -> void:
-	var rain := get_node_or_null("StoryboardExterior/RainField") as MultiMeshInstance3D
+	var rain: MultiMeshInstance3D = get_node_or_null("StoryboardExterior/RainField") as MultiMeshInstance3D
 	if not rain or not rain.multimesh:
 		return
-	var clock := float(get_meta("v16_rain_clock", 0.0)) + (0.08 if not is_mobile else 0.14)
+	var step_time: float = 0.08 if not is_mobile else 0.14
+	var clock: float = float(get_meta("v16_rain_clock", 0.0)) + step_time
 	set_meta("v16_rain_clock", clock)
-	var positions: Array = get_meta("v16_rain_positions", [])
-	for index in range(positions.size()):
+	var positions: Array[Vector3] = get_meta("v16_rain_positions", [])
+	for index: int in range(positions.size()):
 		var position: Vector3 = positions[index]
 		position.y -= 1.25 if not is_mobile else 1.7
 		position.x -= 0.035
