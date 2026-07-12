@@ -6,6 +6,7 @@ const PLAYER_SPEED := 5.2
 const SPRINT_SPEED := 8.1
 const GRAVITY := 18.0
 const MAX_DEBRIS := 56
+const TOTAL_ROUNDS := 5
 
 var player: CharacterBody3D
 var camera: Camera3D
@@ -81,8 +82,9 @@ var tablet_title: Label
 var tablet_open := false
 var tablet_tab := "TÂCHES"
 var context_menu: PanelContainer
-var context_actions: VBoxContainer
+var context_actions: Control
 var context_title: Label
+var context_center_label: Label
 var context_target: Node
 var context_menu_open := false
 var athena_hud_label: Label
@@ -101,6 +103,33 @@ var destroyed_decor := 0
 var v12_time := 0.0
 var marked_target: Node
 
+# ATHENA Protocol v13 polish and campaign systems
+var health_progress: ProgressBar
+var athena_progress: ProgressBar
+var drone_progress: ProgressBar
+var hud_round_label: Label
+var hud_seed_label: Label
+var drone_overlay: Control
+var drone_overlay_label: Label
+var drone_battery := 100.0
+var ignore_secondary_until_release := false
+var current_round := 1
+var campaign_seed := 0
+var round_seed := 0
+var round_environment_root: Node3D
+var watching_toys: Array[Node3D] = []
+var watching_toy_eyes: Array[StandardMaterial3D] = []
+var round_title_label: Label
+var round_summary_label: Label
+var round_continue_button: Button
+var campaign_finished := false
+var control_screen_status_label: Label3D
+var control_screen_alert_label: Label3D
+var arm_attack_cooldown := 0.0
+var status_beep_remaining := 0.0
+var status_beep_frequency := 720.0
+var hud_refresh_accumulator := 0.0
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	rng.randomize()
@@ -115,6 +144,7 @@ func _ready() -> void:
 	_build_audio()
 	_build_ui()
 	_build_v12_ui()
+	_build_v13_polish()
 	_apply_device_profile()
 	get_tree().paused = true
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
