@@ -16,6 +16,30 @@ const timeout = setTimeout(() => {
   markFailed(new Error("BLACKOUT_RUNTIME_READY was not emitted within 120 seconds"));
 }, 120_000);
 
+function analyzeFrame(buffer, label) {
+  const png = PNG.sync.read(buffer);
+  let visiblePixels = 0;
+  let luminanceSum = 0;
+  let luminanceSquaredSum = 0;
+  const pixelCount = png.width * png.height;
+  for (let index = 0; index < png.data.length; index += 4) {
+    const red = png.data[index];
+    const green = png.data[index + 1];
+    const blue = png.data[index + 2];
+    const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+    luminanceSum += luminance;
+    luminanceSquaredSum += luminance * luminance;
+    if (luminance > 32) visiblePixels += 1;
+  }
+  const mean = luminanceSum / pixelCount;
+  const variance = luminanceSquaredSum / pixelCount - mean * mean;
+  const visibleRatio = visiblePixels / pixelCount;
+  consoleLines.push(`[visual:${label}] mean=${mean.toFixed(2)} variance=${variance.toFixed(2)} visibleRatio=${visibleRatio.toFixed(4)}`);
+  if (visibleRatio < 0.006 || variance < 8.0) {
+    throw new Error(`Firefox rendered an effectively black ${label} frame: visibleRatio=${visibleRatio}, variance=${variance}`);
+  }
+}
+
 const browser = await firefox.launch({
   headless,
   env: {
@@ -48,9 +72,7 @@ page.on("console", (message) => {
     "RuntimeError",
   ];
   const fatalConsoleError = text.trimStart().startsWith("ERROR:") || fatalPatterns.some((pattern) => text.includes(pattern));
-  if (message.type() === "error" && fatalConsoleError) {
-    runtimeErrors.push(line);
-  }
+  if (message.type() === "error" && fatalConsoleError) runtimeErrors.push(line);
 });
 page.on("pageerror", (error) => {
   const line = `[pageerror] ${error.stack ?? error.message}`;
@@ -67,9 +89,7 @@ try {
   const webgl = await page.evaluate(() => {
     const testCanvas = document.createElement("canvas");
     const context = testCanvas.getContext("webgl2");
-    if (!context) {
-      return { available: false };
-    }
+    if (!context) return { available: false };
     return {
       available: true,
       renderer: context.getParameter(context.RENDERER),
@@ -78,43 +98,19 @@ try {
     };
   });
   consoleLines.push(`[webgl2] ${JSON.stringify(webgl)}`);
-  if (!webgl.available) {
-    throw new Error("Firefox test environment does not expose WebGL2");
-  }
+  if (!webgl.available) throw new Error("Firefox test environment does not expose WebGL2");
+
   await runtimeReady;
   await page.waitForTimeout(2_000);
   const canvas = page.locator("canvas").first();
-  if ((await canvas.count()) === 0) {
-    throw new Error("Godot canvas was not created");
-  }
+  if ((await canvas.count()) === 0) throw new Error("Godot canvas was not created");
   const bounds = await canvas.boundingBox();
   if (!bounds || bounds.width < 640 || bounds.height < 360) {
     throw new Error(`Unexpected canvas bounds: ${JSON.stringify(bounds)}`);
   }
-  const screenshot = await page.screenshot({ path: "build/firefox-smoke.png", fullPage: true });
-  const png = PNG.sync.read(screenshot);
-  let visiblePixels = 0;
-  let luminanceSum = 0;
-  let luminanceSquaredSum = 0;
-  const pixelCount = png.width * png.height;
-  for (let index = 0; index < png.data.length; index += 4) {
-    const red = png.data[index];
-    const green = png.data[index + 1];
-    const blue = png.data[index + 2];
-    const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
-    luminanceSum += luminance;
-    luminanceSquaredSum += luminance * luminance;
-    if (luminance > 32) {
-      visiblePixels += 1;
-    }
-  }
-  const mean = luminanceSum / pixelCount;
-  const variance = luminanceSquaredSum / pixelCount - mean * mean;
-  const visibleRatio = visiblePixels / pixelCount;
-  consoleLines.push(`[visual] mean=${mean.toFixed(2)} variance=${variance.toFixed(2)} visibleRatio=${visibleRatio.toFixed(4)}`);
-  if (visibleRatio < 0.006 || variance < 8.0) {
-    throw new Error(`Firefox rendered an effectively black frame: visibleRatio=${visibleRatio}, variance=${variance}`);
-  }
+
+  const menuFrame = await page.screenshot({ path: "build/firefox-smoke.png", fullPage: true });
+  analyzeFrame(menuFrame, "menu");
   const state = await page.evaluate(() => {
     const canvasElement = document.querySelector("canvas");
     const compatibilityPanel = document.getElementById("blackout-webgl-error");
@@ -124,13 +120,17 @@ try {
       canvasHeight: canvasElement?.height ?? 0,
       visibility: document.visibilityState,
       compatibilityPanelVisible: compatibilityPanel ? getComputedStyle(compatibilityPanel).display !== "none" : false,
-      bodyText: document.body.innerText.slice(0, 500),
     };
   });
   consoleLines.push(`[state] ${JSON.stringify(state)}`);
-  if (state.compatibilityPanelVisible) {
-    throw new Error("Compatibility panel remained visible despite WebGL2 support");
-  }
+  if (state.compatibilityPanelVisible) throw new Error("Compatibility panel remained visible despite WebGL2 support");
+
+  await page.mouse.click(bounds.x + bounds.width * 0.5, bounds.y + bounds.height * 0.71);
+  await page.waitForTimeout(3_000);
+  const startFrame = await page.screenshot({ path: "build/firefox-after-start.png", fullPage: true });
+  analyzeFrame(startFrame, "after-start");
+  consoleLines.push("[interaction] campaign start click rendered successfully");
+
   if (runtimeErrors.length > 0) {
     throw new Error(`Firefox emitted runtime errors:\n${runtimeErrors.join("\n")}`);
   }
