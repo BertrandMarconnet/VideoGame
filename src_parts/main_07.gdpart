@@ -9,8 +9,12 @@
 			fear_turns += abs(event.relative.x) / 160.0
 
 func _rotate_view(relative: Vector2) -> void:
-	player.rotate_y(-relative.x * mouse_sensitivity)
-	camera.rotation.x = clamp(camera.rotation.x - relative.y * mouse_sensitivity, -1.35, 1.35)
+	if drone_active and drone and drone_camera:
+		drone.rotate_y(-relative.x * mouse_sensitivity)
+		drone_camera.rotation.x = clamp(drone_camera.rotation.x - relative.y * mouse_sensitivity, -1.1, 1.1)
+	else:
+		player.rotate_y(-relative.x * mouse_sensitivity)
+		camera.rotation.x = clamp(camera.rotation.x - relative.y * mouse_sensitivity, -1.35, 1.35)
 
 func _interact() -> void:
 	if held_body:
