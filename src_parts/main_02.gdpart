@@ -52,6 +52,7 @@ func _build_destructible_wall(at: Vector3, size: Vector3, label: String) -> Stat
 func _terminal(at: Vector3, terminal_id: String) -> StaticBody3D:
 	var body := _static_box(Vector3(2.0, 2.2, 1.1), at, _material(Color(0.06, 0.09, 0.11), 0.72, 0.35), "Terminal")
 	body.set_meta("terminal", terminal_id)
+	body.set_meta("destructible", false)
 	_visual_box(Vector3(1.35, 0.75, 0.05), at + Vector3(0, 0.25, -0.58), _material(Color(0.02, 0.12, 0.14), 0.1, 0.15, Color(0.0, 0.62, 0.72)), "TerminalScreen")
 	return body
 
@@ -70,6 +71,17 @@ func _static_box(size: Vector3, at: Vector3, material: Material, label: String) 
 	shape.size = size
 	collision.shape = shape
 	body.add_child(collision)
+	body.set_meta("size", size)
+	var protected_tokens := ["Floor", "Ceiling", "Shell", "Wall", "Frame", "Header", "Bridge", "Terminal", "SecretBack", "ShelterFront"]
+	var protected := false
+	for token in protected_tokens:
+		if label.contains(token):
+			protected = true
+			break
+	var volume := size.x * size.y * size.z
+	if not protected and volume <= 160.0:
+		body.set_meta("destructible", true)
+		body.set_meta("health", clamp(size.length() * 12.0, 35.0, 110.0))
 	add_child(body)
 	return body
 
