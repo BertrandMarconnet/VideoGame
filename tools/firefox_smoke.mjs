@@ -7,6 +7,10 @@ const headless = process.env.BLACKOUT_FIREFOX_HEADLESS !== "0";
 const consoleLines = [];
 const runtimeErrors = [];
 let storyboardReady = false;
+let mobileControlsReady = false;
+let gameplayStarted = false;
+let mobileForwardPressed = false;
+let mobileFlashlightPressed = false;
 let markReady;
 let markFailed;
 const runtimeReady = new Promise((resolve, reject) => {
@@ -55,7 +59,11 @@ const browser = await firefox.launch({
     "gfx.webrender.software": true,
   },
 });
-const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+const context = await browser.newContext({
+  viewport: { width: 1280, height: 720 },
+  hasTouch: true,
+});
+const page = await context.newPage();
 page.on("console", (message) => {
   const text = message.text();
   const line = `[${message.type()}] ${text}`;
@@ -65,6 +73,10 @@ page.on("console", (message) => {
     markReady();
   }
   if (text.includes("BLACKOUT_STORYBOARD_ACT1_READY")) storyboardReady = true;
+  if (text.includes("BLACKOUT_MOBILE_CONTROLS_READY")) mobileControlsReady = true;
+  if (text.includes("BLACKOUT_GAMEPLAY_STARTED")) gameplayStarted = true;
+  if (text.includes("BLACKOUT_MOBILE_ACTION_DOWN move_forward")) mobileForwardPressed = true;
+  if (text.includes("BLACKOUT_MOBILE_ACTION_DOWN flashlight")) mobileFlashlightPressed = true;
   const fatalPatterns = [
     "The following features required to run Godot projects",
     "SCRIPT ERROR",
@@ -90,13 +102,14 @@ try {
   await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 120_000 });
   const webgl = await page.evaluate(() => {
     const testCanvas = document.createElement("canvas");
-    const context = testCanvas.getContext("webgl2");
-    if (!context) return { available: false };
+    const context2d = testCanvas.getContext("webgl2");
+    if (!context2d) return { available: false };
     return {
       available: true,
-      renderer: context.getParameter(context.RENDERER),
-      vendor: context.getParameter(context.VENDOR),
-      version: context.getParameter(context.VERSION),
+      renderer: context2d.getParameter(context2d.RENDERER),
+      vendor: context2d.getParameter(context2d.VENDOR),
+      version: context2d.getParameter(context2d.VERSION),
+      maxTouchPoints: navigator.maxTouchPoints,
     };
   });
   consoleLines.push(`[webgl2] ${JSON.stringify(webgl)}`);
@@ -109,6 +122,9 @@ try {
   const bounds = await canvas.boundingBox();
   if (!bounds || bounds.width < 640 || bounds.height < 360) {
     throw new Error(`Unexpected canvas bounds: ${JSON.stringify(bounds)}`);
+  }
+  if (!mobileControlsReady) {
+    throw new Error(`Mobile controls were not created in touch-enabled Firefox; maxTouchPoints=${webgl.maxTouchPoints}`);
   }
 
   const menuFrame = await page.screenshot({ path: "build/firefox-smoke.png", fullPage: true });
@@ -128,11 +144,31 @@ try {
   if (state.compatibilityPanelVisible) throw new Error("Compatibility panel remained visible despite WebGL2 support");
 
   await page.mouse.click(bounds.x + bounds.width * 0.5, bounds.y + bounds.height * 0.71);
-  await page.waitForTimeout(3_000);
+  await page.waitForTimeout(1_000);
   if (!storyboardReady) throw new Error("Act I exterior initialization marker was not emitted after campaign start");
+
+  const introSkipPositions = [
+    [0.59, 0.77],
+    [0.64, 0.76],
+    [0.68, 0.79],
+  ];
+  for (const [xRatio, yRatio] of introSkipPositions) {
+    if (gameplayStarted) break;
+    await page.mouse.click(bounds.x + bounds.width * xRatio, bounds.y + bounds.height * yRatio);
+    await page.waitForTimeout(800);
+  }
+  if (!gameplayStarted) throw new Error("The intro could not be closed to start the touchscreen gameplay test");
+
+  await page.touchscreen.tap(bounds.x + bounds.width * 0.105, bounds.y + bounds.height * 0.749);
+  await page.waitForTimeout(250);
+  await page.touchscreen.tap(bounds.x + bounds.width * 0.942, bounds.y + bounds.height * 0.821);
+  await page.waitForTimeout(750);
+  if (!mobileForwardPressed) throw new Error("The direct mobile move_forward control did not emit a touch action");
+  if (!mobileFlashlightPressed) throw new Error("The direct mobile flashlight control did not emit a touch action");
+
   const startFrame = await page.screenshot({ path: "build/firefox-after-start.png", fullPage: true });
-  analyzeFrame(startFrame, "after-start");
-  consoleLines.push("[interaction] campaign start initialized the Act I exterior and rendered successfully");
+  analyzeFrame(startFrame, "after-start-mobile-controls");
+  consoleLines.push("[interaction] direct touchscreen movement and flashlight controls emitted successfully");
 
   if (runtimeErrors.length > 0) {
     throw new Error(`Firefox emitted runtime errors:\n${runtimeErrors.join("\n")}`);
@@ -140,5 +176,6 @@ try {
 } finally {
   fs.mkdirSync("build", { recursive: true });
   fs.writeFileSync("build/firefox-console.log", `${consoleLines.join("\n")}\n`);
+  await context.close();
   await browser.close();
 }
