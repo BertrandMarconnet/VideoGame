@@ -1,0 +1,19 @@
+# Godot generated files
+.godot/
+
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Local and CI outputs
+build/
+output/
+triposr-output/
+
+# Local AI model caches and virtual environments
+.venv/
+models/
+
+# Blender temporary files
+*.blend1
+*.blend2
