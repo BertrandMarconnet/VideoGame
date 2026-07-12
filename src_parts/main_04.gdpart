@@ -42,7 +42,7 @@ func _build_ui() -> void:
 	hud_layer.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(hud_layer)
 	phase_label = _label(Vector2(18, 14), "PHASE 0 — CALIBRATION", 18, Color(0.42, 0.88, 1.0))
-	objective_label = _label(Vector2(18, 44), "OBJECTIF : atteindre le relais nord.", 14, Color(0.94, 0.97, 1.0))
+	objective_label = _label(Vector2(18, 44), "OBJECTIF : rejoindre l'entrée S-01.", 14, Color(0.94, 0.97, 1.0))
 	status_label = _label(Vector2(18, 70), "", 13, Color(1.0, 0.58, 0.26))
 	health_label = _label(Vector2(18, 96), "SANTÉ 100%", 13, Color(0.5, 1.0, 0.72))
 	fear_label = _label(Vector2(18, 119), "PROFIL DE PEUR : CALIBRATION", 11, Color(0.7, 0.78, 0.84))
@@ -91,12 +91,12 @@ func _build_start_panel() -> void:
 	title.modulate = Color(0.86, 0.95, 1.0)
 	box.add_child(title)
 	var subtitle := Label.new()
-	subtitle.text = "CAMPAGNE 5 RONDES // IA ADAPTATIVE // GODOT + JOLT"
+	subtitle.text = "ACTE I // NEW HALCYON, SEPTEMBRE 1987 // ATHENA PROTOCOL"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.modulate = Color(1.0, 0.43, 0.22)
 	box.add_child(subtitle)
 	var brief := Label.new()
-	brief.text = "Traversez l'usine, activez le relais nord, puis revenez à S-01.\nL'usine et ATHENA évolueront après chaque ronde."
+	brief.text = "Arrivez sous la pluie devant ToyGuard Industries, rejoignez le bunker S-01,\nouvrez Sentinel OS puis rétablissez le relais nord. ATHENA observe vos choix."
 	brief.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	brief.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	brief.custom_minimum_size = Vector2(620, 90)
