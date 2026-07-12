@@ -1,0 +1,21 @@
+{
+  "asset_name": "SPECTER-5",
+  "source_image": "assets/concepts/specter_5/three_quarter.png",
+  "generation": {
+    "foreground_ratio": 0.86,
+    "mc_resolution": 256,
+    "texture_resolution": 1024,
+    "target_faces": 12000,
+    "target_height_m": 1.95,
+    "bake_texture": false,
+    "create_collision": true,
+    "device": "cuda:0"
+  },
+  "quality": {
+    "max_glb_mb": 20
+  },
+  "provenance": {
+    "author": "Bertrand Marconnet / Blackout Protocol",
+    "source_license": "project-owned concept; review before production integration"
+  }
+}
