@@ -1,0 +1,100 @@
+		return
+	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		_rotate_view(event.relative)
+		if abs(event.relative.x) > 38.0:
+			fear_turns += abs(event.relative.x) / 120.0
+	if event is InputEventScreenDrag:
+		if event.position.x > get_viewport().get_visible_rect().size.x * 0.44:
+			_rotate_view(event.relative * 0.65)
+			fear_turns += abs(event.relative.x) / 160.0
+
+func _rotate_view(relative: Vector2) -> void:
+	player.rotate_y(-relative.x * mouse_sensitivity)
+	camera.rotation.x = clamp(camera.rotation.x - relative.y * mouse_sensitivity, -1.35, 1.35)
+
+func _interact() -> void:
+	if held_body:
+		held_body.gravity_scale = 1.0
+		held_body = null
+		_show_status("OBJET RELÂCHÉ")
+		return
+	var hit := _raycast(4.2)
+	if hit.is_empty():
+		return
+	var collider := hit.get("collider") as Node
+	if collider is RigidBody3D and collider.get_meta("grabbable", false):
+		held_body = collider
+		held_body.gravity_scale = 0.0
+		_show_status("OBJET SAISI — clic pour lancer")
+		return
+	if collider and collider.has_meta("terminal"):
+		_activate_terminal(String(collider.get_meta("terminal")))
+
+func _primary_action() -> void:
+	if held_body:
+		var forward := -camera.global_transform.basis.z
+		held_body.gravity_scale = 1.0
+		held_body.linear_velocity = player.velocity
+		held_body.apply_central_impulse(forward * clamp(held_body.mass * 3.2, 18.0, 70.0))
+		held_body = null
+		_show_status("OBJET LANCÉ")
+		return
+	var hit := _raycast(3.0)
+	if hit.is_empty():
+		return
+	var collider := hit.get("collider") as Node
+	if collider and collider.get_meta("destructible", false):
+		_damage_destructible(collider, 18.0, hit.get("position", Vector3.ZERO))
+	elif collider and collider.get_meta("robot", false):
+		_damage_robot(collider as CharacterBody3D, 6.0, 0.4)
+
+func _raycast(distance: float) -> Dictionary:
+	var origin := camera.global_position
+	var target := origin - camera.global_transform.basis.z * distance
+	var query := PhysicsRayQueryParameters3D.create(origin, target)
+	query.exclude = [player.get_rid()]
+	return get_world_3d().direct_space_state.intersect_ray(query)
+
+func _update_held_object(_delta: float) -> void:
+	if not held_body or not is_instance_valid(held_body):
+		held_body = null
+		return
+	var target := camera.global_position - camera.global_transform.basis.z * held_distance
+	var error := target - held_body.global_position
+	held_body.linear_velocity = error * 9.0
+	held_body.angular_velocity *= 0.75
+	if error.length() > 7.0:
+		held_body.gravity_scale = 1.0
+		held_body = null
+
+func _on_prop_body_entered(other: Node, prop: RigidBody3D) -> void:
+	if not is_instance_valid(prop):
+		return
+	var impact := prop.linear_velocity.length() * prop.mass
+	if other.get_meta("robot", false) and impact > 22.0:
+		_damage_robot(other as CharacterBody3D, clamp(impact * 0.18, 7.0, 42.0), 1.8)
+	if other.get_meta("destructible", false) and impact > 28.0:
+		_damage_destructible(other, clamp(impact * 0.22, 8.0, 52.0), prop.global_position)
+
+func _damage_destructible(body: Node, amount: float, at: Vector3) -> void:
+	var hp := float(body.get_meta("health", 75.0)) - amount
+	body.set_meta("health", hp)
+	_show_status("STRUCTURE ENDOMMAGÉE — %d%%" % int(max(hp, 0.0) / 75.0 * 100.0))
+	if hp <= 0.0:
+		_break_destructible(body as StaticBody3D, at)
+
+func _break_destructible(body: StaticBody3D, at: Vector3) -> void:
+	var size := body.get_meta("size", Vector3(3, 3, 0.4)) as Vector3
+	var origin := body.global_position
+	body.queue_free()
+	for i in range(8):
+		var piece_size := Vector3(max(size.x / 4.2, 0.35), max(size.y / 3.5, 0.35), max(size.z * 0.8, 0.25))
+		var piece := _create_prop(origin + Vector3(rng.randf_range(-size.x * 0.35, size.x * 0.35), rng.randf_range(-size.y * 0.35, size.y * 0.35), rng.randf_range(-0.25, 0.25)), piece_size, 5.0, Color(0.2, 0.21, 0.22))
+		piece.set_meta("grabbable", true)
+		piece.apply_central_impulse((piece.global_position - at).normalized() * rng.randf_range(4.0, 11.0) + Vector3.UP * 2.0)
+		debris.append(piece)
+		get_tree().create_timer(14.0).timeout.connect(_freeze_debris.bind(piece))
+	while debris.size() > MAX_DEBRIS:
+		var oldest := debris.pop_front()
+		if is_instance_valid(oldest):
+			oldest.freeze = true
