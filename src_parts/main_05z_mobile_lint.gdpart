@@ -1,0 +1,4 @@
+
+# The mobile input router intentionally exits early after consuming a touch,
+# pointer or keyboard event so the same gesture cannot reach another subsystem.
+# gdlint: disable=max-returns
