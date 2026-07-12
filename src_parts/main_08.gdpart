@@ -1,5 +1,3 @@
-	_show_status("BRÈCHE OUVERTE — les robots peuvent l'utiliser.")
-
 func _freeze_debris(piece: RigidBody3D) -> void:
 	if is_instance_valid(piece) and piece != held_body:
 		piece.freeze = true
