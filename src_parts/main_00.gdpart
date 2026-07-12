@@ -53,6 +53,18 @@ var next_scare_time := 18.0
 var look_touch_id := -1
 var paused_from_menu := false
 
+# Steel Echo v11 systems
+var drone: CharacterBody3D
+var drone_camera: Camera3D
+var drone_active := false
+var drone_home := Vector3(4.2, 2.15, -8.8)
+var robot_visuals: Dictionary = {}
+var machine_arms: Array[Node3D] = []
+var control_screen_material: StandardMaterial3D
+var alarm_lights: Array[OmniLight3D] = []
+var v11_time := 0.0
+var shelter_door: StaticBody3D
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	rng.randomize()
@@ -62,6 +74,7 @@ func _ready() -> void:
 	_build_factory()
 	_build_player()
 	_build_robots()
+	_build_v11_upgrade()
 	_build_audio()
 	_build_ui()
 	_apply_device_profile()
@@ -81,6 +94,7 @@ func _setup_inputs() -> void:
 	_add_key_action("interact", KEY_E)
 	_add_key_action("pause", KEY_ESCAPE)
 	_add_key_action("drop", KEY_G)
+	_add_key_action("drone", KEY_C)
 	_add_mouse_action("primary", MOUSE_BUTTON_LEFT)
 	_add_mouse_action("secondary", MOUSE_BUTTON_RIGHT)
 
