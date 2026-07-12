@@ -130,25 +130,105 @@ var status_beep_remaining := 0.0
 var status_beep_frequency := 720.0
 var hud_refresh_accumulator := 0.0
 
+# Web-safe staged boot. The original synchronous _ready() could leave Firefox on a
+# black canvas while hundreds of procedural nodes and materials were constructed.
+var boot_layer: CanvasLayer
+var boot_status_label: Label
+var boot_progress: ProgressBar
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	rng.randomize()
 	_setup_inputs()
 	is_mobile = OS.has_feature("mobile") or OS.has_feature("web_android") or OS.has_feature("web_ios") or DisplayServer.is_touchscreen_available()
+	_build_boot_overlay_v15()
+	await get_tree().process_frame
+	_set_boot_status_v15("INITIALISATION DU RÉSEAU S-01", 10.0)
 	_build_world_environment()
+	await get_tree().process_frame
+	_set_boot_status_v15("CHARGEMENT DE L'USINE TOYGUARD", 24.0)
 	_build_factory()
+	await get_tree().process_frame
+	_set_boot_status_v15("CALIBRATION DU TECHNICIEN", 38.0)
 	_build_player()
 	_build_robots()
+	await get_tree().process_frame
+	_set_boot_status_v15("ACTIVATION DES CELLULES INDUSTRIELLES", 52.0)
 	_build_v11_upgrade()
+	await get_tree().process_frame
+	_set_boot_status_v15("SYNCHRONISATION ATHENA / BABOUCHKA", 66.0)
 	_build_v12_world()
+	await get_tree().process_frame
+	_set_boot_status_v15("INITIALISATION DES INTERFACES", 80.0)
 	_build_audio()
 	_build_ui()
 	_build_v12_ui()
+	await get_tree().process_frame
+	_set_boot_status_v15("APPLICATION DU PROFIL WEB", 92.0)
 	_build_v13_polish()
 	_apply_device_profile()
 	get_tree().paused = true
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	_set_boot_status_v15("SYSTÈME PRÊT — INCIDENT MATRYOSHKA", 100.0)
+	await get_tree().process_frame
+	if boot_layer:
+		boot_layer.queue_free()
 	print("BLACKOUT_RUNTIME_READY")
+
+func _build_boot_overlay_v15() -> void:
+	boot_layer = CanvasLayer.new()
+	boot_layer.name = "BootOverlay"
+	boot_layer.layer = 100
+	boot_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(boot_layer)
+	var background := ColorRect.new()
+	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	background.color = Color(0.006, 0.012, 0.019, 1.0)
+	boot_layer.add_child(background)
+	var frame := VBoxContainer.new()
+	frame.set_anchors_preset(Control.PRESET_CENTER)
+	frame.position = Vector2(-330.0, -118.0)
+	frame.size = Vector2(660.0, 236.0)
+	frame.alignment = BoxContainer.ALIGNMENT_CENTER
+	background.add_child(frame)
+	var facility := Label.new()
+	facility.text = "TOYGUARD INDUSTRIES // BUNKER S-01"
+	facility.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	facility.add_theme_font_size_override("font_size", 18)
+	facility.modulate = Color(0.95, 0.69, 0.18)
+	frame.add_child(facility)
+	var title := Label.new()
+	title.text = "BLACKOUT PROTOCOL"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 38)
+	title.modulate = Color(0.55, 0.86, 1.0)
+	frame.add_child(title)
+	boot_status_label = Label.new()
+	boot_status_label.text = "DÉMARRAGE DU TERMINAL ANALOGIQUE"
+	boot_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	boot_status_label.add_theme_font_size_override("font_size", 16)
+	boot_status_label.modulate = Color(0.62, 0.78, 0.86)
+	frame.add_child(boot_status_label)
+	boot_progress = ProgressBar.new()
+	boot_progress.custom_minimum_size = Vector2(560.0, 18.0)
+	boot_progress.min_value = 0.0
+	boot_progress.max_value = 100.0
+	boot_progress.value = 3.0
+	boot_progress.show_percentage = false
+	frame.add_child(boot_progress)
+	var warning := Label.new()
+	warning.text = "PERSEUS // LIAISON ATHENA RESTREINTE // 1987"
+	warning.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	warning.add_theme_font_size_override("font_size", 13)
+	warning.modulate = Color(0.45, 0.58, 0.64)
+	frame.add_child(warning)
+
+func _set_boot_status_v15(text_value: String, progress_value: float) -> void:
+	if boot_status_label:
+		boot_status_label.text = text_value
+	if boot_progress:
+		boot_progress.value = progress_value
+	print("BLACKOUT_BOOT %d%% %s" % [int(progress_value), text_value])
 
 func _setup_inputs() -> void:
 	_add_key_action("move_forward", KEY_W)
