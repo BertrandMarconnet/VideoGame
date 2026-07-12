@@ -2,7 +2,8 @@ func _add_mobile_action_control(label_text: String, action: StringName, anchor_p
 	var visual := _mobile_visual_button(label_text, anchor_preset, offset, control_size)
 	var touch_button := TouchScreenButton.new()
 	touch_button.name = "Touch_%s" % String(action)
-	touch_button.action = String(action)
+	if action != &"primary":
+		touch_button.action = String(action)
 	touch_button.position = _mobile_touch_center(anchor_preset, offset, control_size)
 	touch_button.shape_centered = true
 	touch_button.passby_press = true
@@ -13,6 +14,8 @@ func _add_mobile_action_control(label_text: String, action: StringName, anchor_p
 	touch_button.shape = touch_shape
 	touch_button.pressed.connect(_mobile_touch_pressed.bind(action, visual))
 	touch_button.released.connect(_mobile_touch_released.bind(action, visual))
+	if action == &"primary":
+		touch_button.pressed.connect(_mobile_primary_pressed_v17)
 	mobile_layer.add_child(touch_button)
 
 func _add_mobile_callback_control(label_text: String, callback: Callable, anchor_preset: int, offset: Vector2, control_size: Vector2) -> void:
@@ -63,12 +66,113 @@ func _mobile_touch_released(action: StringName, visual: Button) -> void:
 	visual.set_pressed_no_signal(false)
 	print("BLACKOUT_MOBILE_ACTION_UP ", String(action))
 
+func _mobile_primary_pressed_v17() -> void:
+	if not game_started or get_tree().paused:
+		return
+	if drone_active:
+		_scan_drone_v13()
+	else:
+		_primary_action()
+
 func _mobile_callback_pressed(visual: Button, callback: Callable) -> void:
 	visual.set_pressed_no_signal(true)
 	callback.call()
 
 func _mobile_callback_released(visual: Button) -> void:
 	visual.set_pressed_no_signal(false)
+
+func _build_mobile_look_pad_v17() -> void:
+	mobile_look_pad = PanelContainer.new()
+	mobile_look_pad.name = "MobileLookPad"
+	mobile_look_pad.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
+	mobile_look_pad.position = Vector2(-246.0, -112.0)
+	mobile_look_pad.size = Vector2(206.0, 224.0)
+	mobile_look_pad.custom_minimum_size = Vector2(206.0, 224.0)
+	mobile_look_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mobile_look_pad.modulate = Color(1.0, 1.0, 1.0, 0.72)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.01, 0.055, 0.075, 0.24)
+	style.border_color = Color(0.08, 0.75, 0.9, 0.72)
+	style.set_border_width_all(2)
+	style.corner_radius_top_left = 90
+	style.corner_radius_top_right = 90
+	style.corner_radius_bottom_left = 90
+	style.corner_radius_bottom_right = 90
+	mobile_look_pad.add_theme_stylebox_override("panel", style)
+	mobile_layer.add_child(mobile_look_pad)
+	var label := Label.new()
+	label.text = "LOOK"
+	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 14)
+	label.modulate = Color(0.45, 0.86, 0.95, 0.58)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mobile_look_pad.add_child(label)
+	mobile_look_knob = ColorRect.new()
+	mobile_look_knob.name = "MobileLookKnob"
+	mobile_look_knob.color = Color(0.16, 0.86, 1.0, 0.52)
+	mobile_look_knob.size = Vector2(34.0, 34.0)
+	mobile_look_knob.position = mobile_look_pad.size * 0.5 - mobile_look_knob.size * 0.5
+	mobile_look_knob.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mobile_look_pad.add_child(mobile_look_knob)
+
+func _mobile_look_rect_v17() -> Rect2:
+	if not mobile_look_pad:
+		return Rect2()
+	return mobile_look_pad.get_global_rect()
+
+func _mobile_begin_look_v17(event: InputEventScreenTouch) -> bool:
+	if not is_mobile or not game_started or get_tree().paused or mobile_look_touch_id != -1:
+		return false
+	if not _mobile_look_rect_v17().has_point(event.position):
+		return false
+	mobile_look_touch_id = event.index
+	mobile_look_origin = event.position
+	mobile_look_target = Vector2.ZERO
+	mobile_look_active = true
+	print("BLACKOUT_MOBILE_LOOK_ACTIVE")
+	return true
+
+func _mobile_drag_look_v17(event: InputEventScreenDrag) -> bool:
+	if not mobile_look_active or event.index != mobile_look_touch_id:
+		return false
+	var displacement := event.position - mobile_look_origin
+	var radius := 72.0
+	mobile_look_target = displacement.limit_length(radius) / radius
+	_update_mobile_look_knob_v17()
+	return true
+
+func _mobile_end_look_v17(event: InputEventScreenTouch) -> bool:
+	if event.index != mobile_look_touch_id:
+		return false
+	mobile_look_touch_id = -1
+	mobile_look_active = false
+	mobile_look_target = Vector2.ZERO
+	_update_mobile_look_knob_v17()
+	print("BLACKOUT_MOBILE_LOOK_RELEASED")
+	return true
+
+func _update_mobile_look_knob_v17() -> void:
+	if not mobile_look_pad or not mobile_look_knob:
+		return
+	var center := mobile_look_pad.size * 0.5 - mobile_look_knob.size * 0.5
+	mobile_look_knob.position = center + mobile_look_target * 48.0
+
+func _update_mobile_look_v17(delta: float) -> void:
+	if not is_mobile:
+		return
+	if not game_started or get_tree().paused or tablet_open or context_menu_open:
+		mobile_look_target = Vector2.ZERO
+	var blend := clampf(delta * 13.0, 0.0, 1.0)
+	mobile_look_smoothed = mobile_look_smoothed.lerp(mobile_look_target, blend)
+	if mobile_look_smoothed.length_squared() < 0.0004:
+		return
+	var frame_delta := Vector2(mobile_look_smoothed.x * 820.0 * delta, mobile_look_smoothed.y * 680.0 * delta)
+	_rotate_view(frame_delta)
+	fear_turns += absf(mobile_look_smoothed.x) * delta * 0.55
+	if int(visual_overhaul_time_v17 * 4.0) % 12 == 0:
+		print("BLACKOUT_MOBILE_LOOK_ROTATE")
 
 func _mobile_down(action: StringName) -> void:
 	Input.action_press(action)
@@ -86,11 +190,8 @@ func _apply_device_profile() -> void:
 		get_viewport().scaling_3d_scale = 0.82
 
 func _start_game() -> void:
-	# Build the storyboard exterior before the unique prologue gives control back
-	# to the player. Existing combat, drone and Jolt systems remain unchanged.
 	_ensure_storyboard_act1_v16()
-	# Browser audio must be initialized from a real user gesture. This also keeps
-	# Firefox from decoding MP3 resources while the procedural scene is booting.
+	_ensure_storyboard_art_v17()
 	_ensure_suno_audio_v14()
 	if not intro_completed:
 		_start_intro_v12()
@@ -131,10 +232,11 @@ func _physics_process(delta: float) -> void:
 	_update_hud()
 
 func _process(delta: float) -> void:
-	# _ready() now yields between construction stages on Web. Do not run HUD or
-	# soundtrack updates until the final v13 interface has been created.
 	if not health_progress:
 		return
+	visual_overhaul_time_v17 += delta
+	_update_mobile_look_v17(delta)
+	_update_storyboard_art_v17(delta)
 	if audio_playback:
 		_fill_audio(delta)
 	_update_v12_ui(delta)
@@ -163,7 +265,7 @@ func _update_player(delta: float) -> void:
 		_interact()
 	if Input.is_action_just_pressed("secondary") and not ignore_secondary_until_release:
 		_open_context_menu_v12()
-	if Input.is_action_just_pressed("primary"):
+	if not is_mobile and Input.is_action_just_pressed("primary"):
 		_primary_action()
 	if Input.is_action_pressed("sprint") and direction.length() > 0.2:
 		fear_sprint += delta
@@ -171,6 +273,20 @@ func _update_player(delta: float) -> void:
 		fear_still += delta
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch:
+		var touch_event := event as InputEventScreenTouch
+		if touch_event.pressed:
+			if _mobile_begin_look_v17(touch_event):
+				get_viewport().set_input_as_handled()
+				return
+		else:
+			if _mobile_end_look_v17(touch_event):
+				get_viewport().set_input_as_handled()
+				return
+	if event is InputEventScreenDrag:
+		if _mobile_drag_look_v17(event as InputEventScreenDrag):
+			get_viewport().set_input_as_handled()
+			return
 	if event is InputEventMouseButton:
 		var mouse_event := event as InputEventMouseButton
 		if mouse_event.button_index == MOUSE_BUTTON_RIGHT:
@@ -181,7 +297,7 @@ func _input(event: InputEvent) -> void:
 				_force_player_view_v13("KITE-01 rappelé par clic droit")
 				get_viewport().set_input_as_handled()
 				return
-		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed and game_started and drone_active:
+		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed and game_started and drone_active and not is_mobile:
 			_scan_drone_v13()
 			get_viewport().set_input_as_handled()
 			return
@@ -206,7 +322,3 @@ func _input(event: InputEvent) -> void:
 		_rotate_view(event.relative)
 		if abs(event.relative.x) > 38.0:
 			fear_turns += abs(event.relative.x) / 120.0
-	if event is InputEventScreenDrag:
-		if event.position.x > get_viewport().get_visible_rect().size.x * 0.44:
-			_rotate_view(event.relative * 0.65)
-			fear_turns += abs(event.relative.x) / 160.0
