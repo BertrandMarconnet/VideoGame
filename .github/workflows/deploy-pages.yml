@@ -44,6 +44,7 @@ jobs:
           grep -q 'func _update_factory_population_v12' scripts/main.gd
           grep -q 'func _athena_speak_v12' scripts/main.gd
           grep -q 'func _update_suno_audio_v14' scripts/main.gd
+          grep -q 'func _build_boot_overlay_v15' scripts/main.gd
           grep -q 'BLACKOUT_RUNTIME_READY' scripts/main.gd
 
       - name: Install validation tools
@@ -83,21 +84,21 @@ jobs:
         shell: bash
         run: |
           set +e
-          timeout 180 "$GODOT_BIN" --headless --editor --path . --quit-after 8 > godot-import.log 2>&1
+          timeout 180 "$GODOT_BIN" --headless --editor --path . --quit-after 12 > godot-import.log 2>&1
           status=$?
           set -e
           if [ "$status" -ne 0 ]; then
-            tail -n 160 godot-import.log
+            tail -n 200 godot-import.log
             exit "$status"
           fi
-          tail -n 30 godot-import.log
+          tail -n 40 godot-import.log
           test -d .godot
 
-      - name: Run startup smoke test
+      - name: Run native startup smoke test
         shell: bash
         run: |
           set +e
-          timeout 35 "$GODOT_BIN" --headless --path . --quit-after 8 > godot-runtime.log 2>&1
+          timeout 45 "$GODOT_BIN" --headless --path . --quit-after 20 > godot-runtime.log 2>&1
           status=$?
           set -e
           cat godot-runtime.log
@@ -118,10 +119,10 @@ jobs:
           status=$?
           set -e
           if [ "$status" -ne 0 ]; then
-            tail -n 200 godot-export.log
+            tail -n 240 godot-export.log
             exit "$status"
           fi
-          tail -n 50 godot-export.log
+          tail -n 70 godot-export.log
           touch build/web/.nojekyll
           test -s build/web/index.html
           test -s build/web/index.wasm
@@ -129,16 +130,48 @@ jobs:
           printf 'User-agent: *\nAllow: /\n' > build/web/robots.txt
           find build/web -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
 
-      - name: Upload Godot diagnostics
+      - name: Install Firefox Web test
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save playwright@1.55.0 pngjs@7.0.0
+          npx playwright install --with-deps firefox
+
+      - name: Run exported game in Firefox
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8080 --directory build/web > build/http-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/ -o /dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              echo 'Local Web server did not start.'
+              exit 1
+            fi
+            sleep 1
+          done
+          BLACKOUT_TEST_URL=http://127.0.0.1:8080/ node tools/firefox_smoke.mjs
+          test -s build/firefox-smoke.png
+          test -s build/firefox-console.log
+          cat build/firefox-console.log
+
+      - name: Upload Godot and Firefox diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: godot-diagnostics-${{ github.run_id }}
+          name: godot-firefox-diagnostics-${{ github.run_id }}
           path: |
             gdlint.log
             godot-import.log
             godot-runtime.log
             godot-export.log
+            build/firefox-console.log
+            build/firefox-smoke.png
+            build/http-server.log
           if-no-files-found: warn
 
       - name: Configure GitHub Pages
@@ -199,4 +232,5 @@ jobs:
             echo "- Jeu Web accessible : $PAGE_URL"
             echo "- Commit déployé : $GITHUB_SHA"
             echo '- index.html, index.wasm et index.pck accessibles'
+            echo '- Export validé dans Firefox avant publication'
           } >> "$GITHUB_STEP_SUMMARY"
