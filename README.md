@@ -1,4 +1,4 @@
-# Blackout Protocol: Steel Echo — Godot/Jolt v10
+# Blackout Protocol: Steel Echo — Godot/Jolt v11
 
 Vertical slice jouable d’un survival-horror industriel en vue subjective, développée sous Godot 4.7 avec le moteur physique Jolt et publiée automatiquement en Web/PWA.
 
@@ -7,6 +7,18 @@ Vertical slice jouable d’un survival-horror industriel en vue subjective, dév
 **https://bertrandmarconnet.github.io/VideoGame/**
 
 Sur smartphone : ouvrir le lien dans Chrome ou Safari, passer en paysage puis toucher **COMMENCER LA RONDE**. Les commandes tactiles apparaissent automatiquement.
+
+## Steel Echo v11
+
+Cette version renforce la poursuite industrielle et la présence physique des machines avec une direction artistique originale :
+
+- SPECTER-5 devient un endosquelette bipède complet avec bassin, colonne, cage thoracique, mâchoire, optiques, épaules, coudes, hanches et genoux articulés ;
+- CRAWLER-7 reçoit un véritable châssis quadrupède avec quatre pattes articulées et une tête mobile ;
+- les animations procédurales adaptent la démarche à la vitesse et à la proximité du joueur ;
+- l’usine comprend désormais une passerelle technique, des chaînes suspendues, une grande presse hydraulique, des machines auxiliaires et six bras industriels animés ;
+- l’abri S-01 possède un sas blindé, des consoles détaillées, des éclairages cyan/rouge et un grand écran de supervision animé ;
+- le drone KITE-01 peut être déployé pour explorer et scanner l’usine ;
+- les profils PC et smartphone conservent un budget graphique adapté au Web.
 
 ## Contenu jouable
 
@@ -27,11 +39,11 @@ Sur smartphone : ouvrir le lien dans Chrome ou Safari, passer en paysage puis to
 
 ## Commandes PC
 
-ZQSD/WASD : déplacement · souris : caméra · E : saisir/interagir · clic gauche : lancer/frapper · clic droit : interaction · F : lampe · Espace : saut · Maj : courir · Échap : pause.
+ZQSD/WASD : déplacement · souris : caméra · E : saisir/interagir · clic gauche : lancer/frapper · clic droit : interaction · F : lampe · Espace : saut · Maj : courir · C : déployer/reprendre KITE-01 · Ctrl : descendre avec le drone · Échap : pause.
 
 ## Commandes smartphone
 
-Boutons directionnels à gauche · glisser sur la moitié droite pour regarder · E : interagir/saisir · LANCER : lancer/frapper · F : lampe · JUMP : sauter · RUN : courir · Ⅱ : pause.
+Boutons directionnels à gauche · glisser sur la moitié droite pour regarder · E : interagir/saisir · LANCER : lancer/frapper · F : lampe · JUMP : sauter/monter avec le drone · RUN : courir/accélérer · KITE : drone · ▼D : descendre · Ⅱ : pause.
 
 Le mode paysage est fortement recommandé. Le profil mobile réduit automatiquement la résolution interne et le nombre de lumières dynamiques.
 
