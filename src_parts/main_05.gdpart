@@ -95,8 +95,21 @@ func _build_win_panel() -> void:
 
 func _build_mobile_controls() -> void:
 	mobile_layer = Control.new()
+	mobile_layer.name = "MobileControls"
 	mobile_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	mobile_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	mobile_layer.process_mode = Node.PROCESS_MODE_ALWAYS
 	hud_layer.add_child(mobile_layer)
-	var buttons := [
-		["▲", "move_forward", Vector2(96, -210)], ["▼", "move_back", Vector2(96, -86)],
+	_add_mobile_action_control("▲", &"move_forward", Control.PRESET_BOTTOM_LEFT, Vector2(96, -210), Vector2(76, 58))
+	_add_mobile_action_control("▼", &"move_back", Control.PRESET_BOTTOM_LEFT, Vector2(96, -86), Vector2(76, 58))
+	_add_mobile_action_control("◀", &"move_left", Control.PRESET_BOTTOM_LEFT, Vector2(34, -148), Vector2(76, 58))
+	_add_mobile_action_control("▶", &"move_right", Control.PRESET_BOTTOM_LEFT, Vector2(158, -148), Vector2(76, 58))
+	_add_mobile_action_control("E", &"interact", Control.PRESET_BOTTOM_RIGHT, Vector2(-210, -158), Vector2(76, 58))
+	_add_mobile_action_control("F", &"flashlight", Control.PRESET_BOTTOM_RIGHT, Vector2(-112, -158), Vector2(76, 58))
+	_add_mobile_action_control("JUMP", &"jump", Control.PRESET_BOTTOM_RIGHT, Vector2(-210, -86), Vector2(76, 58))
+	_add_mobile_action_control("RUN", &"sprint", Control.PRESET_BOTTOM_RIGHT, Vector2(-112, -86), Vector2(76, 58))
+	_add_mobile_action_control("KITE", &"drone", Control.PRESET_BOTTOM_RIGHT, Vector2(-310, -158), Vector2(76, 58))
+	_add_mobile_action_control("▼D", &"drone_down", Control.PRESET_BOTTOM_RIGHT, Vector2(-310, -86), Vector2(76, 58))
+	_add_mobile_action_control("ACTION", &"primary", Control.PRESET_BOTTOM_RIGHT, Vector2(-408, -86), Vector2(88, 58))
+	_add_mobile_callback_control("Ⅱ", Callable(self, "_toggle_pause"), Control.PRESET_TOP_RIGHT, Vector2(-74, 16), Vector2(58, 48))
+	print("BLACKOUT_MOBILE_CONTROLS_READY")
