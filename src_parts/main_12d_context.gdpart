@@ -1,30 +1,31 @@
 func _open_context_menu_v12() -> void:
-	if not game_started or tablet_open:
+	if not game_started or tablet_open or drone_active:
 		return
 	var hit := _raycast(5.2)
 	context_target = null
 	if not hit.is_empty():
 		context_target = hit.get("collider") as Node
-	for child in context_actions.get_children():
-		child.queue_free()
-	var target_name := "ZONE DEVANT VOUS"
+	var target_name := "ENVIRONNEMENT"
 	if context_target:
 		target_name = context_target.name
 	context_title.text = "ACTIONS // " + target_name
-	_add_context_action_v12("Examiner / scanner", "examine")
+	context_center_label.text = target_name.left(20)
+	var available_actions: Array[Dictionary] = []
+	available_actions.append({"label": "SCAN", "tooltip": "Examiner / scanner", "action": "examine"})
 	if context_target is RigidBody3D and context_target.get_meta("grabbable", false):
-		_add_context_action_v12("Saisir l'objet", "grab")
+		available_actions.append({"label": "SAISIR", "tooltip": "Saisir l'objet", "action": "grab"})
 	if context_target and context_target.has_meta("terminal"):
-		_add_context_action_v12("Pirater / activer le terminal", "activate")
+		available_actions.append({"label": "ACTIVER", "tooltip": "Pirater / activer le terminal", "action": "activate"})
 	if context_target and context_target.get_meta("destructible", false):
-		_add_context_action_v12("Forcer la structure", "breach")
+		available_actions.append({"label": "FORCER", "tooltip": "Forcer la structure", "action": "breach"})
 	if context_target and context_target.get_meta("robot", false):
-		_add_context_action_v12("Marquer comme menace", "mark")
-		_add_context_action_v12("Demander à ATHENA de négocier", "educate")
+		available_actions.append({"label": "MARQUER", "tooltip": "Marquer comme menace", "action": "mark"})
+		available_actions.append({"label": "NÉGOCIER", "tooltip": "Demander à ATHENA de négocier", "action": "educate"})
 	if context_target and context_target.get_meta("ambient_agent", false):
-		_add_context_action_v12("Lire le diagnostic du jouet", "diagnose")
-		_add_context_action_v12("Isoler du réseau", "isolate")
-	_add_context_action_v12("Déployer / rappeler KITE-01", "kite")
+		available_actions.append({"label": "DIAGNOSTIC", "tooltip": "Lire le diagnostic du jouet", "action": "diagnose"})
+		available_actions.append({"label": "ISOLER", "tooltip": "Isoler du réseau", "action": "isolate"})
+	available_actions.append({"label": "KITE-01", "tooltip": "Déployer le drone", "action": "kite"})
+	_populate_action_wheel_v12(available_actions)
 	context_menu_open = true
 	context_menu.visible = true
 	get_tree().paused = true
@@ -32,12 +33,38 @@ func _open_context_menu_v12() -> void:
 	if mobile_layer:
 		mobile_layer.visible = false
 
-func _add_context_action_v12(label_text: String, action: String) -> void:
-	var button := Button.new()
-	button.text = label_text
-	button.custom_minimum_size = Vector2(290, 42)
-	button.pressed.connect(_execute_context_action_v12.bind(action))
-	context_actions.add_child(button)
+func _populate_action_wheel_v12(actions: Array[Dictionary]) -> void:
+	for child in context_actions.get_children():
+		child.queue_free()
+	var action_count := actions.size()
+	var center := Vector2(250, 250)
+	var radius := 158.0 if action_count > 4 else 145.0
+	for index in range(action_count):
+		var info: Dictionary = actions[index]
+		var angle := -PI * 0.5 + TAU * float(index) / float(maxi(action_count, 1))
+		var button := Button.new()
+		button.text = String(info["label"])
+		button.tooltip_text = String(info["tooltip"])
+		button.size = Vector2(138, 54)
+		button.custom_minimum_size = Vector2(138, 54)
+		button.position = center + Vector2(cos(angle), sin(angle)) * radius - button.size * 0.5
+		button.add_theme_font_size_override("font_size", 14)
+		var normal_style := StyleBoxFlat.new()
+		normal_style.bg_color = Color(0.025, 0.085, 0.105, 0.98)
+		normal_style.border_color = Color(0.0, 0.58, 0.72, 0.95)
+		normal_style.set_border_width_all(2)
+		normal_style.corner_radius_top_left = 12
+		normal_style.corner_radius_top_right = 12
+		normal_style.corner_radius_bottom_left = 12
+		normal_style.corner_radius_bottom_right = 12
+		button.add_theme_stylebox_override("normal", normal_style)
+		var hover_style := normal_style.duplicate() as StyleBoxFlat
+		hover_style.bg_color = Color(0.0, 0.35, 0.44, 0.98)
+		hover_style.border_color = Color(0.35, 0.95, 1.0, 1.0)
+		button.add_theme_stylebox_override("hover", hover_style)
+		button.add_theme_stylebox_override("focus", hover_style)
+		button.pressed.connect(_execute_context_action_v12.bind(String(info["action"])))
+		context_actions.add_child(button)
 
 func _execute_context_action_v12(action: String) -> void:
 	if action == "examine":
@@ -81,6 +108,6 @@ func _close_context_menu_v12(resume_game := true) -> void:
 	context_target = null
 	if resume_game and game_started and not tablet_open and not pause_panel.visible:
 		get_tree().paused = false
-		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED if not is_mobile else Input.MOUSE_MODE_VISIBLE)
+		_capture_pointer_v13()
 		if mobile_layer:
 			mobile_layer.visible = true

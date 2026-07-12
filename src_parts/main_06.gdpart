@@ -52,8 +52,11 @@ func _start_game() -> void:
 	start_panel.visible = false
 	intro_panel.visible = false
 	get_tree().paused = false
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED if not is_mobile else Input.MOUSE_MODE_VISIBLE)
-	_show_status("RONDE DÉMARRÉE — TAB ouvre Sentinel, clic droit affiche les actions.")
+	_capture_pointer_v13()
+	if audio_player and not audio_player.playing:
+		audio_player.play()
+		audio_playback = audio_player.get_stream_playback() as AudioStreamGeneratorPlayback
+	_show_status("RONDE %d/%d — TAB ouvre Sentinel, clic droit affiche la roue d'actions." % [current_round, TOTAL_ROUNDS])
 	_athena_speak_v12("start")
 	if mobile_layer:
 		mobile_layer.visible = true
@@ -64,6 +67,7 @@ func _physics_process(delta: float) -> void:
 	elapsed += delta
 	_update_v11(delta)
 	_update_v12(delta)
+	_update_v13(delta)
 	_update_player(delta)
 	_update_held_object(delta)
 	_update_robots(delta)
@@ -77,6 +81,7 @@ func _process(delta: float) -> void:
 	if audio_playback:
 		_fill_audio(delta)
 	_update_v12_ui(delta)
+	_update_v13_ui(delta)
 
 func _update_player(delta: float) -> void:
 	if drone_active:
@@ -98,7 +103,7 @@ func _update_player(delta: float) -> void:
 		_show_status("LAMPE " + ("ACTIVE" if flashlight.visible else "COUPÉE"))
 	if Input.is_action_just_pressed("interact"):
 		_interact()
-	if Input.is_action_just_pressed("secondary"):
+	if Input.is_action_just_pressed("secondary") and not ignore_secondary_until_release:
 		_open_context_menu_v12()
 	if Input.is_action_just_pressed("primary"):
 		_primary_action()
@@ -108,12 +113,28 @@ func _update_player(delta: float) -> void:
 		fear_still += delta
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mouse_event := event as InputEventMouseButton
+		if mouse_event.button_index == MOUSE_BUTTON_RIGHT:
+			if not mouse_event.pressed:
+				ignore_secondary_until_release = false
+			elif game_started and drone_active:
+				ignore_secondary_until_release = true
+				_force_player_view_v13("KITE-01 rappelé par clic droit")
+				get_viewport().set_input_as_handled()
+				return
+		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed and game_started and drone_active:
+			_scan_drone_v13()
+			get_viewport().set_input_as_handled()
+			return
 	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_TAB and game_started:
 		_toggle_tablet_v12()
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE and game_started:
-		if tablet_open:
+		if drone_active:
+			_force_player_view_v13("KITE-01 rappelé")
+		elif tablet_open:
 			_toggle_tablet_v12()
 		elif context_menu_open:
 			_close_context_menu_v12()

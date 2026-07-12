@@ -13,12 +13,7 @@ func _activate_terminal(terminal_id: String) -> void:
 		_show_status("UPLINK INCOMPLET — le relais nord ne répond pas.")
 
 func _win_game() -> void:
-	game_started = false
-	get_tree().paused = true
-	win_panel.visible = true
-	if mobile_layer:
-		mobile_layer.visible = false
-	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	_complete_round_v13()
 
 func _update_fear(_delta: float) -> void:
 	if int(elapsed) % 5 != 0:
@@ -54,7 +49,7 @@ func _update_phase() -> void:
 func _update_scares() -> void:
 	if elapsed < next_scare_time or not game_started:
 		return
-	next_scare_time = elapsed + rng.randf_range(14.0, 27.0)
+	next_scare_time = elapsed + rng.randf_range(max(8.0, 14.0 - float(current_round)), max(16.0, 27.0 - float(current_round) * 1.5))
 	var event := rng.randi_range(0, 3)
 	if event == 0:
 		_flicker()
