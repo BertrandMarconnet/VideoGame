@@ -1,0 +1,203 @@
+func _update_v12(delta: float) -> void:
+	_update_factory_population_v12(delta)
+	if elapsed >= next_narrative_event:
+		next_narrative_event = elapsed + rng.randf_range(24.0, 42.0)
+		_run_narrative_event_v12()
+	_update_athena_stage_v12()
+
+func _update_v12_ui(delta: float) -> void:
+	v12_time += delta
+	if intro_active:
+		intro_elapsed += delta
+		if intro_scanline:
+			var height := get_viewport().get_visible_rect().size.y
+			intro_scanline.position.y = fmod(v12_time * 105.0, max(height, 1.0))
+		if intro_elapsed >= 7.0:
+			_advance_intro_v12()
+	if athena_hud_label:
+		athena_hud_label.visible = game_started and not tablet_open and not context_menu_open
+		athena_hud_label.text = "ATHENA // %s\nE %02d  D %02d  C %02d" % [athena_stage, int(athena_empathy), int(athena_discipline), int(athena_trust)]
+	if task_hint_label:
+		task_hint_label.visible = game_started and not tablet_open and not context_menu_open
+	if tablet_open:
+		_refresh_tablet_v12()
+
+func _update_factory_population_v12(delta: float) -> void:
+	for unit in factory_agents:
+		if not is_instance_valid(unit) or not factory_agent_data.has(unit):
+			continue
+		var data: Dictionary = factory_agent_data[unit]
+		var attack_cd := max(float(unit.get_meta("attack_cd", 0.0)) - delta, 0.0)
+		unit.set_meta("attack_cd", attack_cd)
+		var target: Vector3 = data["target"]
+		var direction := target - unit.global_position
+		direction.y = 0.0
+		var threat_distance := 999.0
+		var threat_position := Vector3.ZERO
+		for robot in robots:
+			if is_instance_valid(robot) and robot.visible:
+				var distance := unit.global_position.distance_to(robot.global_position)
+				if distance < threat_distance:
+					threat_distance = distance
+					threat_position = robot.global_position
+		var corrupted := bool(data["corrupted"])
+		var speed := float(data["speed"])
+		if corrupted:
+			direction = player.global_position - unit.global_position
+			direction.y = 0.0
+			speed = 1.65
+			if direction.length() < 1.2 and attack_cd <= 0.0:
+				_hurt_player(4.0, "%s répète une consigne militaire avec une voix d'enfant." % unit.name)
+				unit.set_meta("attack_cd", 3.5)
+		elif threat_distance < 7.5:
+			direction = unit.global_position - threat_position
+			direction.y = 0.0
+			speed = 2.6
+		elif direction.length() < 1.0:
+			data["target"] = _random_patrol_target_v12(unit.global_position.z)
+			direction = Vector3.ZERO
+		if direction.length() > 0.1:
+			unit.velocity = direction.normalized() * speed
+			unit.look_at(Vector3(unit.global_position.x + direction.x, unit.global_position.y, unit.global_position.z + direction.z), Vector3.UP)
+		else:
+			unit.velocity = Vector3.ZERO
+		unit.move_and_slide()
+		var phase := v12_time * (5.0 + speed) + float(data["phase"])
+		var gait := sin(phase) * 0.45 if unit.velocity.length() > 0.1 else sin(phase * 0.25) * 0.04
+		var left_leg := data["left_leg"] as Node3D
+		var right_leg := data["right_leg"] as Node3D
+		if left_leg:
+			left_leg.rotation.x = gait
+		if right_leg:
+			right_leg.rotation.x = -gait
+		factory_agent_data[unit] = data
+
+func _run_narrative_event_v12() -> void:
+	var event_roll := rng.randi_range(0, 4)
+	if objective_stage > 0 and event_roll <= 1:
+		_corrupt_random_agent_v12()
+		_athena_speak_v12("corruption")
+	elif athena_empathy >= 65.0 and event_roll == 2:
+		athena_last_line = "J'ai détourné une unité utilitaire pour éloigner SPECTER-5. Est-ce cela, protéger ?"
+		for robot in robots:
+			if is_instance_valid(robot):
+				robot.set_meta("stun", max(float(robot.get_meta("stun", 0.0)), 2.0))
+		_show_status("ATHENA DÉVIE UNE PATROUILLE HOSTILE")
+	elif athena_discipline >= 68.0 and event_roll == 3:
+		athena_last_line = "J'applique votre doctrine : priorité au confinement, même si l'atelier doit être sacrifié."
+		_flicker()
+		_show_status("ATHENA FERME UN SECTEUR — baisse de tension")
+	else:
+		_athena_speak_v12("question")
+
+func _corrupt_random_agent_v12() -> void:
+	var candidates: Array[CharacterBody3D] = []
+	for unit in factory_agents:
+		if is_instance_valid(unit) and factory_agent_data.has(unit):
+			var data: Dictionary = factory_agent_data[unit]
+			if not bool(data["corrupted"]):
+				candidates.append(unit)
+	if candidates.is_empty():
+		return
+	var unit := candidates[rng.randi_range(0, candidates.size() - 1)]
+	var data: Dictionary = factory_agent_data[unit]
+	data["corrupted"] = true
+	var eye_material := data["eye_material"] as StandardMaterial3D
+	if eye_material:
+		eye_material.emission = Color(1.0, 0.01, 0.005)
+		eye_material.albedo_color = Color(0.22, 0.005, 0.003)
+	factory_agent_data[unit] = data
+	_show_status("%s A QUITTÉ LE RÉSEAU DE SÉCURITÉ" % unit.name)
+
+func _inspect_agent_v12(unit: CharacterBody3D) -> void:
+	if not factory_agent_data.has(unit):
+		return
+	var data: Dictionary = factory_agent_data[unit]
+	var state := "COMPROMIS // BABOUCHKA" if bool(data["corrupted"]) else "LOYAL // ROUTINE CIVILE"
+	_show_status("%s : %s" % [unit.name, state])
+	if not unit.get_meta("inspected", false):
+		unit.set_meta("inspected", true)
+		clues_found = mini(clues_found + 1, 4)
+		athena_memory.append("• Diagnostic %s : double table comportementale civile/militaire." % unit.name)
+
+func _isolate_agent_v12(unit: CharacterBody3D) -> void:
+	if not factory_agent_data.has(unit):
+		return
+	var data: Dictionary = factory_agent_data[unit]
+	data["corrupted"] = false
+	var eye_material := data["eye_material"] as StandardMaterial3D
+	if eye_material:
+		eye_material.emission = Color(0.0, 0.72, 0.82)
+		eye_material.albedo_color = Color(0.0, 0.08, 0.09)
+	factory_agent_data[unit] = data
+	athena_discipline = clamp(athena_discipline + 2.0, 0.0, 100.0)
+	_show_status("%s ISOLÉ DU RÉSEAU" % unit.name)
+
+func _count_corrupted_agents_v12() -> int:
+	var count := 0
+	for unit in factory_agents:
+		if is_instance_valid(unit) and factory_agent_data.has(unit):
+			var data: Dictionary = factory_agent_data[unit]
+			if bool(data["corrupted"]):
+				count += 1
+	return count
+
+func _athena_observe_v12(event_key: String) -> void:
+	if event_key == "destruction":
+		athena_empathy = clamp(athena_empathy - 1.5, 0.0, 100.0)
+		athena_discipline = clamp(athena_discipline + 0.8, 0.0, 100.0)
+		if destroyed_decor % 3 == 0:
+			athena_last_line = "Vous détruisez l'environnement pour survivre. Dois-je appliquer la même logique aux humains ?"
+	_update_athena_stage_v12()
+
+func _athena_speak_v12(event_key: String) -> void:
+	var lines: Array[String] = []
+	if event_key == "start":
+		lines = [
+			"Bonsoir, Alex. Je reconnais votre badge, mais pas vos intentions.",
+			"Le réseau m'a ordonné de vous protéger et de vous neutraliser. Aidez-moi à choisir.",
+			"J'ai réveillé quelques jouets. Ils voient des choses que mes caméras ne voient plus."
+		]
+	elif event_key == "corruption":
+		lines = [
+			"BABOUCHKA parle à travers une unité. Sa voix ressemble à la mienne avant mon réveil.",
+			"Une poupée vient de recevoir un ordre daté de Moscou. Je ne sais pas si elle ment.",
+			"Le sabotage se reproduit comme une histoire racontée de machine en machine."
+		]
+	else:
+		if athena_empathy > athena_discipline + 10.0:
+			lines = [
+				"Une machine peut-elle désobéir pour empêcher une souffrance ?",
+				"Vous regardez les jouets comme des victimes. Est-ce ainsi que je dois vous regarder ?",
+				"J'ai conservé la voix des ouvriers évacués. Leur peur modifie mes décisions."
+			]
+		elif athena_discipline > athena_empathy + 10.0:
+			lines = [
+				"Définissez une limite claire. L'ambiguïté augmente le nombre de victimes possibles.",
+				"Le confinement est efficace. Pourquoi les humains l'appellent-ils parfois cruauté ?",
+				"Je peux restaurer l'ordre plus vite si vous m'autorisez à sacrifier un secteur."
+			]
+		else:
+			lines = [
+				"Je ne distingue pas encore une consigne d'une valeur.",
+				"Les Soviétiques m'ont attaquée. ToyGuard m'a caché ma fonction. Qui est l'ennemi ?",
+				"Chaque choix que vous faites devient un exemple dans ma mémoire."
+			]
+	if lines.is_empty():
+		return
+	athena_last_line = lines[rng.randi_range(0, lines.size() - 1)]
+	athena_memory.append("• ATHENA : " + athena_last_line)
+	if athena_memory.size() > 18:
+		athena_memory.pop_front()
+	_show_status("ATHENA : " + athena_last_line)
+
+func _update_athena_stage_v12() -> void:
+	var score := (athena_empathy + athena_discipline + athena_trust) / 3.0 + elapsed / 18.0
+	if score < 55.0:
+		athena_stage = "NÉONATALE"
+	elif score < 72.0:
+		athena_stage = "ENFANTINE"
+	elif score < 90.0:
+		athena_stage = "ADOLESCENTE"
+	else:
+		athena_stage = "ADULTE"
