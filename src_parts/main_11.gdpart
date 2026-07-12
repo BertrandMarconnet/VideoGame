@@ -1,0 +1,404 @@
+
+# -----------------------------------------------------------------------------
+# STEEL ECHO v11 — articulated machines, shelter and KITE-01 drone
+# -----------------------------------------------------------------------------
+
+func _build_v11_upgrade() -> void:
+	_build_shelter_v11()
+	_build_factory_chase_v11()
+	_upgrade_robot_visuals_v11()
+	_build_drone_v11()
+
+func _build_shelter_v11() -> void:
+	var wall_mat := _material(Color(0.075, 0.09, 0.105), 0.72, 0.42)
+	var trim_mat := _material(Color(0.24, 0.28, 0.31), 0.92, 0.25)
+	var hazard_mat := _material(Color(0.24, 0.08, 0.035), 0.45, 0.48, Color(0.75, 0.08, 0.015))
+	_static_box(Vector3(8.8, 4.6, 0.32), Vector3(-8.7, 2.3, -19.1), wall_mat, "ShelterFrontLeft")
+	_static_box(Vector3(8.8, 4.6, 0.32), Vector3(8.7, 2.3, -19.1), wall_mat, "ShelterFrontRight")
+	_static_box(Vector3(8.0, 0.28, 0.55), Vector3(0, 4.46, -19.08), trim_mat, "ShelterDoorHeader")
+	for side in [-1.0, 1.0]:
+		_static_box(Vector3(0.28, 4.4, 0.58), Vector3(side * 4.15, 2.2, -19.02), trim_mat, "ShelterDoorFrame")
+		_visual_box(Vector3(0.18, 3.2, 0.1), Vector3(side * 3.82, 2.15, -18.82), hazard_mat, "DoorHazard")
+	var door_panel := _visual_box(Vector3(3.6, 0.22, 0.72), Vector3(0, 4.15, -18.92), trim_mat, "RaisedBlastDoor")
+	door_panel.rotation_degrees = Vector3(0, 0, 0)
+	for x in [-9.0, -4.5, 0.0, 4.5, 9.0]:
+		_visual_box(Vector3(3.4, 0.12, 0.4), Vector3(x, 4.0, -15.8), _material(Color(0.55, 0.72, 0.82), 0.18, 0.25, Color(0.18, 0.55, 0.76)), "ShelterLight")
+	_build_main_control_screen_v11()
+	_build_shelter_consoles_v11()
+	for side in [-1.0, 1.0]:
+		var alarm := OmniLight3D.new()
+		alarm.position = Vector3(side * 11.0, 3.5, -17.4)
+		alarm.light_color = Color(1.0, 0.045, 0.012)
+		alarm.light_energy = 1.4
+		alarm.omni_range = 8.0
+		alarm.shadow_enabled = false
+		add_child(alarm)
+		alarm_lights.append(alarm)
+
+func _build_main_control_screen_v11() -> void:
+	var frame_mat := _material(Color(0.055, 0.065, 0.075), 0.88, 0.26)
+	_static_box(Vector3(11.4, 3.9, 0.38), Vector3(0, 3.25, -16.75), frame_mat, "MainScreenFrame")
+	control_screen_material = _material(Color(0.008, 0.06, 0.075), 0.12, 0.12, Color(0.0, 0.62, 0.78))
+	_visual_box(Vector3(10.6, 3.15, 0.08), Vector3(0, 3.25, -16.52), control_screen_material, "MainControlScreen")
+	for x in [-4.6, -2.3, 0.0, 2.3, 4.6]:
+		_visual_box(Vector3(0.04, 2.7, 0.03), Vector3(x, 3.25, -16.46), _material(Color(0.0, 0.15, 0.18), 0.1, 0.2, Color(0.0, 0.2, 0.22)), "ScreenGrid")
+	for y in [2.2, 3.25, 4.3]:
+		_visual_box(Vector3(10.1, 0.035, 0.03), Vector3(0, y, -16.45), _material(Color(0.0, 0.12, 0.15), 0.1, 0.2, Color(0.0, 0.18, 0.21)), "ScreenGrid")
+	_visual_box(Vector3(2.0, 0.08, 0.04), Vector3(-3.7, 4.45, -16.38), _material(Color(0.0, 0.2, 0.22), 0.1, 0.2, Color(0.0, 0.8, 0.9)), "SignalBar")
+	_visual_box(Vector3(1.35, 0.08, 0.04), Vector3(3.85, 2.05, -16.38), _material(Color(0.25, 0.025, 0.01), 0.1, 0.2, Color(1.0, 0.04, 0.01)), "ThreatBar")
+
+func _build_shelter_consoles_v11() -> void:
+	var console_mat := _material(Color(0.045, 0.06, 0.072), 0.78, 0.32)
+	for x in [-9.0, -4.5, 0.0, 4.5, 9.0]:
+		_static_box(Vector3(3.5, 1.15, 1.65), Vector3(x, 0.58, -12.8), console_mat, "ShelterConsole")
+		var display_mat := _material(Color(0.01, 0.12, 0.14), 0.1, 0.18, Color(0.0, 0.45, 0.56))
+		var panel := _visual_box(Vector3(2.7, 0.07, 0.85), Vector3(x, 1.18, -12.55), display_mat, "ConsoleDisplay")
+		panel.rotation_degrees.x = -18.0
+		for k in range(4):
+			_visual_box(Vector3(0.28, 0.04, 0.18), Vector3(x - 0.9 + float(k) * 0.6, 1.24, -13.0), _material(Color(0.08, 0.12, 0.13), 0.2, 0.3, Color(0.0, 0.22 + 0.08 * float(k), 0.28)), "ConsoleKey")
+
+func _build_factory_chase_v11() -> void:
+	var steel := _material(Color(0.13, 0.145, 0.155), 0.9, 0.3)
+	var black_steel := _material(Color(0.035, 0.042, 0.05), 0.88, 0.24)
+	var sodium := _material(Color(0.24, 0.12, 0.035), 0.35, 0.38, Color(0.95, 0.18, 0.025))
+	# Overhead bridge, service rails and hanging chains.
+	_static_box(Vector3(29.0, 0.34, 3.2), Vector3(0, 5.5, -138.0), steel, "ServiceBridge")
+	for side in [-1.0, 1.0]:
+		_static_box(Vector3(29.0, 0.12, 0.12), Vector3(0, 6.45, -138.0 + side * 1.38), steel, "BridgeRail")
+		for x in range(-13, 14, 2):
+			_visual_box(Vector3(0.08, 0.95, 0.08), Vector3(float(x), 5.98, -138.0 + side * 1.38), steel, "RailPost")
+	for x in [-12.0, -7.5, -3.0, 2.0, 7.0, 12.0]:
+		for link in range(7):
+			_visual_box(Vector3(0.12, 0.28, 0.08), Vector3(x, 7.3 - float(link) * 0.29, -128.0 - fmod(abs(x), 5.0)), black_steel, "ChainLink")
+	# Hydraulic chase press and side conveyor.
+	_static_box(Vector3(7.8, 0.8, 7.2), Vector3(0, 0.4, -151.0), black_steel, "HydraulicPressBase")
+	for side in [-1.0, 1.0]:
+		_static_box(Vector3(0.8, 6.5, 0.9), Vector3(side * 3.1, 3.25, -151.0), steel, "PressColumn")
+	_visual_box(Vector3(6.8, 0.7, 2.8), Vector3(0, 6.1, -151.0), steel, "PressHead")
+	_visual_cylinder(0.52, 4.4, Vector3(0, 4.25, -151.0), steel, "PressRam")
+	_visual_box(Vector3(5.8, 0.42, 4.6), Vector3(0, 1.15, -151.0), _material(Color(0.2, 0.08, 0.04), 0.7, 0.34), "PressTable")
+	for x in [-2.4, 2.4]:
+		_visual_box(Vector3(0.28, 0.28, 0.16), Vector3(x, 1.7, -147.3), sodium, "PressWarning")
+	# Industrial robot cells; their joints are animated at runtime.
+	for i in range(6):
+		var side := -1.0 if i % 2 == 0 else 1.0
+		var z := -58.0 - float(i) * 13.5
+		_build_industrial_arm_v11(Vector3(side * 12.0, 0.45, z), side)
+	# Low-level machinery and cables make the factory feel occupied rather than empty.
+	for i in range(14):
+		var side := -1.0 if i % 2 == 0 else 1.0
+		var z := -24.0 - float(i) * 10.4
+		_static_box(Vector3(3.2, 1.15, 2.4), Vector3(side * 14.0, 0.58, z), black_steel, "AuxMachine")
+		_visual_box(Vector3(2.3, 0.12, 1.2), Vector3(side * 13.72, 1.22, z), _material(Color(0.04, 0.11, 0.12), 0.25, 0.28, Color(0.0, 0.28, 0.32)), "AuxPanel")
+	for z in [-34.0, -72.0, -108.0, -144.0, -166.0]:
+		var alarm := OmniLight3D.new()
+		alarm.position = Vector3(0, 6.8, z)
+		alarm.light_color = Color(1.0, 0.06, 0.018)
+		alarm.light_energy = 1.35
+		alarm.omni_range = 9.0
+		alarm.shadow_enabled = false
+		add_child(alarm)
+		alarm_lights.append(alarm)
+
+func _build_industrial_arm_v11(at: Vector3, side: float) -> void:
+	var rig := Node3D.new()
+	rig.name = "FactoryArm"
+	rig.position = at
+	rig.rotation_degrees.y = -90.0 * side
+	add_child(rig)
+	var dark := _material(Color(0.055, 0.065, 0.072), 0.92, 0.22)
+	var joint_mat := _material(Color(0.28, 0.29, 0.3), 0.95, 0.18)
+	_v11_box(rig, Vector3(1.9, 0.5, 1.9), Vector3(0, 0, 0), dark, "ArmBase")
+	var base_joint := Node3D.new()
+	base_joint.name = "BaseJoint"
+	base_joint.position = Vector3(0, 0.4, 0)
+	rig.add_child(base_joint)
+	_v11_cylinder(base_joint, 0.48, 0.55, Vector3.ZERO, joint_mat, "BaseBearing")
+	var shoulder := _v11_bone(base_joint, "Shoulder", 2.4, 0.28, Vector3(0, 0.42, 0), Vector3(0, 0, -22.0 * side), dark)
+	var elbow := _v11_bone(shoulder, "Elbow", 2.2, 0.24, Vector3(0, -2.28, 0), Vector3(0, 0, 44.0 * side), dark)
+	var wrist := _v11_bone(elbow, "Wrist", 1.15, 0.17, Vector3(0, -2.05, 0), Vector3(0, 0, -32.0 * side), joint_mat)
+	_v11_box(wrist, Vector3(0.7, 0.28, 0.7), Vector3(0, -1.1, 0), dark, "ToolHead")
+	machine_arms.append(rig)
+
+func _upgrade_robot_visuals_v11() -> void:
+	for robot in robots:
+		for child in robot.get_children():
+			if child is MeshInstance3D:
+				(child as MeshInstance3D).visible = false
+		var personality := String(robot.get_meta("personality", "specter"))
+		if personality == "specter":
+			_build_biped_endoskeleton_v11(robot)
+		else:
+			_build_crawler_endoskeleton_v11(robot)
+
+func _build_biped_endoskeleton_v11(robot: CharacterBody3D) -> void:
+	var rig := Node3D.new()
+	rig.name = "ArticulatedEndoskeleton"
+	rig.position = Vector3(0, -0.12, 0)
+	robot.add_child(rig)
+	var dark := _material(Color(0.055, 0.065, 0.072), 0.95, 0.2)
+	var steel := _material(Color(0.34, 0.36, 0.37), 0.98, 0.16)
+	var cable := _material(Color(0.015, 0.018, 0.02), 0.5, 0.35)
+	var eye_mat := _material(Color(0.2, 0.005, 0.005), 0.25, 0.12, Color(1.0, 0.0, 0.012))
+	_v11_box(rig, Vector3(0.52, 0.24, 0.34), Vector3(0, 0.05, 0), dark, "Pelvis")
+	_v11_cylinder(rig, 0.1, 0.72, Vector3(0, 0.5, 0), steel, "Spine")
+	for rib in range(4):
+		var width := 0.68 - float(rib) * 0.08
+		_v11_box(rig, Vector3(width, 0.07, 0.28), Vector3(0, 0.67 + float(rib) * 0.15, 0), dark, "Rib")
+	_v11_box(rig, Vector3(0.88, 0.12, 0.22), Vector3(0, 1.03, 0), steel, "ShoulderBridge")
+	for side in [-1.0, 1.0]:
+		_v11_cylinder(rig, 0.055, 0.78, Vector3(side * 0.24, 0.58, 0.13), cable, "BackCable", Vector3(6.0 * side, 0, 0))
+	var neck := Node3D.new()
+	neck.name = "Neck"
+	neck.position = Vector3(0, 1.13, 0)
+	rig.add_child(neck)
+	_v11_cylinder(neck, 0.11, 0.25, Vector3(0, 0.1, 0), steel, "NeckPiston")
+	var head := Node3D.new()
+	head.name = "Head"
+	head.position = Vector3(0, 0.32, 0)
+	neck.add_child(head)
+	_v11_sphere(head, 0.27, Vector3(0, 0, 0), steel, "Skull")
+	_v11_box(head, Vector3(0.46, 0.13, 0.24), Vector3(0, -0.16, -0.06), dark, "Jaw")
+	for side in [-1.0, 1.0]:
+		_v11_sphere(head, 0.058, Vector3(side * 0.105, 0.035, -0.235), eye_mat, "Optic")
+	for tooth in range(5):
+		_v11_box(head, Vector3(0.045, 0.055, 0.045), Vector3(-0.12 + float(tooth) * 0.06, -0.14, -0.185), steel, "Tooth")
+	var joints := {"rig": rig, "head": head, "neck": neck}
+	for side in [-1.0, 1.0]:
+		var prefix := "left" if side < 0.0 else "right"
+		var shoulder := _v11_bone(rig, prefix + "_shoulder", 0.58, 0.09, Vector3(side * 0.48, 1.0, 0), Vector3.ZERO, steel)
+		var elbow := _v11_bone(shoulder, prefix + "_elbow", 0.53, 0.075, Vector3(0, -0.56, 0), Vector3.ZERO, dark)
+		_v11_box(elbow, Vector3(0.15, 0.18, 0.11), Vector3(0, -0.56, -0.02), steel, "Hand")
+		var hip := _v11_bone(rig, prefix + "_hip", 0.62, 0.105, Vector3(side * 0.19, -0.04, 0), Vector3.ZERO, steel)
+		var knee := _v11_bone(hip, prefix + "_knee", 0.62, 0.085, Vector3(0, -0.6, 0), Vector3.ZERO, dark)
+		_v11_box(knee, Vector3(0.2, 0.12, 0.42), Vector3(0, -0.64, -0.1), steel, "Foot")
+		joints[prefix + "_shoulder"] = shoulder
+		joints[prefix + "_elbow"] = elbow
+		joints[prefix + "_hip"] = hip
+		joints[prefix + "_knee"] = knee
+	robot_visuals[robot] = joints
+
+func _build_crawler_endoskeleton_v11(robot: CharacterBody3D) -> void:
+	var rig := Node3D.new()
+	rig.name = "CrawlerArticulatedRig"
+	rig.position = Vector3(0, -0.15, 0)
+	robot.add_child(rig)
+	var dark := _material(Color(0.045, 0.052, 0.058), 0.94, 0.21)
+	var steel := _material(Color(0.28, 0.3, 0.31), 0.98, 0.17)
+	var eye_mat := _material(Color(0.2, 0.005, 0.005), 0.25, 0.1, Color(1.0, 0.0, 0.01))
+	_v11_box(rig, Vector3(0.82, 0.34, 1.15), Vector3(0, 0.18, 0), dark, "CrawlerSpine")
+	_v11_cylinder(rig, 0.13, 0.95, Vector3(0, 0.28, 0), steel, "CrawlerCore", Vector3(90, 0, 0))
+	var head := Node3D.new()
+	head.name = "CrawlerHead"
+	head.position = Vector3(0, 0.22, -0.72)
+	rig.add_child(head)
+	_v11_box(head, Vector3(0.54, 0.28, 0.46), Vector3.ZERO, steel, "CrawlerSkull")
+	_v11_box(head, Vector3(0.48, 0.1, 0.34), Vector3(0, -0.17, -0.08), dark, "CrawlerJaw")
+	for side in [-1.0, 1.0]:
+		_v11_sphere(head, 0.052, Vector3(side * 0.13, 0.035, -0.225), eye_mat, "CrawlerOptic")
+	var joints := {"rig": rig, "head": head}
+	var leg_index := 0
+	for z in [-0.38, 0.38]:
+		for side in [-1.0, 1.0]:
+			var key := "leg_%d" % leg_index
+			var upper := _v11_bone(rig, key, 0.48, 0.085, Vector3(side * 0.43, 0.16, z), Vector3(0, 0, side * 55.0), steel)
+			var lower := _v11_bone(upper, key + "_lower", 0.46, 0.07, Vector3(0, -0.44, 0), Vector3(0, 0, -side * 65.0), dark)
+			_v11_box(lower, Vector3(0.22, 0.09, 0.34), Vector3(0, -0.45, -0.06), steel, "CrawlerFoot")
+			joints[key] = upper
+			joints[key + "_lower"] = lower
+			leg_index += 1
+	robot_visuals[robot] = joints
+
+func _build_drone_v11() -> void:
+	drone = CharacterBody3D.new()
+	drone.name = "KITE-01"
+	drone.position = drone_home
+	drone.set_meta("drone", true)
+	var collision := CollisionShape3D.new()
+	var shape := SphereShape3D.new()
+	shape.radius = 0.32
+	collision.shape = shape
+	drone.add_child(collision)
+	var dark := _material(Color(0.045, 0.055, 0.064), 0.9, 0.24)
+	var steel := _material(Color(0.26, 0.28, 0.29), 0.95, 0.18)
+	var cyan := _material(Color(0.0, 0.08, 0.1), 0.15, 0.18, Color(0.0, 0.58, 0.72))
+	_v11_box(drone, Vector3(0.72, 0.22, 0.52), Vector3.ZERO, dark, "DroneBody")
+	_v11_box(drone, Vector3(0.18, 0.2, 0.18), Vector3(0, -0.04, -0.34), steel, "DroneCameraHousing")
+	_v11_sphere(drone, 0.07, Vector3(0, -0.04, -0.44), cyan, "DroneLens")
+	var rotors: Array[Node3D] = []
+	for x in [-0.48, 0.48]:
+		for z in [-0.36, 0.36]:
+			_v11_box(drone, Vector3(0.48, 0.05, 0.06), Vector3(x * 0.5, 0, z * 0.5), steel, "DroneArm")
+			var rotor := Node3D.new()
+			rotor.position = Vector3(x, 0.04, z)
+			drone.add_child(rotor)
+			_v11_cylinder(rotor, 0.1, 0.08, Vector3.ZERO, steel, "RotorHub")
+			_v11_box(rotor, Vector3(0.72, 0.025, 0.07), Vector3.ZERO, dark, "RotorBlade")
+			rotors.append(rotor)
+	drone.set_meta("rotors", rotors)
+	drone_camera = Camera3D.new()
+	drone_camera.position = Vector3(0, 0.03, -0.34)
+	drone_camera.fov = 78.0
+	drone_camera.current = false
+	drone.add_child(drone_camera)
+	var drone_light := SpotLight3D.new()
+	drone_light.position = Vector3(0, -0.02, -0.38)
+	drone_light.light_color = Color(0.62, 0.86, 1.0)
+	drone_light.light_energy = 3.8
+	drone_light.spot_range = 18.0
+	drone_light.spot_angle = 38.0
+	drone_light.shadow_enabled = false
+	drone_camera.add_child(drone_light)
+	add_child(drone)
+
+func _update_v11(delta: float) -> void:
+	v11_time += delta
+	if Input.is_action_just_pressed("drone"):
+		_toggle_drone_v11()
+	if control_screen_material:
+		var pulse := 0.55 + sin(v11_time * 1.8) * 0.12
+		control_screen_material.emission = Color(0.0, pulse, 0.72 + pulse * 0.18)
+	for i in range(machine_arms.size()):
+		var rig := machine_arms[i]
+		if not is_instance_valid(rig):
+			continue
+		var base_joint := rig.get_node_or_null("BaseJoint") as Node3D
+		if base_joint:
+			base_joint.rotation.y = sin(v11_time * 0.34 + float(i)) * 0.32
+			var shoulder := base_joint.get_node_or_null("Shoulder") as Node3D
+			if shoulder:
+				shoulder.rotation.z = -0.35 + sin(v11_time * 0.52 + float(i) * 0.7) * 0.24
+	for i in range(alarm_lights.size()):
+		var light := alarm_lights[i]
+		if is_instance_valid(light):
+			light.light_energy = 0.65 + max(0.0, sin(v11_time * 3.2 + float(i))) * 1.35
+	_animate_robot_rigs_v11()
+	if drone:
+		var rotors := drone.get_meta("rotors", []) as Array
+		for rotor in rotors:
+			if rotor is Node3D:
+				(rotor as Node3D).rotation.y += delta * (26.0 if drone_active else 5.0)
+
+func _animate_robot_rigs_v11() -> void:
+	var index := 0
+	for robot in robots:
+		if not is_instance_valid(robot) or not robot_visuals.has(robot):
+			index += 1
+			continue
+		var joints: Dictionary = robot_visuals[robot]
+		var speed := robot.velocity.length()
+		var gait := sin(v11_time * (7.0 + speed * 0.6) + float(index) * 1.7)
+		if String(robot.get_meta("personality", "specter")) == "specter":
+			_v11_set_joint_x(joints, "left_hip", gait * 0.58 if speed > 0.1 else 0.0)
+			_v11_set_joint_x(joints, "right_hip", -gait * 0.58 if speed > 0.1 else 0.0)
+			_v11_set_joint_x(joints, "left_knee", max(-gait, 0.0) * 0.65)
+			_v11_set_joint_x(joints, "right_knee", max(gait, 0.0) * 0.65)
+			_v11_set_joint_x(joints, "left_shoulder", -gait * 0.44 if speed > 0.1 else 0.05 * sin(v11_time))
+			_v11_set_joint_x(joints, "right_shoulder", gait * 0.44 if speed > 0.1 else -0.05 * sin(v11_time))
+			var head := joints.get("head") as Node3D
+			if head:
+				head.rotation.y = sin(v11_time * 0.75 + float(index)) * 0.18
+				head.rotation.x = -0.05 + clamp((14.0 - robot.global_position.distance_to(player.global_position)) / 80.0, 0.0, 0.16)
+		else:
+			for leg in range(4):
+				var phase := gait if leg % 2 == 0 else -gait
+				_v11_set_joint_x(joints, "leg_%d" % leg, phase * 0.5 if speed > 0.1 else 0.0)
+				_v11_set_joint_x(joints, "leg_%d_lower" % leg, -abs(phase) * 0.42)
+			var crawler_head := joints.get("head") as Node3D
+			if crawler_head:
+				crawler_head.rotation.y = sin(v11_time * 1.1) * 0.12
+		index += 1
+
+func _v11_set_joint_x(joints: Dictionary, key: String, angle: float) -> void:
+	var joint := joints.get(key) as Node3D
+	if joint:
+		joint.rotation.x = angle
+
+func _toggle_drone_v11() -> void:
+	if not drone or not drone_camera:
+		return
+	drone_active = not drone_active
+	camera.current = not drone_active
+	drone_camera.current = drone_active
+	if drone_active:
+		if held_body:
+			held_body.gravity_scale = 1.0
+			held_body = null
+		_show_status("KITE-01 EN LIGNE — E pour scanner, C pour revenir")
+	else:
+		_show_status("KITE-01 EN VEILLE — contrôle rendu au technicien")
+
+func _update_drone_v11(delta: float) -> void:
+	if not drone_active or not drone:
+		return
+	var input_vec := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var forward := -drone.global_transform.basis.z
+	forward.y = 0.0
+	forward = forward.normalized()
+	var right := drone.global_transform.basis.x
+	right.y = 0.0
+	right = right.normalized()
+	var direction := (right * input_vec.x + forward * -input_vec.y).normalized()
+	var speed := 7.0 if Input.is_action_pressed("sprint") else 4.4
+	drone.velocity.x = direction.x * speed
+	drone.velocity.z = direction.z * speed
+	if Input.is_action_pressed("jump"):
+		drone.velocity.y = 3.2
+	elif Input.is_action_pressed("drone_down"):
+		drone.velocity.y = -3.2
+	else:
+		drone.velocity.y = move_toward(drone.velocity.y, 0.0, delta * 7.0)
+	drone.move_and_slide()
+	drone.position.y = clamp(drone.position.y, 1.2, 6.8)
+	if Input.is_action_just_pressed("interact"):
+		_show_status("SCAN KITE-01 — %d m du relais nord" % int(drone.global_position.distance_to(Vector3(0, 1.1, -165.0))))
+
+func _v11_bone(parent: Node3D, label: String, length: float, radius: float, offset: Vector3, rotation_value: Vector3, material: Material) -> Node3D:
+	var pivot := Node3D.new()
+	pivot.name = label
+	pivot.position = offset
+	pivot.rotation_degrees = rotation_value
+	parent.add_child(pivot)
+	_v11_sphere(pivot, radius * 1.28, Vector3.ZERO, material, label + "Joint")
+	_v11_cylinder(pivot, radius, length, Vector3(0, -length * 0.5, 0), material, label + "Bone")
+	return pivot
+
+func _v11_box(parent: Node3D, size: Vector3, at: Vector3, material: Material, label: String) -> MeshInstance3D:
+	var mesh := MeshInstance3D.new()
+	mesh.name = label
+	var shape := BoxMesh.new()
+	shape.size = size
+	mesh.mesh = shape
+	mesh.position = at
+	mesh.material_override = material
+	parent.add_child(mesh)
+	return mesh
+
+func _v11_cylinder(parent: Node3D, radius: float, height: float, at: Vector3, material: Material, label: String, rotation_value := Vector3.ZERO) -> MeshInstance3D:
+	var mesh := MeshInstance3D.new()
+	mesh.name = label
+	var shape := CylinderMesh.new()
+	shape.top_radius = radius * 0.92
+	shape.bottom_radius = radius
+	shape.height = height
+	shape.radial_segments = 8
+	mesh.mesh = shape
+	mesh.position = at
+	mesh.rotation_degrees = rotation_value
+	mesh.material_override = material
+	parent.add_child(mesh)
+	return mesh
+
+func _v11_sphere(parent: Node3D, radius: float, at: Vector3, material: Material, label: String) -> MeshInstance3D:
+	var mesh := MeshInstance3D.new()
+	mesh.name = label
+	var shape := SphereMesh.new()
+	shape.radius = radius
+	shape.height = radius * 2.0
+	shape.radial_segments = 10
+	shape.rings = 6
+	mesh.mesh = shape
+	mesh.position = at
+	mesh.material_override = material
+	parent.add_child(mesh)
+	return mesh
