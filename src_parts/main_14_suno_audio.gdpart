@@ -1,12 +1,11 @@
 # -----------------------------------------------------------------------------
-# SUNO SOUNDTRACK v14 — compact Web loops selected from the supplied masters.
-# The full masters can replace these files later without changing the director.
+# SUNO SOUNDTRACK v15 — browser-safe staged playback.
+# Firefox and other browsers may suspend WebAudio before a user gesture. No MP3
+# is loaded or played during _enter_tree() or _ready(); the first campaign click
+# explicitly unlocks and initializes the soundtrack.
 # -----------------------------------------------------------------------------
 
-func _enter_tree() -> void:
-	call_deferred("_build_suno_audio_v14")
-
-func _build_suno_audio_v14() -> void:
+func _ensure_suno_audio_v14() -> void:
 	if get_node_or_null("SunoMusic"):
 		return
 	var music := AudioStreamPlayer.new()
@@ -20,12 +19,11 @@ func _build_suno_audio_v14() -> void:
 	chase.volume_db = -80.0
 	chase.stream = _load_suno_stream_v14("res://audio/suno/03_factory_hunts.mp3")
 	add_child(chase)
-	if chase.stream:
-		chase.play()
 	set_meta("suno_music_key", "")
-	_play_suno_music_v14("main")
 	if audio_player:
 		audio_player.volume_db = -25.0
+	if chase.stream:
+		chase.play()
 
 func _load_suno_stream_v14(path: String) -> AudioStream:
 	var resource := load(path)
