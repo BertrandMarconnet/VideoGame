@@ -27,7 +27,7 @@ func _update_factory_population_v12(delta: float) -> void:
 		if not is_instance_valid(unit) or not factory_agent_data.has(unit):
 			continue
 		var data: Dictionary = factory_agent_data[unit]
-		var attack_cd := max(float(unit.get_meta("attack_cd", 0.0)) - delta, 0.0)
+		var attack_cd: float = maxf(float(unit.get_meta("attack_cd", 0.0)) - delta, 0.0)
 		unit.set_meta("attack_cd", attack_cd)
 		var target: Vector3 = data["target"]
 		var direction := target - unit.global_position
@@ -99,7 +99,7 @@ func _corrupt_random_agent_v12() -> void:
 				candidates.append(unit)
 	if candidates.is_empty():
 		return
-	var unit := candidates[rng.randi_range(0, candidates.size() - 1)]
+	var unit: CharacterBody3D = candidates[rng.randi_range(0, candidates.size() - 1)]
 	var data: Dictionary = factory_agent_data[unit]
 	data["corrupted"] = true
 	var eye_material := data["eye_material"] as StandardMaterial3D
@@ -113,7 +113,7 @@ func _inspect_agent_v12(unit: CharacterBody3D) -> void:
 	if not factory_agent_data.has(unit):
 		return
 	var data: Dictionary = factory_agent_data[unit]
-	var state := "COMPROMIS // BABOUCHKA" if bool(data["corrupted"]) else "LOYAL // ROUTINE CIVILE"
+	var state: String = "COMPROMIS // BABOUCHKA" if bool(data["corrupted"]) else "LOYAL // ROUTINE CIVILE"
 	_show_status("%s : %s" % [unit.name, state])
 	if not unit.get_meta("inspected", false):
 		unit.set_meta("inspected", true)
@@ -192,7 +192,7 @@ func _athena_speak_v12(event_key: String) -> void:
 	_show_status("ATHENA : " + athena_last_line)
 
 func _update_athena_stage_v12() -> void:
-	var score := (athena_empathy + athena_discipline + athena_trust) / 3.0 + elapsed / 18.0
+	var score: float = (athena_empathy + athena_discipline + athena_trust) / 3.0 + elapsed / 18.0
 	if score < 55.0:
 		athena_stage = "NÉONATALE"
 	elif score < 72.0:
@@ -201,3 +201,5 @@ func _update_athena_stage_v12() -> void:
 		athena_stage = "ADOLESCENTE"
 	else:
 		athena_stage = "ADULTE"
+
+# -----------------------------------------------------------------------------
