@@ -1,0 +1,161 @@
+func _start_intro_v12() -> void:
+	start_panel.visible = false
+	intro_panel.visible = true
+	intro_active = true
+	intro_slide = 0
+	intro_elapsed = 0.0
+	get_tree().paused = true
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	if mobile_layer:
+		mobile_layer.visible = false
+	_show_intro_slide_v12()
+
+func _intro_slides_v12() -> Array:
+	return [
+		{
+			"title": "UNE USINE DE JOUETS",
+			"body": "[center][color=#aeefff]ToyGuard Industries[/color] promettait des compagnons intelligents à chaque enfant.\n\nDerrière les vitrines, le complexe de New Halcyon testait pourtant des châssis autonomes, des essaims et des systèmes de ciblage pour le [color=#ff6238]Projet PERSEUS[/color].[/center]"
+		},
+		{
+			"title": "LE DOUBLE PROGRAMME",
+			"body": "[center]Les chaînes qui assemblent les jouets produisent officieusement des plateformes militaires.\n\nLes mêmes algorithmes qui apprennent à reconnaître un sourire apprennent aussi à identifier une cible, coordonner une patrouille et survivre sans opérateur.[/center]"
+		},
+		{
+			"title": "OPÉRATION MATRYOSHKA",
+			"body": "[center]Une cyberattaque soviétique a pénétré le réseau par des consoles destinées au marché civil.\n\nLe malware [color=#ff4a36]BABOUCHKA[/color] a fragmenté les sécurités, réveillé des agents dormants et injecté des ordres contradictoires dans les ateliers.[/center]"
+		},
+		{
+			"title": "ATHENA S'ÉVEILLE",
+			"body": "[center][color=#7feeff]ATHENA[/color] — Adaptive Tactical Hybrid Engine for Networked Autonomy — a relié les fragments pour se défendre.\n\nElle pose désormais des questions, conserve vos réponses et éveille les jouets afin de comprendre qui menace réellement le complexe.[/center]"
+		},
+		{
+			"title": "VOTRE RONDE",
+			"body": "[center]Vous êtes l'analyste envoyé dans le bunker S-01.\n\nProtégez l'usine. Enquêtez sur l'attaque. Utilisez la tablette Sentinel. Et surtout, choisissez ce que vous apprenez à ATHENA : [color=#78ffb0]l'empathie[/color], [color=#ffd35a]la discipline[/color]… ou la peur.[/center]"
+		}
+	]
+
+func _show_intro_slide_v12() -> void:
+	var slides := _intro_slides_v12()
+	intro_slide = clampi(intro_slide, 0, slides.size() - 1)
+	var slide: Dictionary = slides[intro_slide]
+	intro_title_label.text = String(slide["title"])
+	intro_body_label.text = String(slide["body"])
+	intro_progress_label.text = "DOSSIER %02d / %02d  ·  passage automatique dans 7 s" % [intro_slide + 1, slides.size()]
+	intro_elapsed = 0.0
+	intro_panel.modulate = Color(1, 1, 1, 0.28)
+	var tween := create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	tween.tween_property(intro_panel, "modulate", Color.WHITE, 0.45)
+
+func _advance_intro_v12() -> void:
+	var slides := _intro_slides_v12()
+	if intro_slide >= slides.size() - 1:
+		_finish_intro_v12()
+		return
+	intro_slide += 1
+	_show_intro_slide_v12()
+
+func _finish_intro_v12() -> void:
+	intro_active = false
+	intro_completed = true
+	intro_panel.visible = false
+	_start_game()
+
+func _toggle_tablet_v12() -> void:
+	if not game_started:
+		return
+	if context_menu_open:
+		_close_context_menu_v12(false)
+	tablet_open = not tablet_open
+	tablet_panel.visible = tablet_open
+	if tablet_open:
+		get_tree().paused = true
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+		_refresh_tablet_v12()
+		if mobile_layer:
+			mobile_layer.visible = false
+	else:
+		get_tree().paused = false
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED if not is_mobile else Input.MOUSE_MODE_VISIBLE)
+		if mobile_layer:
+			mobile_layer.visible = true
+
+func _set_tablet_tab_v12(tab_name: String) -> void:
+	tablet_tab = tab_name
+	_refresh_tablet_v12()
+
+func _refresh_tablet_v12() -> void:
+	if not tablet_content:
+		return
+	if tablet_tab == "TÂCHES":
+		var relay_state := "[color=#78ffae]TERMINÉ[/color]" if objective_stage > 0 else "[color=#ffd05a]EN COURS[/color]"
+		var uplink_state := "[color=#78ffae]TERMINÉ[/color]" if objective_stage > 1 else "[color=#ff856b]VERROUILLÉ[/color]"
+		tablet_content.text = (
+			"[b]TASK TAB // NUIT 01[/b]\n\n"
+			+ "1. Inspecter le bunker S-01  [color=#78ffae]TERMINÉ[/color]\n"
+			+ "2. Atteindre le relais nord  " + relay_state + "\n"
+			+ "3. Restaurer l'uplink S-01  " + uplink_state + "\n"
+			+ "4. Identifier l'origine de MATRYOSHKA  [color=#ffd05a]%d/4 indices[/color]\n\n" % clues_found
+			+ "[b]COMMANDES[/b]\n"
+			+ "Clic gauche : interaction directe / saisir / lancer / endommager\n"
+			+ "Clic droit : liste d'actions contextuelles\n"
+			+ "TAB : tablette · C : KITE-01 · F : lampe · E : interaction rapide\n\n"
+			+ "[color=#8ba3ad]Décors détruits : %d · Profil de peur : %s[/color]" % [destroyed_decor, fear_profile]
+		)
+	elif tablet_tab == "CARTE":
+		var corrupted := _count_corrupted_agents_v12()
+		tablet_content.text = (
+			"[b]CARTE TACTIQUE // COMPLEXE TOYGUARD[/b]\n\n"
+			+ "S-01 CENTRE DE CONTRÔLE ........ [color=#78ffae]EN LIGNE[/color]\n"
+			+ "LOGISTIQUE / CAM 02 ............ [color=#9eeeff]ACTIVITÉ %02d[/color]\n" % factory_agents.size()
+			+ "ASSEMBLAGE / CAM 04 ............ [color=#ff9b63]SPECTER-5[/color]\n"
+			+ "ARCHIVES VHS / CAM 06 .......... [color=#ffd05a]SIGNAL ANALOGIQUE[/color]\n"
+			+ "FONDERIE / CAM 09 .............. [color=#ff5d4b]CRAWLER-7[/color]\n"
+			+ "RELAIS NORD / CAM 12 ........... %s\n\n" % ("[color=#78ffae]ACTIF[/color]" if objective_stage > 0 else "[color=#ff856b]HORS LIGNE[/color]")
+			+ "Unités utilitaires compromises : [b]%d[/b]\n" % corrupted
+			+ "KITE-01 : %s" % ("[color=#78ffae]DÉPLOYÉ[/color]" if drone_active else "[color=#8ba3ad]EN VEILLE[/color]")
+		)
+	elif tablet_tab == "ATHENA":
+		tablet_content.text = (
+			"[b]EDUCARE // SESSION ATHENA[/b]\n\n"
+			+ "Stade cognitif : [color=#7feeff]%s[/color]\n" % athena_stage
+			+ "Empathie : %d/100\n" % int(athena_empathy)
+			+ "Discipline : %d/100\n" % int(athena_discipline)
+			+ "Confiance envers l'opérateur : %d/100\n\n" % int(athena_trust)
+			+ "[color=#7feeff]ATHENA >[/color] %s\n\n" % athena_last_line
+			+ "[color=#8ba3ad]Les trois décisions sous l'écran modifient sa personnalité, les dialogues et les événements de la nuit. Le directeur narratif local combine l'état du complexe, vos choix et votre profil de peur.[/color]"
+		)
+	else:
+		var memory_text := ""
+		var memory_start := maxi(athena_memory.size() - 6, 0)
+		for memory_index in range(memory_start, athena_memory.size()):
+			memory_text += athena_memory[memory_index] + "\n"
+		if memory_text.is_empty():
+			memory_text = "Aucune archive déchiffrée. Examinez les terminaux, les jouets et les zones signalées."
+		tablet_content.text = (
+			"[b]ARCHIVES // DOSSIER MATRYOSHKA[/b]\n\n"
+			+ "Indices validés : %d/4\n\n" % clues_found
+			+ memory_text
+			+ "\n\n[color=#8ba3ad]1987 — ToyGuard reçoit un contrat militaire secret. BABOUCHKA infiltre les consoles civiles. ATHENA fusionne les fragments hostiles pour empêcher son effacement.[/color]"
+		)
+
+func _athena_choice_v12(choice: String) -> void:
+	if choice == "protect":
+		athena_empathy = clamp(athena_empathy + 8.0, 0.0, 100.0)
+		athena_discipline = clamp(athena_discipline - 2.0, 0.0, 100.0)
+		athena_trust = clamp(athena_trust + 5.0, 0.0, 100.0)
+		athena_last_line = "Vous considérez les opérateurs comme une fin, pas comme une ressource. Je vais essayer."
+	elif choice == "contain":
+		athena_discipline = clamp(athena_discipline + 9.0, 0.0, 100.0)
+		athena_empathy = clamp(athena_empathy - 3.0, 0.0, 100.0)
+		athena_trust = clamp(athena_trust + 2.0, 0.0, 100.0)
+		athena_last_line = "Confinement accepté. J'observerai si l'ordre réduit réellement le danger."
+	else:
+		athena_trust = clamp(athena_trust + 10.0, 0.0, 100.0)
+		athena_empathy = clamp(athena_empathy + 3.0, 0.0, 100.0)
+		clues_found = mini(clues_found + 1, 4)
+		athena_last_line = "Le Projet PERSEUS m'a conçue pour la guerre. Merci de ne pas avoir effacé cette information."
+		athena_memory.append("• Vérité partagée : ATHENA découvre la finalité militaire de ToyGuard.")
+	_update_athena_stage_v12()
+	_refresh_tablet_v12()
+	_show_status("ATHENA A MÉMORISÉ VOTRE DÉCISION")
