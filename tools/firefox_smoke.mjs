@@ -1,4 +1,5 @@
 import { firefox } from "playwright";
+import { PNG } from "pngjs";
 import fs from "node:fs";
 
 const targetUrl = process.env.BLACKOUT_TEST_URL ?? "http://127.0.0.1:8080/";
@@ -49,7 +50,30 @@ try {
   if (!bounds || bounds.width < 640 || bounds.height < 360) {
     throw new Error(`Unexpected canvas bounds: ${JSON.stringify(bounds)}`);
   }
-  await page.screenshot({ path: "build/firefox-smoke.png", fullPage: true });
+  const screenshot = await page.screenshot({ path: "build/firefox-smoke.png", fullPage: true });
+  const png = PNG.sync.read(screenshot);
+  let visiblePixels = 0;
+  let luminanceSum = 0;
+  let luminanceSquaredSum = 0;
+  const pixelCount = png.width * png.height;
+  for (let index = 0; index < png.data.length; index += 4) {
+    const red = png.data[index];
+    const green = png.data[index + 1];
+    const blue = png.data[index + 2];
+    const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+    luminanceSum += luminance;
+    luminanceSquaredSum += luminance * luminance;
+    if (luminance > 32) {
+      visiblePixels += 1;
+    }
+  }
+  const mean = luminanceSum / pixelCount;
+  const variance = luminanceSquaredSum / pixelCount - mean * mean;
+  const visibleRatio = visiblePixels / pixelCount;
+  consoleLines.push(`[visual] mean=${mean.toFixed(2)} variance=${variance.toFixed(2)} visibleRatio=${visibleRatio.toFixed(4)}`);
+  if (visibleRatio < 0.006 || variance < 8.0) {
+    throw new Error(`Firefox rendered an effectively black frame: visibleRatio=${visibleRatio}, variance=${variance}`);
+  }
   const state = await page.evaluate(() => {
     const canvasElement = document.querySelector("canvas");
     return {
