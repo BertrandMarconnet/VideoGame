@@ -1,6 +1,7 @@
 {
   "asset_name": "Sentinel Console",
   "category": "props",
+  "integration_path": "assets/production/act1/sentinel_console.glb",
   "generation": {
     "foreground_ratio": 0.88,
     "mc_resolution": 256,
