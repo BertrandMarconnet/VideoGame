@@ -2,7 +2,7 @@
 
 - Generator: TripoSR (VAST-AI-Research / Tripo AI / Stability AI)
 - Generator license: MIT
-- Execution mode: local, self-hosted, no external generation API
+- Execution mode: local model execution on a GitHub-hosted runner; no external generation API
 - Concept author: Bertrand Marconnet / Blackout Protocol
 - Concept license: project-owned concept
 - Generated at: 2026-07-13T13:32:05Z
