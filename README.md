@@ -1,4 +1,4 @@
-# Blackout Protocol: Steel Echo — Storyboard v16
+# Blackout Protocol: Steel Echo — Storyboard v19
 
 Vertical slice jouable d’un survival-horror industriel en vue subjective, développée avec Godot 4.7, Jolt Physics et publiée automatiquement en Web/PWA.
 
@@ -16,24 +16,24 @@ L’opération soviétique **MATRYOSHKA** et le malware **BABOUCHKA** contaminen
 
 **Project Daedalus**, Blacklake, Paul Merrick, DAEDALUS, DELTA-00 et la salle Hermès restent réservés à une extension ou à un chapitre ultérieur. Ils ne remplacent pas le canon ToyGuard de 1987.
 
-## Storyboard v16 — Acte I
+## Storyboard — Acte I
 
 La campagne ne commence plus directement dans la salle de contrôle. Après le prologue unique, le joueur reçoit le contrôle **à l’extérieur de ToyGuard Industries**, sous la pluie, conformément au plan 01 du storyboard.
 
 Le premier parcours suit maintenant l’ordre narratif prévu :
 
 1. arrivée nocturne devant la façade ToyGuard ;
-2. progression vers l’accès personnel S-01 ;
-3. entrée dans le bunker et consultation de Sentinel OS ;
-4. première patrouille dans les secteurs logistique et assemblage ;
-5. observation des unités ToyGuard ;
-6. déploiement de KITE-01 ;
-7. reconnaissance distante ;
-8. premier contact contrôlé avec ATHENA ;
-9. apparition différée de SPECTER-5 ;
+2. progression vers la porte de service latérale ;
+3. traversée du sas de décontamination et de la porte blindée S-01 ;
+4. arrivée par un vestibule latéral, sans apparition face à l’écran central ;
+5. consultation de Sentinel OS ;
+6. première patrouille dans les secteurs logistique et assemblage ;
+7. observation des unités ToyGuard ;
+8. déploiement de KITE-01 ;
+9. premier contact contrôlé avec ATHENA ;
 10. réparation du relais nord.
 
-Les menaces principales sont bloquées pendant l’arrivée extérieure et ne sont libérées qu’après la consultation de Sentinel OS. Cela évite une apparition incohérente de SPECTER-5 avant sa scène de storyboard.
+L’écran principal du bunker reste visible mais sa structure n’est plus une collision de navigation. Les menaces principales sont bloquées pendant l’arrivée extérieure et ne sont libérées qu’après la consultation de Sentinel OS.
 
 ## Direction artistique PS1 industrial low-poly
 
@@ -51,6 +51,7 @@ Le filtre ne modifie pas la lisibilité du HUD et utilise une intensité plus fa
 ## Systèmes conservés
 
 - déplacement ZQSD/WASD et contrôles tactiles ;
+- position basse avec vérification du plafond ;
 - interactions clic gauche, `E` et roue d’actions au clic droit ;
 - tablette Sentinel OS ;
 - KITE-01 et retour immédiat à la vue joueur ;
@@ -86,27 +87,51 @@ Les noms historiques des fichiers sont conservés pour éviter les références 
 - `F` : lampe ;
 - `Espace` : saut ou montée avec le drone ;
 - `Maj` : course ;
+- `Ctrl` : se baisser à pied / descendre avec KITE-01 ;
 - `C` : déployer ou rappeler KITE-01 ;
-- `Ctrl` : descendre avec le drone ;
 - `Échap` : retour joueur, fermeture d’interface ou pause.
 
-## Génération 3D open source
+Sur smartphone, le bouton `CROUCH` maintient la position basse. Le personnage ne peut pas se relever lorsqu’un obstacle est détecté au-dessus de lui.
 
-Le pipeline principal de génération assistée utilise désormais **TripoSR en local** :
+## Génération 3D open source sans clé
+
+Le dépôt contient désormais deux niveaux de pipeline local :
 
 ```text
+.github/workflows/generate-open3d-inbox.yml
 .github/workflows/generate-triposr-asset.yml
 ```
 
-Il ne nécessite ni compte de génération, ni clé API, ni crédits. La génération s’exécute sur un runner GPU auto-hébergé, puis Blender produit un GLB décimé, métrique et accompagné d’une collision simple. Le modèle est conservé comme artifact GitHub pour revue manuelle ; il n’est jamais intégré automatiquement au jeu.
-
-Documentation d’installation et d’utilisation :
+Le pipeline recommandé est **Open3D asset inbox** :
 
 ```text
-docs/TRIPOSR_GITHUB_PIPELINE.md
+assets/asset_inbox/
+├── props/
+├── modules/
+├── characters/
+└── robots/
 ```
 
-Le workflow Meshy reste disponible comme option payante/freemium, mais n’est plus le pipeline recommandé.
+Il accepte PNG, JPEG, WebP et SVG, rasterise localement les SVG, exécute TripoSR sur un runner GPU auto-hébergé, puis Blender produit un GLB décimé, métrique et compatible Godot. Aucune API commerciale, aucun compte, aucune clé et aucun quota fournisseur ne sont utilisés.
+
+Avant tout commit automatique d’un GLB, le workflow :
+
+1. valide l’image et le manifeste ;
+2. génère et optimise le modèle ;
+3. assemble et lint `scripts/main.gd` ;
+4. importe le projet avec Godot 4.7 ;
+5. démarre la scène principale ;
+6. exporte la version Web ;
+7. pousse l’asset sur `main` uniquement si tous les contrôles réussissent.
+
+Les concepts Acte I déjà préparés couvrent la porte de service, la porte blindée S-01, la console Sentinel, la lampe FPS et un premier module mural industriel.
+
+Documentation :
+
+```text
+assets/asset_inbox/README.md
+docs/TRIPOSR_GITHUB_PIPELINE.md
+```
 
 ## Validation
 
@@ -120,4 +145,4 @@ Le workflow `.github/workflows/deploy-pages.yml` reconstitue `scripts/main.gd`, 
 - `docs/SOUNDTRACK_SUNO.md` : placement narratif des musiques ;
 - `docs/ASSET_PIPELINE.md` : licences, budgets 3D Web et choix des pipelines ;
 - `docs/TRIPOSR_GITHUB_PIPELINE.md` : génération 3D locale, gratuite et sans quota ;
-- `docs/MESHY_GITHUB_PIPELINE.md` : pipeline Meshy optionnel avec crédits.
+- `assets/asset_inbox/README.md` : dossier image-vers-GLB et intégration automatisée.
