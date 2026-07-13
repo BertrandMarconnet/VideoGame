@@ -1,0 +1,300 @@
+
+# -----------------------------------------------------------------------------
+# ACT I v18 — exterior -> service access -> airlock -> blast door -> lateral
+# vestibule -> bunker. The central façade opening is sealed so the player never
+# spawns directly in front of the main supervision screen.
+# -----------------------------------------------------------------------------
+
+func _ensure_act1_startup_v18() -> void:
+	if bool(get_meta("v18_act1_ready", false)):
+		return
+	set_meta("v18_act1_ready", true)
+	_build_act1_airlock_v18()
+	_apply_act1_interface_v18()
+	_replace_fps_flashlight_v18()
+	print("BLACKOUT_ACT1_AIRLOCK_V18_READY")
+
+func _build_act1_airlock_v18() -> void:
+	var previous: Node = get_node_or_null("Act1AirlockV18")
+	if previous:
+		previous.queue_free()
+	var old_right_wall: Node = find_child("SouthShellRight", true, false)
+	if old_right_wall:
+		old_right_wall.queue_free()
+
+	act1_airlock_root_v18 = Node3D.new()
+	act1_airlock_root_v18.name = "Act1AirlockV18"
+	add_child(act1_airlock_root_v18)
+
+	var concrete: StandardMaterial3D = _material(Color(0.085, 0.092, 0.096), 0.12, 0.93)
+	var steel: StandardMaterial3D = _material(Color(0.12, 0.135, 0.145), 0.88, 0.46)
+	var dark: StandardMaterial3D = _material(Color(0.025, 0.032, 0.038), 0.76, 0.78)
+	var floor_material: StandardMaterial3D = _material(Color(0.052, 0.058, 0.06), 0.34, 0.88)
+	var cyan: StandardMaterial3D = _material(Color(0.01, 0.08, 0.095), 0.04, 0.22, Color(0.0, 0.42, 0.56))
+	var red: StandardMaterial3D = _material(Color(0.12, 0.018, 0.012), 0.08, 0.28, Color(0.9, 0.025, 0.012))
+
+	# The old centered opening is deliberately blocked. A large sign redirects the
+	# player to the service entrance on the right side of the façade.
+	_v18_static_box(act1_airlock_root_v18, Vector3(7.6, 6.6, 0.76), Vector3(0.0, 3.3, 0.08), concrete, "CentralGateSealedV18")
+	_v18_static_box(act1_airlock_root_v18, Vector3(5.4, 0.22, 0.14), Vector3(0.0, 4.35, 0.52), red, "CentralGateAlarmV18")
+	_v18_label(act1_airlock_root_v18, "MAIN GATE SEALED", Vector3(0.0, 4.0, 0.51), 34, Color(0.95, 0.18, 0.08))
+	_v18_label(act1_airlock_root_v18, "SERVICE ACCESS  →", Vector3(0.0, 3.25, 0.51), 30, Color(0.45, 0.92, 0.82))
+
+	# Rebuild the right façade in two modules, leaving a real doorway at x=10.5.
+	_v18_static_box(act1_airlock_root_v18, Vector3(5.0, 9.0, 0.7), Vector3(6.7, 4.2, 0.0), concrete, "FacadeRightWestV18")
+	_v18_static_box(act1_airlock_root_v18, Vector3(5.4, 9.0, 0.7), Vector3(14.35, 4.2, 0.0), concrete, "FacadeRightEastV18")
+	_v18_static_box(act1_airlock_root_v18, Vector3(2.7, 4.6, 0.7), Vector3(ACT1_SERVICE_X_V18, 6.9, 0.0), concrete, "ServiceDoorHeaderV18")
+	for side: float in [-1.0, 1.0]:
+		_v18_static_box(act1_airlock_root_v18, Vector3(0.3, 3.8, 0.82), Vector3(ACT1_SERVICE_X_V18 + side * 1.48, 1.9, 0.08), steel, "ServiceDoorFrameV18")
+	_v18_label(act1_airlock_root_v18, "SERVICE ACCESS", Vector3(ACT1_SERVICE_X_V18, 4.35, 0.52), 31, Color(0.62, 0.78, 0.58))
+	_v18_label(act1_airlock_root_v18, "SAS 01 // AUTHORIZED PERSONNEL", Vector3(ACT1_SERVICE_X_V18, 3.78, 0.52), 16, Color(0.85, 0.58, 0.18))
+
+	# Decontamination corridor. It remains narrow and oppressive, but its collision
+	# is made only from boxes so Jolt and the Web build remain predictable.
+	_v18_static_box(act1_airlock_root_v18, Vector3(3.3, 0.22, 11.2), Vector3(ACT1_SERVICE_X_V18, 0.02, -5.15), floor_material, "AirlockFloorV18")
+	_v18_static_box(act1_airlock_root_v18, Vector3(3.3, 0.22, 11.2), Vector3(ACT1_SERVICE_X_V18, 3.35, -5.15), dark, "AirlockCeilingV18")
+	for side: float in [-1.0, 1.0]:
+		_v18_static_box(act1_airlock_root_v18, Vector3(0.24, 3.35, 11.2), Vector3(ACT1_SERVICE_X_V18 + side * 1.62, 1.68, -5.15), steel, "AirlockWallV18")
+		for z_value: float in [-2.3, -5.1, -7.9]:
+			_v18_visual_box(act1_airlock_root_v18, Vector3(0.12, 0.16, 1.7), Vector3(ACT1_SERVICE_X_V18 + side * 1.48, 2.55, z_value), cyan if side < 0.0 else red, "AirlockConduitV18")
+	for z_value: float in [-2.0, -5.2, -8.4]:
+		var lamp: OmniLight3D = OmniLight3D.new()
+		lamp.name = "AirlockLightV18"
+		lamp.position = Vector3(ACT1_SERVICE_X_V18, 2.95, z_value)
+		lamp.light_color = Color(0.42, 0.74, 0.82) if z_value > -7.0 else Color(0.85, 0.12, 0.06)
+		lamp.light_energy = 0.72
+		lamp.omni_range = 5.2
+		lamp.shadow_enabled = false
+		act1_airlock_root_v18.add_child(lamp)
+	_v18_label(act1_airlock_root_v18, "DECONTAMINATION // PRESSURE LOCK", Vector3(ACT1_SERVICE_X_V18 - 1.5, 2.55, -5.2), 16, Color(0.62, 0.86, 0.88), Vector3(0.0, 90.0, 0.0))
+
+	act1_outer_door_v18 = _v18_sliding_door(
+		act1_airlock_root_v18,
+		"ServiceDoorOuterV18",
+		Vector3(ACT1_SERVICE_X_V18, 1.7, ACT1_OUTER_Z_V18),
+		"res://assets/production/act1/service_access.glb",
+		steel
+	)
+	act1_inner_door_v18 = _v18_sliding_door(
+		act1_airlock_root_v18,
+		"BlastDoorInnerV18",
+		Vector3(ACT1_SERVICE_X_V18, 1.7, ACT1_INNER_Z_V18),
+		"res://assets/production/act1/s01_blast_door.glb",
+		steel
+	)
+	_v18_label(act1_airlock_root_v18, "S-01", Vector3(ACT1_SERVICE_X_V18, 2.15, ACT1_INNER_Z_V18 + 0.24), 38, Color(0.88, 0.25, 0.08))
+
+	# The vestibule turns left before reaching the bunker. This breaks the direct
+	# sightline to the central supervision screen and leaves a safe circulation path.
+	_v18_static_box(act1_airlock_root_v18, Vector3(10.0, 0.22, 4.2), Vector3(6.05, 0.02, -13.4), floor_material, "VestibuleFloorV18")
+	_v18_static_box(act1_airlock_root_v18, Vector3(10.0, 0.22, 4.2), Vector3(6.05, 3.35, -13.4), dark, "VestibuleCeilingV18")
+	_v18_static_box(act1_airlock_root_v18, Vector3(10.0, 3.35, 0.24), Vector3(6.05, 1.68, -15.45), steel, "VestibuleSouthWallV18")
+	_v18_static_box(act1_airlock_root_v18, Vector3(6.5, 3.35, 0.24), Vector3(7.8, 1.68, -11.35), steel, "VestibuleNorthWallV18")
+	_v18_static_box(act1_airlock_root_v18, Vector3(0.24, 3.35, 4.2), Vector3(11.05, 1.68, -13.4), steel, "VestibuleEndWallV18")
+	var vestibule_marker: Marker3D = Marker3D.new()
+	vestibule_marker.name = "VestibuleLateralV18"
+	vestibule_marker.position = Vector3(2.0, 1.2, -13.4)
+	vestibule_marker.rotation_degrees.y = -90.0
+	act1_airlock_root_v18.add_child(vestibule_marker)
+	_v18_label(act1_airlock_root_v18, "VESTIBULE LATÉRAL // SENTINEL", Vector3(6.1, 2.65, -15.28), 18, Color(0.42, 0.88, 0.92))
+	_build_v18_vestibule_console(act1_airlock_root_v18)
+
+func _build_v18_vestibule_console(parent: Node3D) -> void:
+	var console_root: Node3D = Node3D.new()
+	console_root.name = "SentinelVestibuleConsoleV18"
+	console_root.position = Vector3(8.6, 0.0, -14.85)
+	console_root.rotation_degrees.y = 180.0
+	parent.add_child(console_root)
+	if _v18_attach_optional_glb(console_root, "res://assets/production/act1/sentinel_console.glb", Vector3(1.0, 1.0, 1.0)):
+		return
+	var dark: StandardMaterial3D = _material(Color(0.035, 0.045, 0.05), 0.72, 0.76)
+	var cyan: StandardMaterial3D = _material(Color(0.01, 0.07, 0.085), 0.04, 0.22, Color(0.0, 0.46, 0.58))
+	_v18_visual_box(console_root, Vector3(2.3, 1.15, 0.85), Vector3(0.0, 0.62, 0.0), dark, "ConsoleBodyV18")
+	for x_value: float in [-0.72, 0.0, 0.72]:
+		var screen: MeshInstance3D = _v18_visual_box(console_root, Vector3(0.56, 0.08, 0.42), Vector3(x_value, 1.1, -0.44), cyan, "ConsoleCRTV18")
+		screen.rotation_degrees.x = -16.0
+
+func _v18_sliding_door(parent: Node3D, node_name: String, at: Vector3, asset_path: String, fallback_material: Material) -> AnimatableBody3D:
+	var body: AnimatableBody3D = AnimatableBody3D.new()
+	body.name = node_name
+	body.position = at
+	body.sync_to_physics = true
+	body.set_meta("closed_x", at.x)
+	parent.add_child(body)
+	var collision: CollisionShape3D = CollisionShape3D.new()
+	var shape: BoxShape3D = BoxShape3D.new()
+	shape.size = Vector3(2.75, 3.35, 0.38)
+	collision.shape = shape
+	body.add_child(collision)
+	if not _v18_attach_optional_glb(body, asset_path, Vector3(1.0, 1.0, 1.0)):
+		_v18_visual_box(body, Vector3(2.75, 3.35, 0.34), Vector3.ZERO, fallback_material, "%sMesh" % node_name)
+		var inset: StandardMaterial3D = _material(Color(0.032, 0.038, 0.042), 0.82, 0.72)
+		_v18_visual_box(body, Vector3(2.1, 2.65, 0.08), Vector3(0.0, 0.0, 0.22), inset, "%sInset" % node_name)
+	return body
+
+func _v18_attach_optional_glb(parent: Node3D, resource_path: String, scale_value: Vector3) -> bool:
+	if not ResourceLoader.exists(resource_path):
+		return false
+	var packed: PackedScene = load(resource_path) as PackedScene
+	if not packed:
+		return false
+	var instance: Node = packed.instantiate()
+	if instance is Node3D:
+		(instance as Node3D).scale = scale_value
+	parent.add_child(instance)
+	print("BLACKOUT_AUTHORED_ASSET_LOADED ", resource_path)
+	return true
+
+func _replace_fps_flashlight_v18() -> void:
+	if not first_person_rig_v17 or not is_instance_valid(first_person_rig_v17):
+		return
+	var authored_path := "res://assets/production/act1/fps_flashlight.glb"
+	if not ResourceLoader.exists(authored_path):
+		return
+	var fallback: Node = first_person_rig_v17.get_node_or_null("MilitaryFlashlight")
+	if fallback:
+		fallback.visible = false
+	var authored_root: Node3D = Node3D.new()
+	authored_root.name = "AuthoredFlashlightV18"
+	authored_root.position = Vector3(0.0, 0.0, -0.15)
+	authored_root.rotation_degrees = Vector3(90.0, 0.0, 0.0)
+	first_person_rig_v17.add_child(authored_root)
+	_v18_attach_optional_glb(authored_root, authored_path, Vector3(1.0, 1.0, 1.0))
+
+func _update_act1_startup_v18(delta: float) -> void:
+	if not game_started or current_round != 1 or not player or not act1_outer_door_v18 or not act1_inner_door_v18:
+		return
+	var position: Vector3 = player.global_position
+	var in_service_lane := absf(position.x - ACT1_SERVICE_X_V18) < 2.8
+	var outer_requested := in_service_lane and position.z < 6.5 and position.z > -2.0
+	var inside_airlock := in_service_lane and position.z <= -1.8 and position.z > -9.0
+	var inner_requested := in_service_lane and position.z < -7.2
+	if inside_airlock:
+		act1_airlock_timer_v18 += delta
+		outer_requested = false
+		inner_requested = act1_airlock_timer_v18 >= 0.8
+	else:
+		act1_airlock_timer_v18 = 0.0
+	act1_outer_open_v18 = outer_requested
+	act1_inner_open_v18 = inner_requested
+	var outer_target_x := ACT1_SERVICE_X_V18 + (ACT1_DOOR_SLIDE_V18 if act1_outer_open_v18 else 0.0)
+	var inner_target_x := ACT1_SERVICE_X_V18 - (ACT1_DOOR_SLIDE_V18 if act1_inner_open_v18 else 0.0)
+	act1_outer_door_v18.position.x = move_toward(act1_outer_door_v18.position.x, outer_target_x, delta * 3.8)
+	act1_inner_door_v18.position.x = move_toward(act1_inner_door_v18.position.x, inner_target_x, delta * 3.8)
+	if in_service_lane and position.z < -0.7:
+		set_meta("v18_outer_crossed", true)
+	if position.z < -11.0:
+		set_meta("v18_airlock_completed", true)
+
+func _apply_act1_interface_v18() -> void:
+	if act1_interface_ready_v18 or not hud_layer:
+		return
+	act1_interface_ready_v18 = true
+	if start_panel is ColorRect:
+		(start_panel as ColorRect).color = Color(0.004, 0.009, 0.014, 0.78)
+	var start_boxes: Array[Node] = start_panel.find_children("*", "VBoxContainer", true, false) if start_panel else []
+	if not start_boxes.is_empty():
+		var box: VBoxContainer = start_boxes[0] as VBoxContainer
+		box.set_anchors_preset(Control.PRESET_CENTER_LEFT)
+		box.position = Vector2(54.0, -220.0)
+		box.size = Vector2(570.0, 440.0)
+		box.alignment = BoxContainer.ALIGNMENT_CENTER
+	for candidate: Node in start_panel.find_children("*", "Button", true, false) if start_panel else []:
+		var button: Button = candidate as Button
+		button.custom_minimum_size.y = 52.0
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.add_theme_font_size_override("font_size", 18)
+		var normal: StyleBoxFlat = StyleBoxFlat.new()
+		normal.bg_color = Color(0.015, 0.065, 0.085, 0.86)
+		normal.border_color = Color(0.05, 0.55, 0.72, 0.92)
+		normal.set_border_width_all(2)
+		normal.content_margin_left = 18.0
+		var hover: StyleBoxFlat = normal.duplicate() as StyleBoxFlat
+		hover.bg_color = Color(0.04, 0.19, 0.24, 0.94)
+		hover.border_color = Color(0.92, 0.58, 0.12, 1.0)
+		button.add_theme_stylebox_override("normal", normal)
+		button.add_theme_stylebox_override("hover", hover)
+		button.add_theme_stylebox_override("pressed", hover)
+
+	act1_objective_back_v18 = PanelContainer.new()
+	act1_objective_back_v18.name = "Act1ObjectivePanelV18"
+	act1_objective_back_v18.position = Vector2(10.0, 8.0)
+	act1_objective_back_v18.size = Vector2(560.0, 142.0)
+	act1_objective_back_v18.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	act1_objective_back_v18.z_index = -20
+	act1_objective_back_v18.add_theme_stylebox_override("panel", _v18_ui_panel_style(Color(0.008, 0.025, 0.036, 0.82), Color(0.04, 0.48, 0.65, 0.9)))
+	hud_layer.add_child(act1_objective_back_v18)
+	phase_label.position = Vector2(24.0, 18.0)
+	objective_label.position = Vector2(24.0, 48.0)
+	status_label.position = Vector2(24.0, 76.0)
+	health_label.position = Vector2(24.0, 106.0)
+	fear_label.position = Vector2(180.0, 108.0)
+
+	act1_status_back_v18 = PanelContainer.new()
+	act1_status_back_v18.name = "Act1ControlLegendV18"
+	act1_status_back_v18.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	act1_status_back_v18.position = Vector2(-430.0, -46.0)
+	act1_status_back_v18.size = Vector2(414.0, 34.0)
+	act1_status_back_v18.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	act1_status_back_v18.z_index = -20
+	act1_status_back_v18.add_theme_stylebox_override("panel", _v18_ui_panel_style(Color(0.008, 0.025, 0.036, 0.72), Color(0.04, 0.35, 0.5, 0.72)))
+	var legend: Label = Label.new()
+	legend.text = "TAB  SENTINEL  ·  C  KITE-01  ·  CLIC DROIT  ACTIONS"
+	legend.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	legend.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	legend.modulate = Color(0.58, 0.75, 0.82)
+	legend.add_theme_font_size_override("font_size", 12)
+	act1_status_back_v18.add_child(legend)
+	hud_layer.add_child(act1_status_back_v18)
+
+func _v18_ui_panel_style(background: Color, border: Color) -> StyleBoxFlat:
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	style.bg_color = background
+	style.border_color = border
+	style.set_border_width_all(2)
+	style.corner_radius_top_left = 4
+	style.corner_radius_top_right = 4
+	style.corner_radius_bottom_left = 4
+	style.corner_radius_bottom_right = 4
+	return style
+
+func _v18_static_box(parent: Node3D, size_value: Vector3, at: Vector3, material: Material, node_name: String) -> StaticBody3D:
+	var body: StaticBody3D = StaticBody3D.new()
+	body.name = node_name
+	body.position = at
+	parent.add_child(body)
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	var box_mesh: BoxMesh = BoxMesh.new()
+	box_mesh.size = size_value
+	mesh.mesh = box_mesh
+	mesh.material_override = material
+	body.add_child(mesh)
+	var collision: CollisionShape3D = CollisionShape3D.new()
+	var shape: BoxShape3D = BoxShape3D.new()
+	shape.size = size_value
+	collision.shape = shape
+	body.add_child(collision)
+	return body
+
+func _v18_visual_box(parent: Node3D, size_value: Vector3, at: Vector3, material: Material, node_name: String) -> MeshInstance3D:
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	mesh.name = node_name
+	var box_mesh: BoxMesh = BoxMesh.new()
+	box_mesh.size = size_value
+	mesh.mesh = box_mesh
+	mesh.position = at
+	mesh.material_override = material
+	parent.add_child(mesh)
+	return mesh
+
+func _v18_label(parent: Node3D, text_value: String, at: Vector3, size_value: int, color_value: Color, rotation_value: Vector3 = Vector3(0.0, 180.0, 0.0)) -> Label3D:
+	var label: Label3D = Label3D.new()
+	label.text = text_value
+	label.position = at
+	label.rotation_degrees = rotation_value
+	label.font_size = size_value
+	label.pixel_size = 0.0045
+	label.modulate = color_value
+	label.outline_size = 6
+	parent.add_child(label)
+	return label
