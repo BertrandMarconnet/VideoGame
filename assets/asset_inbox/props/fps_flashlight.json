@@ -1,0 +1,20 @@
+{
+  "asset_name": "FPS Flashlight",
+  "category": "props",
+  "generation": {
+    "foreground_ratio": 0.9,
+    "mc_resolution": 256,
+    "target_faces": 4000,
+    "target_height_m": 0.34,
+    "bake_texture": false,
+    "create_collision": false,
+    "device": "cuda:0"
+  },
+  "quality": {
+    "max_glb_mb": 10
+  },
+  "provenance": {
+    "author": "Bertrand Marconnet / OpenAI concept pass",
+    "source_license": "project-owned original concept"
+  }
+}
