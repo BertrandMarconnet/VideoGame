@@ -2,7 +2,7 @@
 # -----------------------------------------------------------------------------
 # ACT I v18 — exterior -> service access -> airlock -> blast door -> lateral
 # vestibule -> bunker. The central façade opening is sealed so the player never
-# spawns directly in front of the main supervision screen.
+# appears directly in front of the main supervision screen.
 # -----------------------------------------------------------------------------
 
 func _ensure_act1_startup_v18() -> void:
@@ -33,14 +33,13 @@ func _build_act1_airlock_v18() -> void:
 	var cyan: StandardMaterial3D = _material(Color(0.01, 0.08, 0.095), 0.04, 0.22, Color(0.0, 0.42, 0.56))
 	var red: StandardMaterial3D = _material(Color(0.12, 0.018, 0.012), 0.08, 0.28, Color(0.9, 0.025, 0.012))
 
-	# The old centered opening is deliberately blocked. A large sign redirects the
-	# player to the service entrance on the right side of the façade.
+	# Central opening blocked: the player must follow the lateral service route.
 	_v18_static_box(act1_airlock_root_v18, Vector3(7.6, 6.6, 0.76), Vector3(0.0, 3.3, 0.08), concrete, "CentralGateSealedV18")
-	_v18_static_box(act1_airlock_root_v18, Vector3(5.4, 0.22, 0.14), Vector3(0.0, 4.35, 0.52), red, "CentralGateAlarmV18")
+	_v18_visual_box(act1_airlock_root_v18, Vector3(5.4, 0.22, 0.14), Vector3(0.0, 4.35, 0.52), red, "CentralGateAlarmV18")
 	_v18_label(act1_airlock_root_v18, "MAIN GATE SEALED", Vector3(0.0, 4.0, 0.51), 34, Color(0.95, 0.18, 0.08))
 	_v18_label(act1_airlock_root_v18, "SERVICE ACCESS  →", Vector3(0.0, 3.25, 0.51), 30, Color(0.45, 0.92, 0.82))
 
-	# Rebuild the right façade in two modules, leaving a real doorway at x=10.5.
+	# Right façade rebuilt around a real doorway at x=10.5.
 	_v18_static_box(act1_airlock_root_v18, Vector3(5.0, 9.0, 0.7), Vector3(6.7, 4.2, 0.0), concrete, "FacadeRightWestV18")
 	_v18_static_box(act1_airlock_root_v18, Vector3(5.4, 9.0, 0.7), Vector3(14.35, 4.2, 0.0), concrete, "FacadeRightEastV18")
 	_v18_static_box(act1_airlock_root_v18, Vector3(2.7, 4.6, 0.7), Vector3(ACT1_SERVICE_X_V18, 6.9, 0.0), concrete, "ServiceDoorHeaderV18")
@@ -49,14 +48,14 @@ func _build_act1_airlock_v18() -> void:
 	_v18_label(act1_airlock_root_v18, "SERVICE ACCESS", Vector3(ACT1_SERVICE_X_V18, 4.35, 0.52), 31, Color(0.62, 0.78, 0.58))
 	_v18_label(act1_airlock_root_v18, "SAS 01 // AUTHORIZED PERSONNEL", Vector3(ACT1_SERVICE_X_V18, 3.78, 0.52), 16, Color(0.85, 0.58, 0.18))
 
-	# Decontamination corridor. It remains narrow and oppressive, but its collision
-	# is made only from boxes so Jolt and the Web build remain predictable.
+	# Narrow decontamination corridor with simple Jolt-compatible collisions.
 	_v18_static_box(act1_airlock_root_v18, Vector3(3.3, 0.22, 11.2), Vector3(ACT1_SERVICE_X_V18, 0.02, -5.15), floor_material, "AirlockFloorV18")
 	_v18_static_box(act1_airlock_root_v18, Vector3(3.3, 0.22, 11.2), Vector3(ACT1_SERVICE_X_V18, 3.35, -5.15), dark, "AirlockCeilingV18")
 	for side: float in [-1.0, 1.0]:
 		_v18_static_box(act1_airlock_root_v18, Vector3(0.24, 3.35, 11.2), Vector3(ACT1_SERVICE_X_V18 + side * 1.62, 1.68, -5.15), steel, "AirlockWallV18")
 		for z_value: float in [-2.3, -5.1, -7.9]:
-			_v18_visual_box(act1_airlock_root_v18, Vector3(0.12, 0.16, 1.7), Vector3(ACT1_SERVICE_X_V18 + side * 1.48, 2.55, z_value), cyan if side < 0.0 else red, "AirlockConduitV18")
+			var conduit_material: StandardMaterial3D = cyan if side < 0.0 else red
+			_v18_visual_box(act1_airlock_root_v18, Vector3(0.12, 0.16, 1.7), Vector3(ACT1_SERVICE_X_V18 + side * 1.48, 2.55, z_value), conduit_material, "AirlockConduitV18")
 	for z_value: float in [-2.0, -5.2, -8.4]:
 		var lamp: OmniLight3D = OmniLight3D.new()
 		lamp.name = "AirlockLightV18"
@@ -68,24 +67,11 @@ func _build_act1_airlock_v18() -> void:
 		act1_airlock_root_v18.add_child(lamp)
 	_v18_label(act1_airlock_root_v18, "DECONTAMINATION // PRESSURE LOCK", Vector3(ACT1_SERVICE_X_V18 - 1.5, 2.55, -5.2), 16, Color(0.62, 0.86, 0.88), Vector3(0.0, 90.0, 0.0))
 
-	act1_outer_door_v18 = _v18_sliding_door(
-		act1_airlock_root_v18,
-		"ServiceDoorOuterV18",
-		Vector3(ACT1_SERVICE_X_V18, 1.7, ACT1_OUTER_Z_V18),
-		"res://assets/production/act1/service_access.glb",
-		steel
-	)
-	act1_inner_door_v18 = _v18_sliding_door(
-		act1_airlock_root_v18,
-		"BlastDoorInnerV18",
-		Vector3(ACT1_SERVICE_X_V18, 1.7, ACT1_INNER_Z_V18),
-		"res://assets/production/act1/s01_blast_door.glb",
-		steel
-	)
+	act1_outer_door_v18 = _v18_sliding_door(act1_airlock_root_v18, "ServiceDoorOuterV18", Vector3(ACT1_SERVICE_X_V18, 1.7, ACT1_OUTER_Z_V18), "res://assets/production/act1/service_access.glb", steel)
+	act1_inner_door_v18 = _v18_sliding_door(act1_airlock_root_v18, "BlastDoorInnerV18", Vector3(ACT1_SERVICE_X_V18, 1.7, ACT1_INNER_Z_V18), "res://assets/production/act1/s01_blast_door.glb", steel)
 	_v18_label(act1_airlock_root_v18, "S-01", Vector3(ACT1_SERVICE_X_V18, 2.15, ACT1_INNER_Z_V18 + 0.24), 38, Color(0.88, 0.25, 0.08))
 
-	# The vestibule turns left before reaching the bunker. This breaks the direct
-	# sightline to the central supervision screen and leaves a safe circulation path.
+	# Lateral vestibule: the route turns left and breaks the sightline to the main CRT.
 	_v18_static_box(act1_airlock_root_v18, Vector3(10.0, 0.22, 4.2), Vector3(6.05, 0.02, -13.4), floor_material, "VestibuleFloorV18")
 	_v18_static_box(act1_airlock_root_v18, Vector3(10.0, 0.22, 4.2), Vector3(6.05, 3.35, -13.4), dark, "VestibuleCeilingV18")
 	_v18_static_box(act1_airlock_root_v18, Vector3(10.0, 3.35, 0.24), Vector3(6.05, 1.68, -15.45), steel, "VestibuleSouthWallV18")
@@ -105,7 +91,7 @@ func _build_v18_vestibule_console(parent: Node3D) -> void:
 	console_root.position = Vector3(8.6, 0.0, -14.85)
 	console_root.rotation_degrees.y = 180.0
 	parent.add_child(console_root)
-	if _v18_attach_optional_glb(console_root, "res://assets/production/act1/sentinel_console.glb", Vector3(1.0, 1.0, 1.0)):
+	if _v18_attach_optional_glb(console_root, "res://assets/production/act1/sentinel_console.glb", Vector3.ONE):
 		return
 	var dark: StandardMaterial3D = _material(Color(0.035, 0.045, 0.05), 0.72, 0.76)
 	var cyan: StandardMaterial3D = _material(Color(0.01, 0.07, 0.085), 0.04, 0.22, Color(0.0, 0.46, 0.58))
@@ -119,14 +105,13 @@ func _v18_sliding_door(parent: Node3D, node_name: String, at: Vector3, asset_pat
 	body.name = node_name
 	body.position = at
 	body.sync_to_physics = true
-	body.set_meta("closed_x", at.x)
 	parent.add_child(body)
 	var collision: CollisionShape3D = CollisionShape3D.new()
 	var shape: BoxShape3D = BoxShape3D.new()
 	shape.size = Vector3(2.75, 3.35, 0.38)
 	collision.shape = shape
 	body.add_child(collision)
-	if not _v18_attach_optional_glb(body, asset_path, Vector3(1.0, 1.0, 1.0)):
+	if not _v18_attach_optional_glb(body, asset_path, Vector3.ONE):
 		_v18_visual_box(body, Vector3(2.75, 3.35, 0.34), Vector3.ZERO, fallback_material, "%sMesh" % node_name)
 		var inset: StandardMaterial3D = _material(Color(0.032, 0.038, 0.042), 0.82, 0.72)
 		_v18_visual_box(body, Vector3(2.1, 2.65, 0.08), Vector3(0.0, 0.0, 0.22), inset, "%sInset" % node_name)
@@ -148,27 +133,29 @@ func _v18_attach_optional_glb(parent: Node3D, resource_path: String, scale_value
 func _replace_fps_flashlight_v18() -> void:
 	if not first_person_rig_v17 or not is_instance_valid(first_person_rig_v17):
 		return
+	if first_person_rig_v17.get_node_or_null("AuthoredFlashlightV18"):
+		return
 	var authored_path := "res://assets/production/act1/fps_flashlight.glb"
 	if not ResourceLoader.exists(authored_path):
 		return
 	var fallback: Node = first_person_rig_v17.get_node_or_null("MilitaryFlashlight")
-	if fallback:
-		fallback.visible = false
+	if fallback is Node3D:
+		(fallback as Node3D).visible = false
 	var authored_root: Node3D = Node3D.new()
 	authored_root.name = "AuthoredFlashlightV18"
 	authored_root.position = Vector3(0.0, 0.0, -0.15)
 	authored_root.rotation_degrees = Vector3(90.0, 0.0, 0.0)
 	first_person_rig_v17.add_child(authored_root)
-	_v18_attach_optional_glb(authored_root, authored_path, Vector3(1.0, 1.0, 1.0))
+	_v18_attach_optional_glb(authored_root, authored_path, Vector3.ONE)
 
 func _update_act1_startup_v18(delta: float) -> void:
 	if not game_started or current_round != 1 or not player or not act1_outer_door_v18 or not act1_inner_door_v18:
 		return
 	var position: Vector3 = player.global_position
-	var in_service_lane := absf(position.x - ACT1_SERVICE_X_V18) < 2.8
-	var outer_requested := in_service_lane and position.z < 6.5 and position.z > -2.0
-	var inside_airlock := in_service_lane and position.z <= -1.8 and position.z > -9.0
-	var inner_requested := in_service_lane and position.z < -7.2
+	var in_service_lane: bool = absf(position.x - ACT1_SERVICE_X_V18) < 2.8
+	var outer_requested: bool = in_service_lane and position.z < 6.5 and position.z > -2.0
+	var inside_airlock: bool = in_service_lane and position.z <= -1.8 and position.z > -9.0
+	var inner_requested: bool = in_service_lane and position.z < -7.2
 	if inside_airlock:
 		act1_airlock_timer_v18 += delta
 		outer_requested = false
@@ -177,8 +164,8 @@ func _update_act1_startup_v18(delta: float) -> void:
 		act1_airlock_timer_v18 = 0.0
 	act1_outer_open_v18 = outer_requested
 	act1_inner_open_v18 = inner_requested
-	var outer_target_x := ACT1_SERVICE_X_V18 + (ACT1_DOOR_SLIDE_V18 if act1_outer_open_v18 else 0.0)
-	var inner_target_x := ACT1_SERVICE_X_V18 - (ACT1_DOOR_SLIDE_V18 if act1_inner_open_v18 else 0.0)
+	var outer_target_x: float = ACT1_SERVICE_X_V18 + (ACT1_DOOR_SLIDE_V18 if act1_outer_open_v18 else 0.0)
+	var inner_target_x: float = ACT1_SERVICE_X_V18 - (ACT1_DOOR_SLIDE_V18 if act1_inner_open_v18 else 0.0)
 	act1_outer_door_v18.position.x = move_toward(act1_outer_door_v18.position.x, outer_target_x, delta * 3.8)
 	act1_inner_door_v18.position.x = move_toward(act1_inner_door_v18.position.x, inner_target_x, delta * 3.8)
 	if in_service_lane and position.z < -0.7:
@@ -192,29 +179,31 @@ func _apply_act1_interface_v18() -> void:
 	act1_interface_ready_v18 = true
 	if start_panel is ColorRect:
 		(start_panel as ColorRect).color = Color(0.004, 0.009, 0.014, 0.78)
-	var start_boxes: Array[Node] = start_panel.find_children("*", "VBoxContainer", true, false) if start_panel else []
+	var start_boxes: Array[Node] = []
+	if start_panel:
+		start_boxes = start_panel.find_children("*", "VBoxContainer", true, false)
 	if not start_boxes.is_empty():
 		var box: VBoxContainer = start_boxes[0] as VBoxContainer
 		box.set_anchors_preset(Control.PRESET_CENTER_LEFT)
 		box.position = Vector2(54.0, -220.0)
 		box.size = Vector2(570.0, 440.0)
-		box.alignment = BoxContainer.ALIGNMENT_CENTER
-	for candidate: Node in start_panel.find_children("*", "Button", true, false) if start_panel else []:
-		var button: Button = candidate as Button
-		button.custom_minimum_size.y = 52.0
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.add_theme_font_size_override("font_size", 18)
-		var normal: StyleBoxFlat = StyleBoxFlat.new()
-		normal.bg_color = Color(0.015, 0.065, 0.085, 0.86)
-		normal.border_color = Color(0.05, 0.55, 0.72, 0.92)
-		normal.set_border_width_all(2)
-		normal.content_margin_left = 18.0
-		var hover: StyleBoxFlat = normal.duplicate() as StyleBoxFlat
-		hover.bg_color = Color(0.04, 0.19, 0.24, 0.94)
-		hover.border_color = Color(0.92, 0.58, 0.12, 1.0)
-		button.add_theme_stylebox_override("normal", normal)
-		button.add_theme_stylebox_override("hover", hover)
-		button.add_theme_stylebox_override("pressed", hover)
+	if start_panel:
+		for candidate: Node in start_panel.find_children("*", "Button", true, false):
+			var button: Button = candidate as Button
+			button.custom_minimum_size.y = 52.0
+			button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			button.add_theme_font_size_override("font_size", 18)
+			var normal: StyleBoxFlat = StyleBoxFlat.new()
+			normal.bg_color = Color(0.015, 0.065, 0.085, 0.86)
+			normal.border_color = Color(0.05, 0.55, 0.72, 0.92)
+			normal.set_border_width_all(2)
+			normal.content_margin_left = 18.0
+			var hover: StyleBoxFlat = normal.duplicate() as StyleBoxFlat
+			hover.bg_color = Color(0.04, 0.19, 0.24, 0.94)
+			hover.border_color = Color(0.92, 0.58, 0.12, 1.0)
+			button.add_theme_stylebox_override("normal", normal)
+			button.add_theme_stylebox_override("hover", hover)
+			button.add_theme_stylebox_override("pressed", hover)
 
 	act1_objective_back_v18 = PanelContainer.new()
 	act1_objective_back_v18.name = "Act1ObjectivePanelV18"
