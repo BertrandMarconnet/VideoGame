@@ -1,0 +1,24 @@
+{
+  "asset_name": "SPECTER-5",
+  "primary_image": "three_quarter.png",
+  "generation": {
+    "target_faces": 12000,
+    "target_height_m": 2.45,
+    "pose_mode": "a-pose",
+    "should_texture": true,
+    "enable_pbr": false,
+    "image_enhancement": false,
+    "remove_lighting": true,
+    "auto_size": true,
+    "origin_at": "bottom",
+    "create_collision": false,
+    "foreground_ratio": 0.86,
+    "mc_resolution": 256,
+    "texture_resolution": 1024,
+    "bake_texture": false,
+    "device": "cuda:0"
+  },
+  "quality": {
+    "max_glb_mb": 25
+  }
+}
