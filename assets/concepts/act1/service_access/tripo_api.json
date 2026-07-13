@@ -1,0 +1,25 @@
+{
+  "asset_id": "service_access",
+  "source_image": "assets/concepts/act1/service_access/source.jpg",
+  "output_name": "service_access.glb",
+  "integration_path": "assets/production/act1/service_access.glb",
+  "task": {
+    "payload": {
+      "type": "image_to_model",
+      "file": {
+        "type": "${SOURCE_TYPE}",
+        "file_token": "${FILE_TOKEN}"
+      }
+    }
+  },
+  "post_tasks": [],
+  "quality": {
+    "max_download_mb": 18,
+    "max_triangles": 12000
+  },
+  "provenance": {
+    "concept": "Blackout Protocol Act I entrance storyboard",
+    "author": "Bertrand Marconnet / OpenAI concept iteration",
+    "intended_use": "original game asset"
+  }
+}
