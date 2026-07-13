@@ -202,8 +202,12 @@ try {
   ];
   for (const [xRatio, yRatio] of campaignStartPositions) {
     if (storyboardReady) break;
-    await page.mouse.click(bounds.x + bounds.width * xRatio, bounds.y + bounds.height * yRatio);
-    await page.waitForTimeout(700);
+    const x = bounds.x + bounds.width * xRatio;
+    const y = bounds.y + bounds.height * yRatio;
+    await page.touchscreen.tap(x, y);
+    await page.waitForTimeout(350);
+    if (!storyboardReady) await page.mouse.click(x, y);
+    await page.waitForTimeout(650);
   }
   if (!storyboardReady) throw new Error("The left-aligned campaign button did not initialize Act I");
   if (!storyboardArtReady) throw new Error("Storyboard art pass v17 was not initialized after campaign start");
