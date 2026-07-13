@@ -46,6 +46,7 @@ jobs:
           cat src_parts/main_*.gdpart > scripts/main.gd
           grep -q 'func _update_crouch_v19' scripts/main.gd
           grep -q 'BLACKOUT_ENTRANCE_ROUTE_V19_CLEAR' scripts/main.gd
+          grep -q 'BLACKOUT_CAMPAIGN_INPUT_V19' scripts/main.gd
           grep -q 'assets/production/act1/service_access.glb' scripts/main.gd
           gdlint scripts/main.gd
 
