@@ -1,0 +1,60 @@
+name: Générer un modèle 3D
+description: Interface simple — déposer une image et recevoir automatiquement un GLB
+title: "[3D] "
+labels: []
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Générateur 3D Blackout Protocol
+        Le système est gratuit, sans clé API et fonctionne sur GitHub. Une image en vue trois-quarts suffit.
+        Pour de meilleurs résultats, montrer un seul objet entier sur un fond simple.
+  - type: input
+    id: asset_name
+    attributes:
+      label: Nom du modèle
+      description: "Exemple : SPECTER-5, caisse_industrielle, porte_s01"
+      placeholder: SPECTER-5
+    validations:
+      required: true
+  - type: input
+    id: existing_asset
+    attributes:
+      label: Images déjà présentes dans le dépôt
+      description: "Laisser « specter_5 » pour générer le robot déjà préparé. Effacer ce texte si vous ajoutez de nouvelles images ci-dessous."
+      value: specter_5
+    validations:
+      required: false
+  - type: textarea
+    id: images
+    attributes:
+      label: Images du modèle
+      description: "Glisser-déposer ici 1 à 4 images PNG/JPG. Utiliser de préférence trois-quarts, face, profil droit et arrière. Ce champ peut rester vide pour SPECTER-5."
+      placeholder: Glissez vos images dans cette zone…
+    validations:
+      required: false
+  - type: input
+    id: height
+    attributes:
+      label: Hauteur souhaitée en mètres
+      value: "2.45"
+    validations:
+      required: true
+  - type: dropdown
+    id: quality
+    attributes:
+      label: Qualité
+      options:
+        - Rapide — recommandé pour le premier essai
+        - Standard — plus lent
+      default: 0
+    validations:
+      required: true
+  - type: checkboxes
+    id: rights
+    attributes:
+      label: Droits d’utilisation
+      options:
+        - label: Je confirme que les images peuvent être utilisées dans le projet Blackout Protocol.
+          required: true

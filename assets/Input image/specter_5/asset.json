@@ -1,0 +1,17 @@
+{
+  "asset_name": "SPECTER-5",
+  "primary_image": "three_quarter.jpg",
+  "generation": {
+    "foreground_ratio": 0.86,
+    "mc_resolution": 128,
+    "texture_resolution": 1024,
+    "target_faces": 9000,
+    "target_height_m": 2.45,
+    "bake_texture": false,
+    "create_collision": false,
+    "device": "cpu"
+  },
+  "quality": {
+    "max_glb_mb": 30
+  }
+}
