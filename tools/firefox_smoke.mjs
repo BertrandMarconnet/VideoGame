@@ -12,6 +12,7 @@ let mobileControlsReady = false;
 let gameplayStarted = false;
 let mobileForwardPressed = false;
 let mobileFlashlightPressed = false;
+let mobileCrouchPressed = false;
 let mobileLookActive = false;
 let mobileLookReleased = false;
 let markReady;
@@ -125,6 +126,7 @@ page.on("console", (message) => {
   if (text.includes("BLACKOUT_GAMEPLAY_STARTED")) gameplayStarted = true;
   if (text.includes("BLACKOUT_MOBILE_ACTION_DOWN move_forward")) mobileForwardPressed = true;
   if (text.includes("BLACKOUT_MOBILE_ACTION_DOWN flashlight")) mobileFlashlightPressed = true;
+  if (text.includes("BLACKOUT_MOBILE_ACTION_DOWN crouch")) mobileCrouchPressed = true;
   if (text.includes("BLACKOUT_MOBILE_LOOK_ACTIVE")) mobileLookActive = true;
   if (text.includes("BLACKOUT_MOBILE_LOOK_RELEASED")) mobileLookReleased = true;
   const fatalPatterns = [
@@ -193,9 +195,17 @@ try {
   consoleLines.push(`[state] ${JSON.stringify(state)}`);
   if (state.compatibilityPanelVisible) throw new Error("Compatibility panel remained visible despite WebGL2 support");
 
-  await page.mouse.click(bounds.x + bounds.width * 0.5, bounds.y + bounds.height * 0.71);
-  await page.waitForTimeout(1_000);
-  if (!storyboardReady) throw new Error("Act I exterior initialization marker was not emitted after campaign start");
+  const campaignStartPositions = [
+    [0.27, 0.71],
+    [0.29, 0.78],
+    [0.50, 0.71],
+  ];
+  for (const [xRatio, yRatio] of campaignStartPositions) {
+    if (storyboardReady) break;
+    await page.mouse.click(bounds.x + bounds.width * xRatio, bounds.y + bounds.height * yRatio);
+    await page.waitForTimeout(700);
+  }
+  if (!storyboardReady) throw new Error("The left-aligned campaign button did not initialize Act I");
   if (!storyboardArtReady) throw new Error("Storyboard art pass v17 was not initialized after campaign start");
 
   const introSkipPositions = [
@@ -213,9 +223,12 @@ try {
   await page.touchscreen.tap(bounds.x + bounds.width * 0.105, bounds.y + bounds.height * 0.749);
   await page.waitForTimeout(250);
   await page.touchscreen.tap(bounds.x + bounds.width * 0.942, bounds.y + bounds.height * 0.821);
+  await page.waitForTimeout(250);
+  await page.touchscreen.tap(bounds.x + bounds.width * 0.716, bounds.y + bounds.height * 0.821);
   await page.waitForTimeout(500);
   if (!mobileForwardPressed) throw new Error("The direct mobile move_forward control did not emit a touch action");
   if (!mobileFlashlightPressed) throw new Error("The direct mobile flashlight control did not emit a touch action");
+  if (!mobileCrouchPressed) throw new Error("The direct mobile crouch control did not emit a touch action");
 
   await dispatchTouchLook(
     page,
@@ -230,7 +243,7 @@ try {
 
   const startFrame = await page.screenshot({ path: "build/firefox-after-start.png", fullPage: true });
   analyzeFrame(startFrame, "after-start-mobile-controls-and-art");
-  consoleLines.push("[interaction] movement, flashlight, right look joystick and storyboard art initialized successfully");
+  consoleLines.push("[interaction] movement, flashlight, crouch, right look joystick and storyboard art initialized successfully");
 
   if (runtimeErrors.length > 0) {
     throw new Error(`Firefox emitted runtime errors:\n${runtimeErrors.join("\n")}`);
