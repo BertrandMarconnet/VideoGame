@@ -14,6 +14,8 @@ from pathlib import Path
 
 from PIL import Image
 
+Image.MAX_IMAGE_PIXELS = 25_000_000
+
 ALLOWED_HOSTS = {
     "github.com",
     "user-images.githubusercontent.com",
@@ -75,20 +77,32 @@ def infer_view_name(text: str, index: int) -> str:
     return ("three_quarter", "front", "right", "back")[min(index, 3)]
 
 
-def download_image(url: str, destination: Path, token: str) -> None:
+def allowed_host(hostname: str | None) -> bool:
+    if not hostname:
+        return False
+    host = hostname.lower()
+    return (
+        host in ALLOWED_HOSTS
+        or host.endswith(".githubusercontent.com")
+        or (host.startswith("github-production-user-asset-") and host.endswith(".s3.amazonaws.com"))
+    )
+
+
+def download_image(url: str, destination: Path) -> None:
     parsed = urllib.parse.urlparse(url)
-    if parsed.scheme != "https" or parsed.hostname not in ALLOWED_HOSTS:
+    if parsed.scheme != "https" or not allowed_host(parsed.hostname):
         raise RequestError(f"Image host is not allowed: {parsed.hostname}")
     headers = {
         "User-Agent": "Blackout-Protocol-3D-Generator/2.0",
         "Accept": "image/avif,image/webp,image/png,image/jpeg,*/*;q=0.8",
     }
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
     request = urllib.request.Request(url, headers=headers)
     destination.parent.mkdir(parents=True, exist_ok=True)
     total = 0
     with urllib.request.urlopen(request, timeout=90) as response, destination.open("wb") as handle:
+        final_host = urllib.parse.urlparse(response.geturl()).hostname
+        if not allowed_host(final_host):
+            raise RequestError(f"Redirected image host is not allowed: {final_host}")
         while True:
             chunk = response.read(1024 * 1024)
             if not chunk:
@@ -99,7 +113,13 @@ def download_image(url: str, destination: Path, token: str) -> None:
             handle.write(chunk)
     try:
         with Image.open(destination) as image:
+            width, height = image.size
+            image_format = image.format
             image.verify()
+        if image_format not in {"PNG", "JPEG", "WEBP"}:
+            raise RequestError(f"Unsupported image format: {image_format}")
+        if width < 64 or height < 64 or width * height > 25_000_000:
+            raise RequestError(f"Invalid image dimensions: {width}x{height}")
     except Exception as exc:
         destination.unlink(missing_ok=True)
         raise RequestError(f"Downloaded file is not a valid image: {url}") from exc
@@ -157,7 +177,7 @@ def main() -> int:
     destination.mkdir(parents=True, exist_ok=True)
 
     image_section = section(body, "Images du modèle")
-    urls: list[str] = []
+    urls = []
     for url in URL_RE.findall(image_section):
         clean = url.rstrip(".,;\"")
         if clean not in urls:
@@ -166,7 +186,6 @@ def main() -> int:
 
     image_names: list[str] = []
     if urls:
-        token = os.environ.get("GITHUB_TOKEN", "")
         for index, url in enumerate(urls):
             view = infer_view_name(url, index)
             target = destination / f"{view}.png"
@@ -174,7 +193,7 @@ def main() -> int:
             while target.exists():
                 target = destination / f"{view}_{suffix_index}.png"
                 suffix_index += 1
-            download_image(url, target, token)
+            download_image(url, target)
             image_names.append(target.name)
     else:
         existing_slug = existing.strip() or slug
