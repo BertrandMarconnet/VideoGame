@@ -1,0 +1,20 @@
+{
+  "asset_name": "Sentinel Console",
+  "category": "props",
+  "generation": {
+    "foreground_ratio": 0.88,
+    "mc_resolution": 256,
+    "target_faces": 7000,
+    "target_height_m": 1.35,
+    "bake_texture": false,
+    "create_collision": true,
+    "device": "cuda:0"
+  },
+  "quality": {
+    "max_glb_mb": 16
+  },
+  "provenance": {
+    "author": "Bertrand Marconnet / OpenAI concept pass",
+    "source_license": "project-owned original concept"
+  }
+}
