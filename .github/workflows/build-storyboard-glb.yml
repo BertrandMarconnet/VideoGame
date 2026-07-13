@@ -1,0 +1,112 @@
+name: Build storyboard GLB baseline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tools/generate_storyboard_glb.py"
+      - "assets/asset_inbox/**"
+      - ".github/workflows/build-storyboard-glb.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: storyboard-glb-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Generate low-poly GLB assets
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --disable-pip-version-check trimesh
+          python3 tools/generate_storyboard_glb.py
+          test -s assets/production/act1/service_access.glb
+          test -s assets/production/act1/s01_blast_door.glb
+          test -s assets/production/act1/sentinel_console.glb
+          test -s assets/production/act1/fps_flashlight.glb
+          test -s assets/production/environment/industrial_wall_module_a.glb
+          test -s assets/production/baseline-catalog.json
+
+      - name: Assemble and lint gameplay
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --disable-pip-version-check gdtoolkit
+          mkdir -p scripts build/web
+          cat src_parts/main_*.gdpart > scripts/main.gd
+          grep -q 'func _update_crouch_v19' scripts/main.gd
+          grep -q 'BLACKOUT_ENTRANCE_ROUTE_V19_CLEAR' scripts/main.gd
+          grep -q 'assets/production/act1/service_access.glb' scripts/main.gd
+          gdlint scripts/main.gd
+
+      - name: Download Godot 4.7 and export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="4.7-stable"
+          curl -fsSL --retry 5 --retry-delay 3 -o godot.zip "https://github.com/godotengine/godot/releases/download/${tag}/Godot_v${tag}_linux.x86_64.zip"
+          curl -fsSL --retry 5 --retry-delay 3 -o templates.tpz "https://github.com/godotengine/godot/releases/download/${tag}/Godot_v${tag}_export_templates.tpz"
+          mkdir -p .godot-bin .templates
+          unzip -q godot.zip -d .godot-bin
+          unzip -q templates.tpz -d .templates
+          GODOT_BIN="$(find .godot-bin -maxdepth 1 -type f -name 'Godot*' | head -n 1)"
+          test -n "$GODOT_BIN"
+          chmod +x "$GODOT_BIN"
+          echo "GODOT_BIN=$GODOT_BIN" >> "$GITHUB_ENV"
+          template_dir="$HOME/.local/share/godot/export_templates/4.7.stable"
+          mkdir -p "$template_dir"
+          cp -a .templates/templates/. "$template_dir/"
+
+      - name: Import, start and export the game
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 180 "$GODOT_BIN" --headless --editor --path . --quit-after 12 > build/storyboard-glb-import.log 2>&1
+          timeout 45 "$GODOT_BIN" --headless --path . --quit-after 20 > build/storyboard-glb-runtime.log 2>&1
+          grep -q 'BLACKOUT_RUNTIME_READY' build/storyboard-glb-runtime.log
+          if grep -Eqi 'SCRIPT ERROR|Invalid call|Invalid get index|Attempt to call|ERROR:' build/storyboard-glb-runtime.log; then
+            cat build/storyboard-glb-runtime.log
+            exit 1
+          fi
+          "$GODOT_BIN" --headless --path . --export-release Web build/web/index.html > build/storyboard-glb-export.log 2>&1
+          test -s build/web/index.html
+          test -s build/web/index.wasm
+          test -s build/web/index.pck
+
+      - name: Commit validated GLB assets to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "blackout-storyboard-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/production/act1 assets/production/environment assets/production/baseline-catalog.json
+          if git diff --cached --quiet; then
+            echo "The generated GLB baseline is already current."
+            exit 0
+          fi
+          git commit -m "Integrate tested Act I storyboard GLB assets"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: storyboard-glb-${{ github.run_id }}
+          path: |
+            assets/production/baseline-catalog.json
+            build/storyboard-glb-import.log
+            build/storyboard-glb-runtime.log
+            build/storyboard-glb-export.log
+          if-no-files-found: warn
+          retention-days: 14
