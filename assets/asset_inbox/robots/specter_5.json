@@ -1,0 +1,13 @@
+{
+  "asset_name": "SPECTER-5",
+  "category": "robots",
+  "integration_path": "assets/production/robots/specter_5.glb",
+  "generation": {
+    "target_faces": 12000,
+    "target_height_m": 2.45,
+    "create_collision": true
+  },
+  "quality": {
+    "max_glb_mb": 16
+  }
+}

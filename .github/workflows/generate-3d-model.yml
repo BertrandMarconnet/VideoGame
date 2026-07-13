@@ -1,0 +1,221 @@
+name: Generate 3D model
+
+on:
+  workflow_dispatch:
+    inputs:
+      backend:
+        description: Meshy uses 1-4 images; TripoSR is free but requires your GPU runner
+        required: true
+        default: meshy
+        type: choice
+        options: [meshy, triposr]
+      asset:
+        description: Optional asset folder or image stem; empty generates every asset
+        required: false
+        default: ""
+        type: string
+      bootstrap_runner:
+        description: Install or update TripoSR before local generation
+        required: true
+        default: "false"
+        type: choice
+        options: ["false", "true"]
+      commit_output:
+        description: Commit GLB files into assets/output 3d model
+        required: true
+        default: "true"
+        type: choice
+        options: ["true", "false"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: input-image-to-glb-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate Input image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile generation scripts
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            tools/input_image_to_glb.py \
+            tools/triposr_generate.py \
+            tools/triposr_blender_postprocess.py
+          bash -n tools/setup_triposr_runner.sh
+
+      - name: Validate images and manifests
+        shell: bash
+        env:
+          REQUESTED_ASSET: ${{ github.event.inputs.asset }}
+          SELECTED_BACKEND: ${{ github.event.inputs.backend }}
+        run: |
+          set -euo pipefail
+          args=(
+            --backend "$SELECTED_BACKEND"
+            --input-root "assets/Input image"
+            --output-root "assets/output 3d model"
+            --work-root build/input-image-to-glb
+            --validate-only
+          )
+          if [ -n "${REQUESTED_ASSET:-}" ]; then
+            args+=(--asset "$REQUESTED_ASSET")
+          fi
+          python3 tools/input_image_to_glb.py "${args[@]}"
+          test -s build/input-image-to-glb/catalog.json
+
+      - name: Upload validation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: input-image-validation-${{ github.run_id }}
+          path: build/input-image-to-glb
+          retention-days: 14
+
+  generate-meshy:
+    name: Generate GLB with Meshy Multi-Image
+    needs: validate
+    if: >-
+      ${{
+        github.event.inputs.backend == 'meshy' &&
+        github.ref == 'refs/heads/main' &&
+        github.actor == github.repository_owner
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      MESHY_API_KEY: ${{ secrets.MESHY_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Generate GLB files
+        shell: bash
+        env:
+          REQUESTED_ASSET: ${{ github.event.inputs.asset }}
+        run: |
+          set -euo pipefail
+          args=(
+            --backend meshy
+            --input-root "assets/Input image"
+            --output-root "assets/output 3d model"
+            --work-root build/input-image-to-glb
+          )
+          if [ -n "${REQUESTED_ASSET:-}" ]; then
+            args+=(--asset "$REQUESTED_ASSET")
+          fi
+          python3 tools/input_image_to_glb.py "${args[@]}"
+          find "assets/output 3d model" -type f -name '*.glb' -size +0c -print -quit | grep -q .
+
+      - name: Commit output models
+        if: ${{ github.event.inputs.commit_output == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "blackout-3d-generation-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "assets/output 3d model"
+          if git diff --cached --quiet; then
+            echo "No generated model changed."
+            exit 0
+          fi
+          git commit -m "Generate Meshy GLB models from Input image"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Upload generated models
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meshy-3d-models-${{ github.run_id }}
+          path: |
+            assets/output 3d model
+            build/input-image-to-glb
+          if-no-files-found: warn
+          retention-days: 14
+
+  generate-triposr:
+    name: Generate GLB with local TripoSR
+    needs: validate
+    if: >-
+      ${{
+        github.event.inputs.backend == 'triposr' &&
+        github.ref == 'refs/heads/main' &&
+        github.actor == github.repository_owner
+      }}
+    runs-on: [self-hosted, linux, x64, gpu, triposr]
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Verify generation host
+        run: |
+          set -euo pipefail
+          python3 --version
+          blender --version | head -n 1
+          nvidia-smi
+
+      - name: Bootstrap TripoSR
+        if: ${{ github.event.inputs.bootstrap_runner == 'true' }}
+        run: |
+          set -euo pipefail
+          chmod +x tools/setup_triposr_runner.sh
+          tools/setup_triposr_runner.sh
+
+      - name: Generate GLB files
+        shell: bash
+        env:
+          REQUESTED_ASSET: ${{ github.event.inputs.asset }}
+          TRIPOSR_HOME_CONFIG: ${{ vars.TRIPOSR_HOME }}
+        run: |
+          set -euo pipefail
+          args=(
+            --backend triposr
+            --input-root "assets/Input image"
+            --output-root "assets/output 3d model"
+            --work-root build/input-image-to-glb
+            --triposr-home "${TRIPOSR_HOME_CONFIG:-$HOME/opt/TripoSR}"
+          )
+          if [ -n "${REQUESTED_ASSET:-}" ]; then
+            args+=(--asset "$REQUESTED_ASSET")
+          fi
+          python3 tools/input_image_to_glb.py "${args[@]}"
+          find "assets/output 3d model" -type f -name '*.glb' -size +0c -print -quit | grep -q .
+
+      - name: Commit output models
+        if: ${{ github.event.inputs.commit_output == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "blackout-3d-generation-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "assets/output 3d model"
+          if git diff --cached --quiet; then
+            echo "No generated model changed."
+            exit 0
+          fi
+          git commit -m "Generate TripoSR GLB models from Input image"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Upload generated models
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: triposr-3d-models-${{ github.run_id }}
+          path: |
+            assets/output 3d model
+            build/input-image-to-glb
+          if-no-files-found: warn
+          retention-days: 14

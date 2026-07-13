@@ -1,0 +1,14 @@
+SPECTER-5 — prompt de génération 3D
+
+Industrial bipedal endoskeleton hunter robot from a secret 1987 military toy factory.
+Full body, isolated asset, symmetrical mechanical anatomy, readable shoulder/elbow/wrist/hip/knee/ankle joints,
+single red optical sensor, worn dark steel and muted military-brown armor plates, exposed actuators,
+PS1-era industrial low-poly horror style, hard-surface modular construction, no weapon, no organic skin,
+no cables touching the ground, game-ready proportions, 2.45 m tall.
+
+Negative prompt:
+environment, room, floor plane, text, logo, extra limbs, fused arms, missing hands, asymmetrical legs,
+modern glossy sci-fi, chrome, smooth rounded armor, cartoon, organic flesh, cape, weapon, smoke, dramatic pose.
+
+Target:
+GLB, approximately 12,000 polygons, 1K base-color texture, A-pose when supported, origin at feet.
