@@ -70,7 +70,7 @@ jobs:
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            blender build-essential cmake git ninja-build libgl1 libglib2.0-0
+            blender build-essential cmake git ninja-build libgl1 libglib2.0-0 python3-numpy
 
       - name: Prepare request from simple interface
         id: request
