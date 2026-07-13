@@ -5,7 +5,8 @@ set -euo pipefail
 INSTALL_DIR="${TRIPOSR_HOME:-$HOME/opt/TripoSR}"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 TRIPOSR_REF="${TRIPOSR_REF:-107cefdc244c39106fa830359024f6a2f1c78871}"
-STAMP="$INSTALL_DIR/.blackout_cpu_ready_${TRIPOSR_REF}"
+SETUP_REVISION="v2"
+STAMP="$INSTALL_DIR/.blackout_cpu_ready_${TRIPOSR_REF}_${SETUP_REVISION}"
 
 for command in git "$PYTHON_BIN" blender; do
   if ! command -v "$command" >/dev/null 2>&1; then
@@ -34,13 +35,14 @@ if [ ! -f "$STAMP" ]; then
   python -m pip install --upgrade pip setuptools wheel
   python -m pip install --index-url https://download.pytorch.org/whl/cpu \
     torch==2.2.2 torchvision==0.17.2
-  python -m pip install 'numpy<2' 'setuptools>=69' ninja
+  python -m pip install 'numpy<2' 'setuptools>=69' ninja 'onnxruntime==1.18.1'
   cat > "$INSTALL_DIR/.blackout-constraints.txt" <<'CONSTRAINTS'
 numpy<2
 huggingface-hub<1.0
 Pillow==10.1.0
 transformers==4.35.0
 trimesh==4.0.5
+onnxruntime==1.18.1
 CONSTRAINTS
   MAX_JOBS="${MAX_JOBS:-2}" python -m pip install \
     -c "$INSTALL_DIR/.blackout-constraints.txt" \
@@ -49,8 +51,11 @@ CONSTRAINTS
 fi
 
 python - <<'PY'
+import onnxruntime
+import rembg
 import torch
 print(f"PyTorch: {torch.__version__}")
+print(f"ONNX Runtime: {onnxruntime.__version__}")
 print(f"CUDA available: {torch.cuda.is_available()}")
 print("TripoSR execution device: cpu")
 PY
