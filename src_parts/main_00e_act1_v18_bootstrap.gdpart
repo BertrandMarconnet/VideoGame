@@ -12,12 +12,15 @@ func _start_act1_v18_bootstrap() -> void:
 	timer.start()
 
 func _tick_act1_v18_bootstrap() -> void:
+	if player:
+		_ensure_player_crouch_v19()
 	if not act1_interface_ready_v18 and hud_layer and start_panel:
 		_apply_act1_interface_v18()
 	if not bool(get_meta("v18_act1_ready", false)):
 		if bool(get_meta("v16_storyboard_ready", false)) and bool(get_meta("v17_art_ready", false)) and player and hud_layer:
 			_ensure_act1_startup_v18()
 		return
+	_repair_entrance_blockers_v19()
 	_update_act1_startup_v18(0.05 if not is_mobile else 0.08)
 	if first_person_rig_v17 and not first_person_rig_v17.get_node_or_null("AuthoredFlashlightV18"):
 		_replace_fps_flashlight_v18()
