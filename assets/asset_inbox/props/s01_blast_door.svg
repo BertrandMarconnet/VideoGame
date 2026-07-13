@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" fill="#08131b"/>
+  <rect x="24" y="24" width="976" height="88" rx="16" fill="#06101a" stroke="#1d8eaa" stroke-width="4"/>
+  <text x="54" y="66" font-family="sans-serif" font-size="34" font-weight="700" fill="#dce6e2">S-01 INNER BLAST DOOR</text>
+  <text x="56" y="96" font-family="sans-serif" font-size="20" fill="#e5a23d">Pressure lock // military analog // PS1 industrial low-poly</text>
+  <ellipse cx="512" cy="870" rx="320" ry="62" fill="#02070b"/>
+  <polygon points="240,222 742,194 830,748 204,818" fill="#242b2d" stroke="#717c7d" stroke-width="7"/>
+  <polygon points="292,272 692,248 756,698 270,750" fill="#11191c" stroke="#909a96" stroke-width="5"/>
+  <polygon points="340,316 640,298 687,656 318,694" fill="#353b3b" stroke="#59635f" stroke-width="5"/>
+  <line x1="500" y1="306" x2="524" y2="674" stroke="#0a0e0f" stroke-width="22"/>
+  <g fill="#171d1e" stroke="#69716e" stroke-width="3">
+    <circle cx="330" cy="303" r="22"/>
+    <circle cx="667" cy="284" r="22"/>
+    <circle cx="311" cy="714" r="22"/>
+    <circle cx="708" cy="669" r="22"/>
+  </g>
+  <rect x="700" y="386" width="82" height="174" rx="8" fill="#11191b" stroke="#68736f" stroke-width="5"/>
+  <rect x="718" y="410" width="46" height="50" fill="#0a6e77"/>
+  <circle cx="741" cy="502" r="12" fill="#e13e22"/>
+  <polygon points="268,752 316,747 350,795 301,801" fill="#d08d2d"/>
+  <polygon points="344,744 392,739 426,787 377,793" fill="#171a1a"/>
+  <polygon points="420,736 468,731 502,779 453,785" fill="#d08d2d"/>
+  <polygon points="496,728 544,723 578,771 529,777" fill="#171a1a"/>
+  <polygon points="572,720 620,715 654,763 605,769" fill="#d08d2d"/>
+  <polygon points="648,712 696,707 730,755 681,761" fill="#171a1a"/>
+  <text x="425" y="508" font-family="sans-serif" font-size="74" font-weight="700" fill="#d24926">S-01</text>
+  <text x="272" y="878" font-family="sans-serif" font-size="20" fill="#7bc1d1">3.2 m · 9k faces · animated by Godot wrapper · no mesh collision</text>
+</svg>
