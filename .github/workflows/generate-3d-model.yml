@@ -70,7 +70,7 @@ jobs:
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            blender build-essential git ninja-build libgl1 libglib2.0-0
+            blender build-essential cmake git ninja-build libgl1 libglib2.0-0
 
       - name: Prepare request from simple interface
         id: request
@@ -79,7 +79,6 @@ jobs:
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
-          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           python -m pip install --quiet 'Pillow==10.1.0'
