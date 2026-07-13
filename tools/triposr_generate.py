@@ -3,7 +3,7 @@
 
 The script uses no proprietary API and does not require an external account.
 Generation expects a local TripoSR checkout and, for the production GLB pass,
-Blender available on the self-hosted runner.
+Blender available on the execution runner.
 """
 from __future__ import annotations
 
@@ -173,7 +173,7 @@ def write_reports(output_dir: Path, validated: dict[str, Any], result: dict[str,
 
 - Generator: TripoSR (VAST-AI-Research / Tripo AI / Stability AI)
 - Generator license: MIT
-- Execution mode: local, self-hosted, no external generation API
+- Execution mode: local model execution on a GitHub-hosted or self-hosted runner; no external generation API
 - Concept author: {validated['provenance']['author']}
 - Concept license: {validated['provenance']['source_license']}
 - Generated at: {result.get('generated_at', 'validation only')}
@@ -228,7 +228,7 @@ def main() -> int:
     run_py = args.triposr_home / "run.py"
     if not run_py.is_file():
         raise PipelineError(
-            f"TripoSR not found at {args.triposr_home}. Run tools/setup_triposr_runner.sh first."
+            f"TripoSR not found at {args.triposr_home}. Run tools/setup_triposr_cpu.sh first."
         )
     python_bin = args.python_bin or str(args.triposr_home / ".venv" / "bin" / "python")
     if not Path(python_bin).is_file() and shutil.which(python_bin) is None:
