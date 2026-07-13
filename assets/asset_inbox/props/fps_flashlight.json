@@ -1,6 +1,7 @@
 {
   "asset_name": "FPS Flashlight",
   "category": "props",
+  "integration_path": "assets/production/act1/fps_flashlight.glb",
   "generation": {
     "foreground_ratio": 0.9,
     "mc_resolution": 256,
