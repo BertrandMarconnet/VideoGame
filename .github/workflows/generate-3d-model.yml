@@ -164,13 +164,15 @@ jobs:
           TRIPOSR_PYTHON: ${{ env.TRIPOSR_HOME }}/.venv/bin/python
         run: |
           set -euo pipefail
+          mkdir -p build/diagnostics
           python tools/input_image_to_glb.py \
             --backend triposr \
             --input-root "${{ steps.vars.outputs.input_root }}" \
             --output-root "assets/output 3d model" \
             --work-root build/input-image-to-glb \
             --triposr-home "$TRIPOSR_HOME" \
-            --asset "${{ steps.vars.outputs.asset_slug }}"
+            --asset "${{ steps.vars.outputs.asset_slug }}" \
+            2>&1 | tee build/diagnostics/generation.log
           test -s "assets/output 3d model/${{ steps.vars.outputs.asset_slug }}.glb"
 
       - name: Validate Godot import
@@ -229,7 +231,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --body "❌ La génération a échoué. Journal : ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          gh issue comment "$ISSUE_NUMBER" --body "❌ La génération a échoué. Journal et diagnostic : ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Upload model and diagnostics
         if: always()
@@ -240,5 +242,6 @@ jobs:
             assets/output 3d model
             build/input-image-to-glb
             build/godot-check
+            build/diagnostics
           if-no-files-found: warn
           retention-days: 14
