@@ -1,0 +1,21 @@
+
+func _enter_tree() -> void:
+	call_deferred("_start_act1_v18_bootstrap")
+
+func _start_act1_v18_bootstrap() -> void:
+	var timer: Timer = Timer.new()
+	timer.name = "Act1V18BootstrapTimer"
+	timer.wait_time = 0.05 if not OS.has_feature("mobile") else 0.08
+	timer.process_mode = Node.PROCESS_MODE_ALWAYS
+	timer.timeout.connect(_tick_act1_v18_bootstrap)
+	add_child(timer)
+	timer.start()
+
+func _tick_act1_v18_bootstrap() -> void:
+	if not bool(get_meta("v18_act1_ready", false)):
+		if bool(get_meta("v16_storyboard_ready", false)) and bool(get_meta("v17_art_ready", false)) and player and hud_layer:
+			_ensure_act1_startup_v18()
+		return
+	_update_act1_startup_v18(0.05 if not is_mobile else 0.08)
+	if first_person_rig_v17 and not first_person_rig_v17.get_node_or_null("AuthoredFlashlightV18"):
+		_replace_fps_flashlight_v18()
