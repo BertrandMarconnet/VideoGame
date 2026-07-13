@@ -1,0 +1,20 @@
+[
+  {
+    "asset_name": "SPECTER-5",
+    "slug": "specter_5",
+    "asset_folder": "build/issue-input/specter_5",
+    "reference_images": [
+      "build/issue-input/specter_5/front.jpg",
+      "build/issue-input/specter_5/right.jpg",
+      "build/issue-input/specter_5/back.jpg",
+      "build/issue-input/specter_5/three_quarter.jpg"
+    ],
+    "primary_image": "build/issue-input/specter_5/three_quarter.jpg",
+    "backend": "triposr",
+    "output": "assets/output 3d model/specter_5.glb",
+    "status": "generated",
+    "result": {
+      "primary_image": "three_quarter.jpg"
+    }
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "faces_before": 12996,
+  "faces_after": 8999,
+  "dimensions_m": [
+    1.93032,
+    4.93525,
+    2.45
+  ],
+  "collision_generated": false,
+  "output": "/home/runner/work/VideoGame/VideoGame/build/input-image-to-glb/triposr/specter_5/production/specter_5.glb"
+}
