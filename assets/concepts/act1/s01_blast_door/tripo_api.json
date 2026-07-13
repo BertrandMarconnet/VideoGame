@@ -1,0 +1,25 @@
+{
+  "asset_id": "s01_blast_door",
+  "source_image": "assets/concepts/act1/s01_blast_door/source.jpg",
+  "output_name": "s01_blast_door.glb",
+  "integration_path": "assets/production/act1/s01_blast_door.glb",
+  "task": {
+    "payload": {
+      "type": "image_to_model",
+      "file": {
+        "type": "${SOURCE_TYPE}",
+        "file_token": "${FILE_TOKEN}"
+      }
+    }
+  },
+  "post_tasks": [],
+  "quality": {
+    "max_download_mb": 18,
+    "max_triangles": 12000
+  },
+  "provenance": {
+    "concept": "Blackout Protocol S-01 airlock storyboard",
+    "author": "Bertrand Marconnet / OpenAI concept iteration",
+    "intended_use": "original game asset"
+  }
+}
