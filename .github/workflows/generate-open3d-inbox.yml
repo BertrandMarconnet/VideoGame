@@ -133,7 +133,7 @@ jobs:
             args+=(--asset "$REQUESTED_ASSET")
           fi
           python3 tools/open3d_inbox.py "${args[@]}"
-          find assets/production/generated -type f -name '*.glb' -size +0c -print -quit | grep -q .
+          find assets/production -type f -name '*.glb' -size +0c -print -quit | grep -q .
 
       - name: Assemble and lint gameplay
         run: |
@@ -176,7 +176,7 @@ jobs:
           set -euo pipefail
           git config user.name "blackout-open3d-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/production/generated
+          git add assets/production
           if git diff --cached --quiet; then
             echo "No generated asset changed."
             exit 0
