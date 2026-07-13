@@ -1,0 +1,103 @@
+
+# Player accessibility and entrance repair v19.
+const CROUCH_SPEED_V19 := 2.45
+const STAND_CAPSULE_HEIGHT_V19 := 1.80
+const CROUCH_CAPSULE_HEIGHT_V19 := 1.12
+const STAND_CAMERA_Y_V19 := 0.68
+const CROUCH_CAMERA_Y_V19 := 0.28
+const CROUCH_TRANSITION_SPEED_V19 := 7.5
+
+var player_collision_v19: CollisionShape3D
+var crouch_active_v19 := false
+var crouch_blend_v19 := 0.0
+var crouch_blocked_v19 := false
+
+func _ensure_player_crouch_v19() -> void:
+	if bool(get_meta("v19_crouch_ready", false)) or not player:
+		return
+	_add_key_action(&"crouch", KEY_CTRL)
+	player_collision_v19 = player.find_child("*", "CollisionShape3D", true, false) as CollisionShape3D
+	if not player_collision_v19 or not (player_collision_v19.shape is CapsuleShape3D):
+		push_error("BLACKOUT_CROUCH_SETUP_FAILED: player capsule not found")
+		return
+	player_collision_v19.name = "PlayerCollision"
+	set_meta("v19_crouch_ready", true)
+	print("BLACKOUT_CROUCH_V19_READY")
+
+func _update_crouch_v19(delta: float) -> void:
+	if drone_active:
+		return
+	if not bool(get_meta("v19_crouch_ready", false)):
+		_ensure_player_crouch_v19()
+	if not player_collision_v19 or not camera:
+		return
+
+	var requested := Input.is_action_pressed("crouch")
+	var was_active := crouch_active_v19
+	if requested:
+		crouch_active_v19 = true
+		crouch_blocked_v19 = false
+	elif crouch_active_v19:
+		if _can_stand_v19():
+			crouch_active_v19 = false
+			crouch_blocked_v19 = false
+		elif not crouch_blocked_v19:
+			crouch_blocked_v19 = true
+			_show_status("ESPACE INSUFFISANT POUR SE RELEVER")
+
+	if was_active != crouch_active_v19:
+		_show_status("POSITION BASSE" if crouch_active_v19 else "POSITION DEBOUT")
+
+	var target_blend := 1.0 if crouch_active_v19 else 0.0
+	crouch_blend_v19 = move_toward(crouch_blend_v19, target_blend, delta * CROUCH_TRANSITION_SPEED_V19)
+	var capsule := player_collision_v19.shape as CapsuleShape3D
+	var current_height := lerpf(STAND_CAPSULE_HEIGHT_V19, CROUCH_CAPSULE_HEIGHT_V19, crouch_blend_v19)
+	capsule.height = maxf(current_height, capsule.radius * 2.0)
+	player_collision_v19.position.y = -0.5 * (STAND_CAPSULE_HEIGHT_V19 - current_height)
+	camera.position.y = lerpf(STAND_CAMERA_Y_V19, CROUCH_CAMERA_Y_V19, crouch_blend_v19)
+
+func _can_stand_v19() -> bool:
+	if not player or not get_world_3d():
+		return true
+	var space_state := get_world_3d().direct_space_state
+	var offsets: Array[Vector3] = [
+		Vector3.ZERO,
+		Vector3(0.27, 0.0, 0.0),
+		Vector3(-0.27, 0.0, 0.0),
+		Vector3(0.0, 0.0, 0.27),
+		Vector3(0.0, 0.0, -0.27),
+	]
+	for offset in offsets:
+		var from := player.global_position + offset + Vector3(0.0, 0.26, 0.0)
+		var to := player.global_position + offset + Vector3(0.0, 1.02, 0.0)
+		var query := PhysicsRayQueryParameters3D.create(from, to)
+		query.exclude = [player.get_rid()]
+		query.collide_with_areas = false
+		query.collide_with_bodies = true
+		if not space_state.intersect_ray(query).is_empty():
+			return false
+	return true
+
+func _repair_entrance_blockers_v19() -> void:
+	if bool(get_meta("v19_entrance_repaired", false)):
+		return
+	var stale_shell_names := ["SouthShell", "SouthShellRight"]
+	for node_name in stale_shell_names:
+		var stale := find_child(node_name, true, false)
+		if stale and stale.get_parent() != act1_airlock_root_v18:
+			stale.queue_free()
+
+	# The supervision screen is visual equipment, not an architectural wall.
+	# Keeping its mesh while disabling its body collision clears the route into S-01.
+	var screen_frame := find_child("MainScreenFrame", true, false)
+	if screen_frame is CollisionObject3D:
+		var collision_object := screen_frame as CollisionObject3D
+		collision_object.collision_layer = 0
+		collision_object.collision_mask = 0
+		for child in collision_object.get_children():
+			if child is CollisionShape3D:
+				(child as CollisionShape3D).set_deferred("disabled", true)
+		collision_object.set_meta("visual_only", true)
+
+	set_meta("v19_entrance_repaired", true)
+	print("BLACKOUT_ENTRANCE_ROUTE_V19_CLEAR")
