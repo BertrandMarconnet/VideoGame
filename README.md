@@ -18,14 +18,12 @@ L’opération soviétique **MATRYOSHKA** et le malware **BABOUCHKA** contaminen
 
 ## Storyboard — Acte I
 
-La campagne ne commence plus directement dans la salle de contrôle. Après le prologue unique, le joueur reçoit le contrôle **à l’extérieur de ToyGuard Industries**, sous la pluie, conformément au plan 01 du storyboard.
-
-Le premier parcours suit maintenant l’ordre narratif prévu :
+La campagne commence à l’extérieur de ToyGuard Industries, sous la pluie. Le parcours suit l’ordre narratif prévu :
 
 1. arrivée nocturne devant la façade ToyGuard ;
 2. progression vers la porte de service latérale ;
 3. traversée du sas de décontamination et de la porte blindée S-01 ;
-4. arrivée par un vestibule latéral, sans apparition face à l’écran central ;
+4. arrivée par un vestibule latéral ;
 5. consultation de Sentinel OS ;
 6. première patrouille dans les secteurs logistique et assemblage ;
 7. observation des unités ToyGuard ;
@@ -33,55 +31,33 @@ Le premier parcours suit maintenant l’ordre narratif prévu :
 9. premier contact contrôlé avec ATHENA ;
 10. réparation du relais nord.
 
-L’écran principal du bunker reste visible mais sa structure n’est plus une collision de navigation. Les menaces principales sont bloquées pendant l’arrivée extérieure et ne sont libérées qu’après la consultation de Sentinel OS.
-
 ## Direction artistique PS1 industrial low-poly
 
-- façade, clôtures, poste de garde, lampadaires, flaques et signalétique procédurale low-poly ;
-- géométrie volontairement simple et silhouettes lisibles ;
+- géométrie simple et silhouettes lisibles ;
 - matériaux mats, couleurs quantifiées et éclairage cyan/ambre/rouge ;
-- pluie construite avec `MultiMeshInstance3D`, limitée sur smartphone ;
+- pluie optimisée pour smartphone ;
 - lampe et main low-poly visibles en vue subjective ;
 - filtrage nearest, ombrage par sommet et palette réduite ;
-- pixelisation, scanlines, bruit et vignettage subtils appliqués uniquement au monde 3D ;
-- réglage **Filtre rétro** dans le menu de pause, permettant de réduire ou désactiver l’effet.
-
-Le filtre ne modifie pas la lisibilité du HUD et utilise une intensité plus faible sur smartphone.
+- pixelisation, scanlines, bruit et vignettage subtils appliqués au monde 3D.
 
 ## Systèmes conservés
 
 - déplacement ZQSD/WASD et contrôles tactiles ;
-- position basse avec vérification du plafond ;
-- interactions clic gauche, `E` et roue d’actions au clic droit ;
+- interactions clic gauche, `E` et roue d’actions ;
 - tablette Sentinel OS ;
-- KITE-01 et retour immédiat à la vue joueur ;
+- KITE-01 ;
 - SPECTER-5 et CRAWLER-7 ;
-- unités ToyGuard et bras industriels ;
 - destruction locale et objets physiques Jolt ;
 - campagne de cinq rondes ;
 - directeur narratif local d’ATHENA ;
-- bande-son Suno déclenchée après interaction utilisateur.
-
-## Bande-son adaptative
-
-- menu et amorçage : `01_main_theme.mp3` après interaction utilisateur ;
-- introduction : `02_introduction.mp3` ;
-- poursuite dynamique : `03_factory_hunts.mp3` ;
-- ronde 1 : `05_daedalus_entity.mp3` ;
-- ronde 2 : `04_surveillance_loop.mp3` ;
-- ronde 3 : `07_crawler.mp3` ;
-- ronde 4 : `08_first_skin.mp3` ;
-- ronde 5 : `09_delta00_final.mp3` ;
-- crédits : `10_credits.mp3`.
-
-Les noms historiques des fichiers sont conservés pour éviter les références cassées. Leur usage narratif actuel reste rattaché à ATHENA/ToyGuard.
+- bande-son adaptative.
 
 ## Commandes PC
 
 - `ZQSD` / `WASD` : déplacement ;
 - souris : caméra ;
 - clic gauche : interaction ou scan KITE ;
-- clic droit : roue d’actions ou rappel immédiat du drone ;
+- clic droit : roue d’actions ou rappel du drone ;
 - `E` : interaction rapide ;
 - `Tab` : tablette Sentinel ;
 - `F` : lampe ;
@@ -91,51 +67,37 @@ Les noms historiques des fichiers sont conservés pour éviter les références 
 - `C` : déployer ou rappeler KITE-01 ;
 - `Échap` : retour joueur, fermeture d’interface ou pause.
 
-Sur smartphone, le bouton `CROUCH` maintient la position basse. Le personnage ne peut pas se relever lorsqu’un obstacle est détecté au-dessus de lui.
+## Générateur 3D clé en main — sans clé API
 
-## Génération 3D open source sans clé
+La génération 3D ne demande plus Meshy, aucune clé API et aucun ordinateur configuré comme runner.
 
-Le dépôt contient désormais deux niveaux de pipeline local :
+### Interface la plus simple
 
-```text
-.github/workflows/generate-open3d-inbox.yml
-.github/workflows/generate-triposr-asset.yml
-```
+1. ouvrir **Issues** ;
+2. cliquer sur **New issue** ;
+3. choisir **Générer un modèle 3D** ;
+4. donner un nom et glisser une image ;
+5. valider.
 
-Le pipeline recommandé est **Open3D asset inbox** :
-
-```text
-assets/asset_inbox/
-├── props/
-├── modules/
-├── characters/
-└── robots/
-```
-
-Il accepte PNG, JPEG, WebP et SVG, rasterise localement les SVG, exécute TripoSR sur un runner GPU auto-hébergé, puis Blender produit un GLB décimé, métrique et compatible Godot. Aucune API commerciale, aucun compte, aucune clé et aucun quota fournisseur ne sont utilisés.
-
-Avant tout commit automatique d’un GLB, le workflow :
-
-1. valide l’image et le manifeste ;
-2. génère et optimise le modèle ;
-3. assemble et lint `scripts/main.gd` ;
-4. importe le projet avec Godot 4.7 ;
-5. démarre la scène principale ;
-6. exporte la version Web ;
-7. pousse l’asset sur `main` uniquement si tous les contrôles réussissent.
-
-Les concepts Acte I déjà préparés couvrent la porte de service, la porte blindée S-01, la console Sentinel, la lampe FPS et un premier module mural industriel.
-
-Documentation :
+GitHub exécute TripoSR sur son runner CPU, optimise le résultat avec Blender, vérifie l’import avec Godot 4.7, puis place automatiquement le fichier dans :
 
 ```text
-assets/asset_inbox/README.md
-docs/TRIPOSR_GITHUB_PIPELINE.md
+assets/output 3d model/<nom>.glb
 ```
+
+Pour générer **SPECTER-5** immédiatement, les quatre vues sont déjà présentes dans :
+
+```text
+assets/Input image/specter_5/
+```
+
+Il est aussi possible d’ouvrir **Actions → Generate 3D model — no key → Run workflow** et de conserver les valeurs proposées.
+
+Le calcul CPU est gratuit mais plus lent qu’un service GPU : le premier essai peut durer de quelques dizaines de minutes à plusieurs heures.
 
 ## Validation
 
-Le workflow `.github/workflows/deploy-pages.yml` reconstitue `scripts/main.gd`, exécute `gdlint`, importe le projet avec Godot 4.7, charge `scenes/main.tscn`, exporte `index.html`, `index.wasm` et `index.pck`, puis lance l’export dans Firefox et refuse un canvas noir avant le déploiement GitHub Pages.
+Le déploiement reconstruit `scripts/main.gd`, exécute `gdlint`, importe le projet avec Godot 4.7, charge `scenes/main.tscn`, exporte la version Web/PWA et vérifie le rendu dans Firefox avant publication.
 
 ## Documentation
 
@@ -143,6 +105,6 @@ Le workflow `.github/workflows/deploy-pages.yml` reconstitue `scripts/main.gd`, 
 - `docs/ATHENA_PROTOCOL_V12.md` : mécaniques adaptatives et Sentinel OS ;
 - `docs/STORYBOARD_IMPLEMENTATION_MATRIX.md` : correspondance entre storyboard et jeu ;
 - `docs/SOUNDTRACK_SUNO.md` : placement narratif des musiques ;
-- `docs/ASSET_PIPELINE.md` : licences, budgets 3D Web et choix des pipelines ;
-- `docs/TRIPOSR_GITHUB_PIPELINE.md` : génération 3D locale, gratuite et sans quota ;
-- `assets/asset_inbox/README.md` : dossier image-vers-GLB et intégration automatisée.
+- `docs/ASSET_PIPELINE.md` : licences et budgets 3D Web ;
+- `docs/TRIPOSR_GITHUB_PIPELINE.md` : générateur sans clé ;
+- `docs/REPOSITORY_AUDIT_2026-07-13.md` : audit des workflows, PR et permissions.
