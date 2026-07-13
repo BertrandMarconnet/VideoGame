@@ -45,6 +45,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install validation dependencies
+        run: python3 -m pip install --quiet --disable-pip-version-check cairosvg
+
       - name: Compile pipeline scripts
         run: |
           set -euo pipefail
@@ -102,6 +105,9 @@ jobs:
           python3 --version
           blender --version | head -n 1
           nvidia-smi
+
+      - name: Install inbox dependencies
+        run: python3 -m pip install --quiet --disable-pip-version-check cairosvg
 
       - name: Bootstrap TripoSR
         if: ${{ github.event.inputs.bootstrap_runner == 'true' }}
