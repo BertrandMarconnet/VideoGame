@@ -16,6 +16,11 @@ func _tick_act1_v18_bootstrap() -> void:
 		_ensure_player_crouch_v19()
 	if not act1_interface_ready_v18 and hud_layer and start_panel:
 		_apply_act1_interface_v18()
+	if start_panel and start_panel.visible:
+		start_panel.z_index = 300
+		start_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+		if mobile_layer:
+			mobile_layer.visible = false
 	if not bool(get_meta("v18_act1_ready", false)):
 		if bool(get_meta("v16_storyboard_ready", false)) and bool(get_meta("v17_art_ready", false)) and player and hud_layer:
 			_ensure_act1_startup_v18()
