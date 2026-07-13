@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<rect width="1024" height="1024" fill="#ebeae7"/>
+<g stroke="#0e0f10" stroke-width="8" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="366,860 445,851 468,942 338,946 331,917" fill="#4a4236" />
+<polygon points="567,852 635,837 680,894 666,925 552,944" fill="#4a4236" />
+<polygon points="383,630 449,624 463,741 443,856 365,858 352,742" fill="#26241f" />
+<polygon points="554,620 622,608 652,721 635,839 567,851 541,731" fill="#26241f" />
+<circle cx="417" cy="622" r="34" fill="#4a4236"/>
+<circle cx="585" cy="612" r="33" fill="#4a4236"/>
+<polygon points="429,548 585,536 611,596 579,643 446,653 406,612" fill="#4a4236" />
+<polygon points="390,306 613,286 672,359 632,520 393,540 345,389" fill="#26241f" />
+<polygon points="408,326 596,307 641,369 610,454 405,470 375,386" fill="#4a4236" />
+<polygon points="451,340 580,327 602,380 574,429 438,441 416,387" fill="#26241f" />
+<circle cx="530" cy="382" r="9" fill="#d52b20"/>
+<rect x="470" y="255" width="70" height="55" rx="6" fill="#4a4236"/>
+<polygon points="430,158 560,147 616,190 598,268 439,282 401,222" fill="#26241f" />
+<polygon points="453,177 548,169 585,198 571,244 455,254 427,218" fill="#4a4236" />
+<circle cx="555" cy="208" r="42" fill="#1a1917"/>
+<circle cx="559" cy="208" r="25" fill="#d52b20"/>
+<circle cx="565" cy="208" r="9" fill="#ff6b43"/>
+<polygon points="359,335 307,367 263,477 304,508 365,424" fill="#73634f" />
+<circle cx="281" cy="506" r="28" fill="#26241f"/>
+<circle cx="281" cy="506" r="12" fill="#73634f"/>
+<polygon points="258,526 211,638 250,670 306,548" fill="#26241f" />
+<polygon points="212,650 189,699 213,739 250,716 260,674" fill="#4a4236" />
+<polygon points="625,318 671,338 713,419 715,500 674,507 642,433" fill="#4a4236" />
+<circle cx="697" cy="512" r="25" fill="#26241f"/>
+<polygon points="682,532 710,628 678,656 644,548" fill="#26241f" />
+<polygon points="710,636 727,680 704,716 672,687 672,654" fill="#4a4236" />
+<rect x="399" y="475" width="58" height="36" rx="4" fill="#73634f"/>
+<rect x="552" y="463" width="51" height="35" rx="4" fill="#73634f"/>
+</g></svg>
