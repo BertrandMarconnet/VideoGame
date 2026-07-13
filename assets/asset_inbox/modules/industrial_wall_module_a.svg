@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" fill="#08131b"/>
+  <rect x="24" y="24" width="976" height="88" rx="16" fill="#06101a" stroke="#1d8eaa" stroke-width="4"/>
+  <text x="54" y="66" font-family="sans-serif" font-size="34" font-weight="700" fill="#dce6e2">MODULAR INDUSTRIAL WALL A</text>
+  <text x="56" y="96" font-family="sans-serif" font-size="20" fill="#e5a23d">3 m grid // snap-ready environment module // PS1 low-poly</text>
+  <ellipse cx="520" cy="862" rx="350" ry="60" fill="#02070b"/>
+  <polygon points="220,246 700,204 818,760 228,824" fill="#303536" stroke="#6d797a" stroke-width="6"/>
+  <g fill="#151e20" stroke="#566363" stroke-width="4">
+    <polygon points="270,318 390,305 405,470 280,486"/>
+    <polygon points="420,304 540,291 557,455 432,472"/>
+    <polygon points="570,290 690,277 710,440 585,457"/>
+    <polygon points="286,528 406,514 424,678 298,695"/>
+    <polygon points="437,512 557,498 577,661 451,678"/>
+    <polygon points="588,496 708,482 730,644 604,662"/>
+  </g>
+  <line x1="704" y1="258" x2="772" y2="700" stroke="#a63b25" stroke-width="30"/>
+  <line x1="748" y1="250" x2="814" y2="694" stroke="#1d8798" stroke-width="26"/>
+  <ellipse cx="706" cy="252" rx="20" ry="12" fill="#7b8179"/>
+  <ellipse cx="750" cy="244" rx="20" ry="12" fill="#7b8179"/>
+  <polygon points="312,230 594,210 606,276 320,300" fill="#101719" stroke="#d29a3a" stroke-width="4"/>
+  <text x="348" y="265" font-family="sans-serif" font-size="40" font-weight="700" fill="#dfa34b">B-2 →</text>
+  <g>
+    <polygon points="255,796 297,792 330,834 287,839" fill="#d08d2d"/>
+    <polygon points="345,786 387,782 420,824 377,829" fill="#181b1b"/>
+    <polygon points="435,776 477,772 510,814 467,819" fill="#d08d2d"/>
+    <polygon points="525,766 567,762 600,804 557,809" fill="#181b1b"/>
+    <polygon points="615,756 657,752 690,794 647,799" fill="#d08d2d"/>
+  </g>
+  <text x="250" y="878" font-family="sans-serif" font-size="20" fill="#7bc1d1">3.0 × 3.2 m · 6k faces · box collision · 1K atlas</text>
+</svg>
