@@ -3,8 +3,8 @@
 
 The default backend is local TripoSR followed by Blender. It uses no API key,
 account or paid generation endpoint. Each image may have an optional JSON sidecar
-with generation overrides. Without a sidecar, safe Web-oriented defaults are used.
-SVG concepts are rasterized locally before inference.
+with generation and integration overrides. Without a sidecar, safe Web-oriented
+defaults are used. SVG concepts are rasterized locally before inference.
 """
 from __future__ import annotations
 
@@ -65,6 +65,25 @@ def default_faces(category: str) -> int:
     return 12000 if category in {"characters", "robots"} else 7000
 
 
+def validate_integration_path(
+    repo_root: Path,
+    requested: str | None,
+    production_root: Path,
+    category: str,
+    slug: str,
+) -> Path:
+    relative = Path(requested) if requested else production_root / category / f"{slug}.glb"
+    if relative.is_absolute() or relative.suffix.lower() != ".glb":
+        raise InboxError("integration_path must be a relative .glb path")
+    destination = (repo_root / relative).resolve()
+    production_base = (repo_root / "assets" / "production").resolve()
+    try:
+        destination.relative_to(production_base)
+    except ValueError as exc:
+        raise InboxError("integration_path must stay below assets/production/") from exc
+    return destination
+
+
 def prepare_image(repo_root: Path, output_root: Path, image: Path) -> Path:
     if image.suffix.lower() != ".svg":
         return image
@@ -88,7 +107,8 @@ def merge_manifest(
     inbox: Path,
     source_image: Path,
     prepared_image: Path,
-) -> tuple[dict[str, Any], str, str]:
+    production_root: Path,
+) -> tuple[dict[str, Any], str, str, Path]:
     sidecar = load_sidecar(source_image.with_suffix(".json"))
     asset_name = str(sidecar.get("asset_name", source_image.stem.replace("_", " ").title())).strip()
     slug = slugify(asset_name)
@@ -113,6 +133,13 @@ def merge_manifest(
         "source_license": "project-owned concept",
     }
     provenance.update(sidecar.get("provenance", {}))
+    destination = validate_integration_path(
+        repo_root,
+        str(sidecar["integration_path"]) if "integration_path" in sidecar else None,
+        production_root,
+        category,
+        slug,
+    )
     manifest = {
         "asset_name": asset_name,
         "source_image": prepared_image.relative_to(repo_root).as_posix(),
@@ -120,7 +147,7 @@ def merge_manifest(
         "quality": quality,
         "provenance": provenance,
     }
-    return manifest, slug, category
+    return manifest, slug, category, destination
 
 
 def discover(inbox: Path) -> list[Path]:
@@ -171,7 +198,13 @@ def main() -> int:
 
     for image in images:
         prepared = prepare_image(repo_root, args.output_root, image)
-        manifest, slug, category = merge_manifest(repo_root, inbox, image, prepared)
+        manifest, slug, category, destination = merge_manifest(
+            repo_root,
+            inbox,
+            image,
+            prepared,
+            args.production_root,
+        )
         manifest_path = manifests_dir / f"{slug}.json"
         manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         command = [
@@ -187,7 +220,6 @@ def main() -> int:
         if args.validate_only:
             command.append("--validate-only")
         run(command, repo_root)
-        destination = repo_root / args.production_root / category / f"{slug}.glb"
         if not args.validate_only:
             source = repo_root / args.output_root / "triposr" / slug / "production" / f"{slug}.glb"
             if not source.is_file():
@@ -208,7 +240,7 @@ def main() -> int:
     catalog_path = repo_root / args.output_root / "catalog.json"
     catalog_path.write_text(json.dumps(catalog, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     if not args.validate_only:
-        production_catalog = repo_root / args.production_root / "catalog.json"
+        production_catalog = repo_root / "assets" / "production" / "generated-catalog.json"
         production_catalog.parent.mkdir(parents=True, exist_ok=True)
         production_catalog.write_text(json.dumps(catalog, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(json.dumps(catalog, indent=2, ensure_ascii=False))
