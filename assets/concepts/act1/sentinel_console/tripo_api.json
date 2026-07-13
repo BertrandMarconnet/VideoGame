@@ -1,0 +1,25 @@
+{
+  "asset_id": "sentinel_console",
+  "source_image": "assets/concepts/act1/sentinel_console/source.jpg",
+  "output_name": "sentinel_console.glb",
+  "integration_path": "assets/production/act1/sentinel_console.glb",
+  "task": {
+    "payload": {
+      "type": "image_to_model",
+      "file": {
+        "type": "${SOURCE_TYPE}",
+        "file_token": "${FILE_TOKEN}"
+      }
+    }
+  },
+  "post_tasks": [],
+  "quality": {
+    "max_download_mb": 20,
+    "max_triangles": 14000
+  },
+  "provenance": {
+    "concept": "Blackout Protocol S-01 lateral vestibule console",
+    "author": "Bertrand Marconnet / OpenAI concept iteration",
+    "intended_use": "original game asset"
+  }
+}
