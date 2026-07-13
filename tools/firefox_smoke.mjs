@@ -196,9 +196,9 @@ try {
   if (state.compatibilityPanelVisible) throw new Error("Compatibility panel remained visible despite WebGL2 support");
 
   const campaignStartPositions = [
+    [0.22, 0.21],
+    [0.18, 0.24],
     [0.27, 0.71],
-    [0.29, 0.78],
-    [0.50, 0.71],
   ];
   for (const [xRatio, yRatio] of campaignStartPositions) {
     if (storyboardReady) break;
