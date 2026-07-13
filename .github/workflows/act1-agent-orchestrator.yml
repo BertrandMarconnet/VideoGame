@@ -1,0 +1,343 @@
+name: Act I multi-agent asset orchestration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/act1-agent-orchestrator.yml"
+      - "tools/tripo_api_pipeline.py"
+      - "tools/asset_quality_gate.py"
+      - "tools/package_tripo_assets.py"
+      - "tools/act1_storyboard_audit.py"
+      - "assets/concepts/act1/**"
+      - "src_parts/main_17_act1_startup_v18.gdpart"
+      - "src_parts/main_00d_act1_v18_state.gdpart"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Validate only, or call the Tripo API and test the returned GLB
+        required: true
+        default: validate
+        type: choice
+        options:
+          - validate
+          - generate
+      manifest:
+        description: Act I Tripo manifest
+        required: true
+        default: assets/concepts/act1/service_access/tripo_api.json
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: act1-assets-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DEFAULT_MANIFEST: assets/concepts/act1/service_access/tripo_api.json
+
+jobs:
+  agent_1_orchestrator:
+    name: Agent 1 — plan and repository audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      manifest: ${{ steps.resolve.outputs.manifest }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: resolve
+        name: Resolve the requested production increment
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest="${{ github.event.inputs.manifest }}"
+          if [ -z "$manifest" ]; then manifest="$DEFAULT_MANIFEST"; fi
+          test -f "$manifest"
+          echo "manifest=$manifest" >> "$GITHUB_OUTPUT"
+          mkdir -p build/agents
+          cat > build/agents/agent-1-plan.json <<JSON
+          {
+            "increment": "Act I interface and corrected S-01 entrance",
+            "manifest": "$manifest",
+            "canonical_flow": [
+              "ToyGuard exterior",
+              "service access",
+              "decontamination airlock",
+              "S-01 blast door",
+              "lateral vestibule",
+              "control bunker"
+            ],
+            "constraints": [
+              "no direct opening onto the central bunker screen",
+              "Godot 4.7 GL Compatibility",
+              "Jolt simple collisions",
+              "Web and smartphone fallback required",
+              "no automatic commit of unreviewed generated assets"
+            ]
+          }
+          JSON
+
+      - name: Compile production tooling
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            tools/tripo_api_pipeline.py \
+            tools/asset_quality_gate.py \
+            tools/package_tripo_assets.py \
+            tools/act1_storyboard_audit.py
+
+      - name: Upload orchestration plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-1-plan
+          path: build/agents/agent-1-plan.json
+          retention-days: 14
+
+  agent_2_concept:
+    name: Agent 2 — concept image and storyboard gate
+    needs: agent_1_orchestrator
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install image validation tools
+        run: python3 -m pip install --quiet pillow
+
+      - name: Validate concept source and manifest
+        env:
+          MANIFEST: ${{ needs.agent_1_orchestrator.outputs.manifest }}
+        run: |
+          set -euo pipefail
+          mkdir -p build/agents
+          python3 tools/tripo_api_pipeline.py \
+            --manifest "$MANIFEST" \
+            --validate-only \
+            --output-root build/tripo-api
+          python3 tools/asset_quality_gate.py \
+            --manifest "$MANIFEST" \
+            --report build/agents/agent-2-concept.json
+
+      - name: Upload approved concept package
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-2-concept
+          path: |
+            build/agents/agent-2-concept.json
+            build/tripo-api
+          retention-days: 14
+
+  agent_3_tripo:
+    name: Agent 3 — Tripo 3D generation
+    needs: [agent_1_orchestrator, agent_2_concept]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      generated: ${{ steps.generate.outputs.generated }}
+    env:
+      MANIFEST: ${{ needs.agent_1_orchestrator.outputs.manifest }}
+      TRIPO_API_KEY: ${{ secrets.TRIPO_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install API client
+        run: python3 -m pip install --quiet requests pillow
+
+      - id: generate
+        name: Generate the model when authorized
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/tripo-api
+          requested="false"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.mode }}" = "generate" ]; then
+            requested="true"
+          elif [ "${{ github.event_name }}" = "push" ] && [ -n "${TRIPO_API_KEY:-}" ]; then
+            requested="true"
+          fi
+          if [ "$requested" != "true" ]; then
+            echo "generated=false" >> "$GITHUB_OUTPUT"
+            printf '%s\n' 'Generation was not requested. Manifest and source were validated only.' > build/tripo-api/SKIPPED.md
+            exit 0
+          fi
+          if [ -z "${TRIPO_API_KEY:-}" ]; then
+            echo "generated=false" >> "$GITHUB_OUTPUT"
+            printf '%s\n' 'TRIPO_API_KEY is missing. Add it in Settings > Secrets and variables > Actions.' > build/tripo-api/SKIPPED.md
+            exit 0
+          fi
+          python3 tools/tripo_api_pipeline.py \
+            --manifest "$MANIFEST" \
+            --output-root build/tripo-api
+          find build/tripo-api -type f -name '*.glb' -print -quit | grep -q .
+          echo "generated=true" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Tripo output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-3-tripo
+          path: build/tripo-api
+          if-no-files-found: error
+          retention-days: 14
+
+  agent_4_reviewer:
+    name: Agent 4 — storyboard and model quality review
+    needs: [agent_1_orchestrator, agent_3_tripo]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: agent-3-tripo
+          path: build/tripo-api
+
+      - name: Install review tools
+        run: python3 -m pip install --quiet pillow trimesh pygltflib
+
+      - name: Review concept or generated model
+        env:
+          MANIFEST: ${{ needs.agent_1_orchestrator.outputs.manifest }}
+          GENERATED: ${{ needs.agent_3_tripo.outputs.generated }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/review
+          if [ "$GENERATED" = "true" ]; then
+            glb="$(find build/tripo-api -type f -name '*.glb' -print -quit)"
+            test -n "$glb"
+            python3 tools/asset_quality_gate.py \
+              --manifest "$MANIFEST" \
+              --glb "$glb" \
+              --report build/review/agent-4-quality.json
+          else
+            python3 tools/asset_quality_gate.py \
+              --manifest "$MANIFEST" \
+              --report build/review/agent-4-quality.json
+          fi
+
+      - name: Upload reviewer report
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-4-review
+          path: build/review
+          retention-days: 14
+
+  agent_5_godot_integrator:
+    name: Agent 5 — Godot integration candidate
+    needs: [agent_1_orchestrator, agent_3_tripo, agent_4_reviewer]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: agent-3-tripo
+          path: build/tripo-api
+
+      - name: Build an integration overlay or retain the fallback
+        env:
+          MANIFEST: ${{ needs.agent_1_orchestrator.outputs.manifest }}
+          GENERATED: ${{ needs.agent_3_tripo.outputs.generated }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/integration
+          if [ "$GENERATED" = "true" ]; then
+            python3 tools/package_tripo_assets.py \
+              --manifest "$MANIFEST" \
+              --generated-root build/tripo-api \
+              --overlay-root build/integration
+            cp -a build/integration/. .
+          else
+            printf '%s\n' 'Procedural Godot fallback retained; no API model was available.' > build/integration/FALLBACK.md
+          fi
+          mkdir -p scripts
+          cat src_parts/main_*.gdpart > scripts/main.gd
+          python3 tools/act1_storyboard_audit.py \
+            --source scripts/main.gd \
+            --report build/integration/act1-storyboard-audit.json
+
+      - name: Validate GDScript syntax
+        run: |
+          python3 -m pip install --quiet gdtoolkit
+          gdlint scripts/main.gd
+
+      - name: Upload Godot-ready candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-5-godot-candidate
+          path: build/integration
+          retention-days: 14
+
+  agent_6_playtester:
+    name: Agent 6 — headless gameplay and Web safety test
+    needs: [agent_3_tripo, agent_5_godot_integrator]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: agent-5-godot-candidate
+          path: build/integration
+
+      - name: Apply candidate overlay when present
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -d build/integration/assets ]; then cp -a build/integration/assets/. assets/; fi
+          mkdir -p scripts build/web
+          cat src_parts/main_*.gdpart > scripts/main.gd
+
+      - name: Download Godot 4.7 and templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="4.7-stable"
+          curl -fsSL --retry 4 -o godot.zip "https://github.com/godotengine/godot/releases/download/${tag}/Godot_v${tag}_linux.x86_64.zip"
+          curl -fsSL --retry 4 -o templates.tpz "https://github.com/godotengine/godot/releases/download/${tag}/Godot_v${tag}_export_templates.tpz"
+          mkdir -p .godot-bin .templates
+          unzip -q godot.zip -d .godot-bin
+          unzip -q templates.tpz -d .templates
+          GODOT_BIN="$(find .godot-bin -maxdepth 1 -type f -name 'Godot*' | head -n 1)"
+          chmod +x "$GODOT_BIN"
+          echo "GODOT_BIN=$GODOT_BIN" >> "$GITHUB_ENV"
+          template_dir="$HOME/.local/share/godot/export_templates/4.7.stable"
+          mkdir -p "$template_dir"
+          cp -a .templates/templates/. "$template_dir/"
+
+      - name: Import, start and export the candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 180 "$GODOT_BIN" --headless --editor --path . --quit-after 12 > build/agent-6-import.log 2>&1
+          timeout 45 "$GODOT_BIN" --headless --path . --quit-after 20 > build/agent-6-runtime.log 2>&1
+          grep -q 'BLACKOUT_RUNTIME_READY' build/agent-6-runtime.log
+          if grep -Eqi 'SCRIPT ERROR|Invalid call|Invalid get index|Attempt to call|ERROR:' build/agent-6-runtime.log; then
+            cat build/agent-6-runtime.log
+            exit 1
+          fi
+          "$GODOT_BIN" --headless --path . --export-release Web build/web/index.html > build/agent-6-export.log 2>&1
+          test -s build/web/index.html
+          test -s build/web/index.wasm
+          test -s build/web/index.pck
+
+      - name: Upload playtest diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-6-playtest
+          path: |
+            build/agent-6-import.log
+            build/agent-6-runtime.log
+            build/agent-6-export.log
+            build/web/index.html
+          if-no-files-found: warn
+          retention-days: 14
