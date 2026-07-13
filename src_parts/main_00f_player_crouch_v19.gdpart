@@ -16,7 +16,9 @@ func _ensure_player_crouch_v19() -> void:
 	if bool(get_meta("v19_crouch_ready", false)) or not player:
 		return
 	_add_key_action(&"crouch", KEY_CTRL)
-	player_collision_v19 = player.find_child("*", "CollisionShape3D", true, false) as CollisionShape3D
+	var collision_nodes := player.find_children("*", "CollisionShape3D", true, false)
+	if not collision_nodes.is_empty():
+		player_collision_v19 = collision_nodes[0] as CollisionShape3D
 	if not player_collision_v19 or not (player_collision_v19.shape is CapsuleShape3D):
 		push_error("BLACKOUT_CROUCH_SETUP_FAILED: player capsule not found")
 		return
