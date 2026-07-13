@@ -49,9 +49,17 @@ func _update_crouch_v19(delta: float) -> void:
 		_show_status("POSITION BASSE" if crouch_active_v19 else "POSITION DEBOUT")
 
 	var target_blend := 1.0 if crouch_active_v19 else 0.0
-	crouch_blend_v19 = move_toward(crouch_blend_v19, target_blend, delta * CROUCH_TRANSITION_SPEED_V19)
+	crouch_blend_v19 = move_toward(
+		crouch_blend_v19,
+		target_blend,
+		delta * CROUCH_TRANSITION_SPEED_V19,
+	)
 	var capsule := player_collision_v19.shape as CapsuleShape3D
-	var current_height := lerpf(STAND_CAPSULE_HEIGHT_V19, CROUCH_CAPSULE_HEIGHT_V19, crouch_blend_v19)
+	var current_height := lerpf(
+		STAND_CAPSULE_HEIGHT_V19,
+		CROUCH_CAPSULE_HEIGHT_V19,
+		crouch_blend_v19,
+	)
 	capsule.height = maxf(current_height, capsule.radius * 2.0)
 	player_collision_v19.position.y = -0.5 * (STAND_CAPSULE_HEIGHT_V19 - current_height)
 	camera.position.y = lerpf(STAND_CAMERA_Y_V19, CROUCH_CAMERA_Y_V19, crouch_blend_v19)
@@ -87,11 +95,18 @@ func _repair_entrance_blockers_v19() -> void:
 		if stale and stale.get_parent() != act1_airlock_root_v18:
 			stale.queue_free()
 
-	# The supervision screen is visual equipment, not an architectural wall.
-	# Keeping its mesh while disabling its body collision clears the route into S-01.
+	_relocate_main_control_screen_v19()
+	set_meta("v19_entrance_repaired", true)
+	print("BLACKOUT_ENTRANCE_ROUTE_V19_CLEAR")
+
+func _relocate_main_control_screen_v19() -> void:
+	# The former screen crossed the circulation axis between S-01 and the factory.
+	# It is now mounted against the right wall and remains non-colliding equipment.
 	var screen_frame := find_child("MainScreenFrame", true, false)
 	if screen_frame is CollisionObject3D:
 		var collision_object := screen_frame as CollisionObject3D
+		collision_object.global_position = Vector3(12.55, 3.25, -10.0)
+		collision_object.rotation_degrees = Vector3(0.0, 90.0, 0.0)
 		collision_object.collision_layer = 0
 		collision_object.collision_mask = 0
 		for child in collision_object.get_children():
@@ -99,5 +114,18 @@ func _repair_entrance_blockers_v19() -> void:
 				(child as CollisionShape3D).set_deferred("disabled", true)
 		collision_object.set_meta("visual_only", true)
 
-	set_meta("v19_entrance_repaired", true)
-	print("BLACKOUT_ENTRANCE_ROUTE_V19_CLEAR")
+	var old_origin := Vector3(0.0, 3.25, -16.52)
+	var new_origin := Vector3(12.32, 3.25, -10.0)
+	var turn := Basis(Vector3.UP, deg_to_rad(90.0))
+	var visual_names := [
+		"MainControlScreen",
+		"ScreenGrid",
+		"SignalBar",
+		"ThreatBar",
+	]
+	for node_name in visual_names:
+		for candidate in find_children(node_name, "MeshInstance3D", true, false):
+			var visual := candidate as MeshInstance3D
+			var offset := visual.global_position - old_origin
+			visual.global_position = new_origin + turn * offset
+			visual.rotation_degrees.y += 90.0
