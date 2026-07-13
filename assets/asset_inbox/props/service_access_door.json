@@ -1,13 +1,14 @@
 {
   "asset_name": "Service Access Door",
   "category": "props",
+  "integration_path": "assets/production/act1/service_access.glb",
   "generation": {
     "foreground_ratio": 0.9,
     "mc_resolution": 256,
     "target_faces": 8000,
     "target_height_m": 3.2,
     "bake_texture": false,
-    "create_collision": true,
+    "create_collision": false,
     "device": "cuda:0"
   },
   "quality": {
