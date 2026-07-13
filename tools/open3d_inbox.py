@@ -4,6 +4,7 @@
 The default backend is local TripoSR followed by Blender. It uses no API key,
 account or paid generation endpoint. Each image may have an optional JSON sidecar
 with generation overrides. Without a sidecar, safe Web-oriented defaults are used.
+SVG concepts are rasterized locally before inference.
 """
 from __future__ import annotations
 
@@ -16,7 +17,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-SUPPORTED = {".png", ".jpg", ".jpeg", ".webp"}
+SUPPORTED = {".png", ".jpg", ".jpeg", ".webp", ".svg"}
 SLUG_RE = re.compile(r"[^a-z0-9]+")
 
 
@@ -64,13 +65,36 @@ def default_faces(category: str) -> int:
     return 12000 if category in {"characters", "robots"} else 7000
 
 
-def merge_manifest(repo_root: Path, inbox: Path, image: Path) -> tuple[dict[str, Any], str, str]:
-    sidecar = load_sidecar(image.with_suffix(".json"))
-    asset_name = str(sidecar.get("asset_name", image.stem.replace("_", " ").title())).strip()
+def prepare_image(repo_root: Path, output_root: Path, image: Path) -> Path:
+    if image.suffix.lower() != ".svg":
+        return image
+    try:
+        import cairosvg
+    except ImportError as exc:
+        raise InboxError("CairoSVG is required to rasterize SVG concepts") from exc
+    destination = repo_root / output_root / "prepared" / f"{slugify(image.stem)}.png"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    cairosvg.svg2png(
+        url=str(image),
+        write_to=str(destination),
+        output_width=1024,
+        output_height=1024,
+    )
+    return destination
+
+
+def merge_manifest(
+    repo_root: Path,
+    inbox: Path,
+    source_image: Path,
+    prepared_image: Path,
+) -> tuple[dict[str, Any], str, str]:
+    sidecar = load_sidecar(source_image.with_suffix(".json"))
+    asset_name = str(sidecar.get("asset_name", source_image.stem.replace("_", " ").title())).strip()
     slug = slugify(asset_name)
-    category = str(sidecar.get("category", infer_category(image, inbox))).lower()
+    category = str(sidecar.get("category", infer_category(source_image, inbox))).lower()
     if category not in {"props", "modules", "characters", "robots"}:
-        raise InboxError(f"Unsupported category {category!r} for {image}")
+        raise InboxError(f"Unsupported category {category!r} for {source_image}")
     generation = {
         "foreground_ratio": 0.86,
         "mc_resolution": 256,
@@ -91,7 +115,7 @@ def merge_manifest(repo_root: Path, inbox: Path, image: Path) -> tuple[dict[str,
     provenance.update(sidecar.get("provenance", {}))
     manifest = {
         "asset_name": asset_name,
-        "source_image": image.relative_to(repo_root).as_posix(),
+        "source_image": prepared_image.relative_to(repo_root).as_posix(),
         "generation": generation,
         "quality": quality,
         "provenance": provenance,
@@ -138,7 +162,7 @@ def main() -> int:
         wanted = slugify(args.asset)
         images = [image for image in images if slugify(image.stem) == wanted]
     if not images:
-        raise InboxError("No PNG/JPEG/WebP concept image was found in the asset inbox")
+        raise InboxError("No PNG/JPEG/WebP/SVG concept image was found in the asset inbox")
 
     manifests_dir = repo_root / args.output_root / "manifests"
     manifests_dir.mkdir(parents=True, exist_ok=True)
@@ -146,7 +170,8 @@ def main() -> int:
     generator = repo_root / "tools" / "triposr_generate.py"
 
     for image in images:
-        manifest, slug, category = merge_manifest(repo_root, inbox, image)
+        prepared = prepare_image(repo_root, args.output_root, image)
+        manifest, slug, category = merge_manifest(repo_root, inbox, image, prepared)
         manifest_path = manifests_dir / f"{slug}.json"
         manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         command = [
@@ -173,7 +198,8 @@ def main() -> int:
                 "asset_name": manifest["asset_name"],
                 "slug": slug,
                 "category": category,
-                "source_image": manifest["source_image"],
+                "source_image": image.relative_to(repo_root).as_posix(),
+                "prepared_image": manifest["source_image"],
                 "output": destination.relative_to(repo_root).as_posix(),
                 "status": "validated" if args.validate_only else "generated",
             }
