@@ -247,14 +247,15 @@ func _update_player(delta: float) -> void:
 	if drone_active:
 		_update_drone_v11(delta)
 		return
+	_update_crouch_v19(delta)
 	var input_vec := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := (player.transform.basis * Vector3(input_vec.x, 0, input_vec.y)).normalized()
-	var speed := SPRINT_SPEED if Input.is_action_pressed("sprint") else PLAYER_SPEED
+	var speed := CROUCH_SPEED_V19 if crouch_blend_v19 > 0.2 else (SPRINT_SPEED if Input.is_action_pressed("sprint") else PLAYER_SPEED)
 	player.velocity.x = direction.x * speed
 	player.velocity.z = direction.z * speed
 	if not player.is_on_floor():
 		player.velocity.y -= GRAVITY * delta
-	elif Input.is_action_just_pressed("jump"):
+	elif Input.is_action_just_pressed("jump") and crouch_blend_v19 < 0.2:
 		player.velocity.y = 6.2
 	player.move_and_slide()
 	if Input.is_action_just_pressed("flashlight"):
@@ -267,7 +268,7 @@ func _update_player(delta: float) -> void:
 		_open_context_menu_v12()
 	if not is_mobile and Input.is_action_just_pressed("primary"):
 		_primary_action()
-	if Input.is_action_pressed("sprint") and direction.length() > 0.2:
+	if Input.is_action_pressed("sprint") and crouch_blend_v19 < 0.2 and direction.length() > 0.2:
 		fear_sprint += delta
 	if direction.length() < 0.05:
 		fear_still += delta
