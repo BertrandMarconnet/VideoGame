@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" fill="#08131b"/>
+  <rect x="24" y="24" width="976" height="88" rx="16" fill="#06101a" stroke="#1d8eaa" stroke-width="4"/>
+  <text x="54" y="66" font-family="sans-serif" font-size="34" font-weight="700" fill="#dce6e2">SERVICE ACCESS DOOR</text>
+  <text x="56" y="96" font-family="sans-serif" font-size="20" fill="#e5a23d">ToyGuard // 1987 // PS1 industrial low-poly</text>
+  <ellipse cx="520" cy="860" rx="310" ry="58" fill="#02070b"/>
+  <polygon points="250,248 718,204 824,732 220,792" fill="#31383a" stroke="#6e7c7e" stroke-width="6"/>
+  <polygon points="292,286 682,248 750,698 268,746" fill="#141d21" stroke="#95a09a" stroke-width="4"/>
+  <g stroke="#666e6c" stroke-width="3">
+    <polygon points="314,316 395,307 410,680 326,691" fill="#303638"/>
+    <polygon points="406,306 487,297 505,669 420,680" fill="#343a3b"/>
+    <polygon points="498,296 579,287 600,658 515,669" fill="#383d3e"/>
+    <polygon points="590,286 671,277 695,647 610,658" fill="#3c4141"/>
+  </g>
+  <line x1="493" y1="290" x2="516" y2="675" stroke="#050809" stroke-width="16"/>
+  <g>
+    <polygon points="286,710 326,706 360,752 319,757" fill="#d1902f"/>
+    <polygon points="350,704 390,700 424,746 383,751" fill="#181b1b"/>
+    <polygon points="414,698 454,694 488,740 447,745" fill="#d1902f"/>
+    <polygon points="478,692 518,688 552,734 511,739" fill="#181b1b"/>
+    <polygon points="542,686 582,682 616,728 575,733" fill="#d1902f"/>
+    <polygon points="606,680 646,676 680,722 639,727" fill="#181b1b"/>
+  </g>
+  <rect x="696" y="376" width="72" height="150" rx="8" fill="#151f22" stroke="#67706d" stroke-width="5"/>
+  <rect x="713" y="400" width="38" height="42" fill="#087d8e"/>
+  <circle cx="732" cy="479" r="10" fill="#e03920"/>
+  <text x="330" y="230" font-family="sans-serif" font-size="42" font-weight="700" fill="#df4a26">S-01</text>
+  <text x="278" y="842" font-family="sans-serif" font-size="20" fill="#7bc1d1">3.2 m · box collision · 8k faces · pivot at floor</text>
+</svg>
