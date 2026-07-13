@@ -157,7 +157,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tools/setup_triposr_cpu.sh
+          bash tools/setup_triposr_cpu.sh
 
       - name: Generate GLB
         shell: bash
