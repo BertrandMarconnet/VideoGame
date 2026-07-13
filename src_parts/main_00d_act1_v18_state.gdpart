@@ -1,0 +1,16 @@
+
+# Act I v18 — corrected service entrance, airlock and interface state.
+const ACT1_SERVICE_X_V18 := 10.5
+const ACT1_OUTER_Z_V18 := 0.35
+const ACT1_INNER_Z_V18 := -10.5
+const ACT1_DOOR_SLIDE_V18 := 2.45
+
+var act1_airlock_root_v18: Node3D
+var act1_outer_door_v18: AnimatableBody3D
+var act1_inner_door_v18: AnimatableBody3D
+var act1_airlock_timer_v18 := 0.0
+var act1_outer_open_v18 := false
+var act1_inner_open_v18 := false
+var act1_interface_ready_v18 := false
+var act1_objective_back_v18: PanelContainer
+var act1_status_back_v18: PanelContainer
