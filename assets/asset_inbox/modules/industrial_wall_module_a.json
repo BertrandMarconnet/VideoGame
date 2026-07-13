@@ -1,0 +1,21 @@
+{
+  "asset_name": "Industrial Wall Module A",
+  "category": "modules",
+  "integration_path": "assets/production/environment/industrial_wall_module_a.glb",
+  "generation": {
+    "foreground_ratio": 0.9,
+    "mc_resolution": 256,
+    "target_faces": 6000,
+    "target_height_m": 3.2,
+    "bake_texture": false,
+    "create_collision": true,
+    "device": "cuda:0"
+  },
+  "quality": {
+    "max_glb_mb": 14
+  },
+  "provenance": {
+    "author": "Bertrand Marconnet / OpenAI concept pass",
+    "source_license": "project-owned original concept"
+  }
+}
