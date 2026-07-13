@@ -1,0 +1,21 @@
+{
+  "asset_name": "S01 Blast Door",
+  "category": "props",
+  "integration_path": "assets/production/act1/s01_blast_door.glb",
+  "generation": {
+    "foreground_ratio": 0.9,
+    "mc_resolution": 256,
+    "target_faces": 9000,
+    "target_height_m": 3.2,
+    "bake_texture": false,
+    "create_collision": false,
+    "device": "cuda:0"
+  },
+  "quality": {
+    "max_glb_mb": 18
+  },
+  "provenance": {
+    "author": "Bertrand Marconnet / OpenAI concept pass",
+    "source_license": "project-owned original concept"
+  }
+}
