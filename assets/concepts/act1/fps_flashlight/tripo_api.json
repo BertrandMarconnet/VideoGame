@@ -1,0 +1,25 @@
+{
+  "asset_id": "fps_flashlight",
+  "source_image": "assets/concepts/act1/fps_flashlight/source.jpg",
+  "output_name": "fps_flashlight.glb",
+  "integration_path": "assets/production/act1/fps_flashlight.glb",
+  "task": {
+    "payload": {
+      "type": "image_to_model",
+      "file": {
+        "type": "${SOURCE_TYPE}",
+        "file_token": "${FILE_TOKEN}"
+      }
+    }
+  },
+  "post_tasks": [],
+  "quality": {
+    "max_download_mb": 12,
+    "max_triangles": 8000
+  },
+  "provenance": {
+    "concept": "Blackout Protocol first-person military flashlight",
+    "author": "Bertrand Marconnet / OpenAI concept iteration",
+    "intended_use": "original game asset"
+  }
+}
