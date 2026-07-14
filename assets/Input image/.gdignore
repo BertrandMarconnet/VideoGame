@@ -1,0 +1,2 @@
+# Source reference images are inputs for 3D generation, not Godot runtime assets.
+# The presence of this file prevents Godot from importing them.
