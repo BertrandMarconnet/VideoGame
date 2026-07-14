@@ -7,6 +7,7 @@ import json
 import sys
 from pathlib import Path
 
+import bmesh
 import bpy
 from mathutils import Vector
 
@@ -61,6 +62,47 @@ def face_count(objects: list[bpy.types.Object]) -> int:
     return sum(len(obj.data.polygons) for obj in objects)
 
 
+def clean_mesh(model: bpy.types.Object) -> dict[str, float | int]:
+    """Repair the triangle soup produced by TripoSR before decimation and rigging.
+
+    TripoSR may export coincident vertices independently for almost every triangle.
+    Welding exact/near-exact duplicates creates a connected mesh, removes degenerate
+    edges and recalculates normals without changing the visible silhouette.
+    """
+    mesh = model.data
+    vertices_before = len(mesh.vertices)
+    faces_before = len(mesh.polygons)
+    largest_dimension = max(float(value) for value in model.dimensions)
+    weld_distance = max(1.0e-7, min(1.0e-5, largest_dimension * 1.0e-6))
+
+    mesh.validate(clean_customdata=False)
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
+    bm.verts.ensure_lookup_table()
+    bm.edges.ensure_lookup_table()
+    bm.faces.ensure_lookup_table()
+
+    if bm.verts:
+        bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=weld_distance)
+    if bm.edges:
+        bmesh.ops.dissolve_degenerate(bm, edges=list(bm.edges), dist=weld_distance)
+    if bm.faces:
+        bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+
+    bm.to_mesh(mesh)
+    bm.free()
+    mesh.update()
+    mesh.validate(clean_customdata=False)
+
+    return {
+        "vertices_before_cleanup": vertices_before,
+        "vertices_after_cleanup": len(mesh.vertices),
+        "faces_before_cleanup": faces_before,
+        "faces_after_cleanup": len(mesh.polygons),
+        "weld_distance": weld_distance,
+    }
+
+
 def main() -> None:
     args = parse_args()
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -76,6 +118,7 @@ def main() -> None:
     model = bpy.context.view_layer.objects.active
     model.name = args.asset_name
 
+    cleanup_metrics = clean_mesh(model)
     before_faces = face_count([model])
     if before_faces > args.target_faces:
         modifier = model.modifiers.new(name="WebDecimate", type="DECIMATE")
@@ -88,6 +131,7 @@ def main() -> None:
     triangulate = model.modifiers.new(name="Triangulate", type="TRIANGULATE")
     bpy.context.view_layer.objects.active = model
     bpy.ops.object.modifier_apply(modifier=triangulate.name)
+    model.data.validate(clean_customdata=False)
 
     minimum, maximum = world_bounds([model])
     height = maximum.z - minimum.z
@@ -129,8 +173,10 @@ def main() -> None:
 
     minimum, maximum = world_bounds([model])
     metrics = {
-        "faces_before": before_faces,
+        **cleanup_metrics,
+        "faces_before_decimation": before_faces,
         "faces_after": face_count([model]),
+        "vertices_after": len(model.data.vertices),
         "dimensions_m": [round(value, 5) for value in (maximum - minimum)],
         "collision_generated": bool(collision),
         "output": str(args.output),
