@@ -61,7 +61,8 @@ jobs:
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            blender jq unzip curl libegl1 libgl1 libglib2.0-0 libx11-6 libxext6 libxi6 libxrender1
+            blender jq unzip curl python3-numpy \
+            libegl1 libgl1 libglib2.0-0 libx11-6 libxext6 libxi6 libxrender1
 
       - name: Validate sources
         shell: bash
