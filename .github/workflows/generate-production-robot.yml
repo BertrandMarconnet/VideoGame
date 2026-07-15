@@ -28,6 +28,7 @@ on:
   pull_request:
     paths:
       - tools/generate_crawler7_production_v2.py
+      - tools/generate_crawler7_production_v3.py
       - tools/validate_rigged_glb.py
       - .github/workflows/generate-production-robot.yml
 
@@ -74,7 +75,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m py_compile tools/generate_crawler7_production_v2.py tools/validate_rigged_glb.py
+          python3 -m py_compile tools/generate_crawler7_production_v2.py tools/generate_crawler7_production_v3.py tools/validate_rigged_glb.py
 
       - name: Generate segmented robot, rig, materials and animations
         shell: bash
@@ -84,7 +85,7 @@ jobs:
           set -euo pipefail
           mkdir -p "$OUTPUT_DIR" build/production-robot
           blender --background --factory-startup \
-            --python tools/generate_crawler7_production_v2.py -- \
+            --python tools/generate_crawler7_production_v3.py -- \
             --output "$OUTPUT_GLB" \
             --metrics "$OUTPUT_METRICS" \
             --preview "$OUTPUT_PREVIEW" \
@@ -134,7 +135,7 @@ jobs:
           cat > "$OUTPUT_DIR/crawler_7_production.PROVENANCE.md" <<'EOF'
           # Provenance — CRAWLER-7 production asset
 
-          - Generator: deterministic Blender hard-surface generator v2 maintained in this repository
+          - Generator: deterministic Blender hard-surface generator v3 maintained in this repository
           - External generation API: none
           - API key: none
           - Geometry: segmented modular mechanical construction
