@@ -2,8 +2,8 @@
 """Compatibility entry point for the category-aware asset generator.
 
 The Ubuntu runner can expose different Blender defaults and glTF operator arguments. This wrapper
-loads the generator definitions without executing its entry point, then replaces only environment
-initialization, material creation and GLB export with version-tolerant implementations.
+loads the generator definitions without executing its entry point, then replaces environment
+initialization, palette extraction, material creation and GLB export with compatible implementations.
 """
 from __future__ import annotations
 
@@ -81,6 +81,52 @@ def compatible_material(name, definition, emission=None, texture=None):
     return mat
 
 
+def reference_color(request) -> tuple[float, float, float] | None:
+    references = request.get("reference_images", [])
+    samples: list[tuple[float, float, float]] = []
+    for reference in references[:4]:
+        path = Path(reference)
+        if not path.exists():
+            continue
+        try:
+            image = bpy.data.images.load(str(path), check_existing=True)
+            pixel_count = max(1, int(image.size[0]) * int(image.size[1]))
+            step = max(1, pixel_count // 1800)
+            pixels = image.pixels
+            for pixel_index in range(0, pixel_count, step):
+                offset = pixel_index * 4
+                red = float(pixels[offset])
+                green = float(pixels[offset + 1])
+                blue = float(pixels[offset + 2])
+                alpha = float(pixels[offset + 3])
+                brightness = max(red, green, blue)
+                saturation = max(red, green, blue) - min(red, green, blue)
+                if alpha > 0.45 and 0.035 < brightness < 0.82 and saturation > 0.055:
+                    samples.append((red, green, blue))
+        except Exception as exc:
+            print(f"Reference palette skipped for {path}: {exc}")
+    if not samples:
+        return None
+    return tuple(sum(sample[channel] for sample in samples) / len(samples) for channel in range(3))
+
+
+def compatible_build_materials(request):
+    definitions = namespace["MATERIALS"]
+    base = definitions[request["material_id"]]
+    sampled = reference_color(request)
+    if sampled is not None:
+        original = base[0]
+        blend = 0.52
+        adapted = tuple(max(0.018, min(0.48, original[index] * (1.0 - blend) + sampled[index] * blend)) for index in range(3)) + (original[3],)
+        base = (adapted, base[1], base[2])
+    return {
+        "primary": compatible_material("BP_Primary", base),
+        "dark": compatible_material("BP_DarkMetal", ((0.035, 0.038, 0.04, 1.0), 0.85, 0.72)),
+        "joint": compatible_material("BP_Joints", ((0.025, 0.022, 0.02, 1.0), 0.9, 0.86)),
+        "red": compatible_material("BP_RedSensor", ((0.15, 0.005, 0.005, 1.0), 0.2, 0.25), emission=(1.0, 0.0, 0.02, 1.0)),
+    }
+
+
 def compatible_export_glb(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.object.select_all(action="DESELECT")
@@ -105,5 +151,6 @@ def compatible_export_glb(path: Path) -> None:
 
 namespace["reset"] = compatible_reset
 namespace["material"] = compatible_material
+namespace["build_materials"] = compatible_build_materials
 namespace["export_glb"] = compatible_export_glb
 namespace["main"]()
