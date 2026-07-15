@@ -1,0 +1,53 @@
+name: Validate localized damage system
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "project.godot"
+      - "scripts/destruction/**"
+      - "scripts/generated_assets/**"
+      - "data/material_response_db.json"
+      - "tests/test_damage_system.gd"
+      - ".github/workflows/validate-local-damage.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  damage-behavior:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Godot 4.7 stable
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="4.7-stable"
+          curl -fsSL --retry 5 --retry-delay 3 -o godot.zip \
+            "https://github.com/godotengine/godot/releases/download/${tag}/Godot_v${tag}_linux.x86_64.zip"
+          unzip -q godot.zip -d .godot-bin
+          GODOT_BIN="$(find .godot-bin -maxdepth 1 -type f -name 'Godot*' | head -n 1)"
+          chmod +x "$GODOT_BIN"
+          echo "GODOT_BIN=$GODOT_BIN" >> "$GITHUB_ENV"
+      - name: Run localized damage behavior tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/damage-tests
+          "$GODOT_BIN" --headless --path . --script res://tests/test_damage_system.gd \
+            > build/damage-tests/test.log 2>&1
+          cat build/damage-tests/test.log
+          grep -q "DAMAGE_SYSTEM_TEST_OK" build/damage-tests/test.log
+          if grep -Eqi 'SCRIPT ERROR|Invalid call|Parse Error|DAMAGE_TEST_FAIL' build/damage-tests/test.log; then
+            exit 1
+          fi
+      - name: Upload damage test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: localized-damage-test-${{ github.run_id }}
+          path: build/damage-tests
+          if-no-files-found: warn
+          retention-days: 30
