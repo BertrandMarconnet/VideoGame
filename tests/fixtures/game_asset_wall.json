@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "asset_name": "Smoke drywall panel",
+  "slug": "smoke_drywall_panel",
+  "category": "wall",
+  "generator_profile": "segmented_wall",
+  "visual_profile": "PS1 industriel ToyGuard",
+  "dimensions_m": {"width": 3.0, "height": 2.4, "depth": 0.18},
+  "material_id": "drywall",
+  "rig": "none",
+  "animations": ["idle"],
+  "destruction_mode": "segmented_wall",
+  "damage_zones_description": "Chaque cellule peut ouvrir un trou local.",
+  "interactions_description": "crowbar=2.2; flashlight=0.45",
+  "quality": "web",
+  "integration": "bridge_module",
+  "reference_images": [],
+  "reference_image_errors": [],
+  "issue_number": 0,
+  "issue_url": ""
+}
