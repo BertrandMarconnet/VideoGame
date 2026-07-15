@@ -24,6 +24,7 @@ on:
       - ".github/ISSUE_TEMPLATE/generate-game-asset.yml"
       - ".github/workflows/generate-game-asset.yml"
       - "tools/generate_game_asset.py"
+      - "tools/generate_game_asset_v2.py"
       - "tools/parse_game_asset_issue.py"
       - "tools/build_asset_sidecars.py"
       - "tools/validate_game_asset_bundle.py"
@@ -77,6 +78,7 @@ jobs:
           python3 -m py_compile \
             tools/parse_game_asset_issue.py \
             tools/generate_game_asset.py \
+            tools/generate_game_asset_v2.py \
             tools/build_asset_sidecars.py \
             tools/validate_game_asset_bundle.py \
             tools/update_generated_asset_catalog.py
@@ -123,7 +125,7 @@ jobs:
               --output-dir "$BUNDLE_DIR"
           else
             blender --background --factory-startup \
-              --python tools/generate_game_asset.py -- \
+              --python tools/generate_game_asset_v2.py -- \
               --request "$REQUEST_JSON" \
               --output-dir "$BUNDLE_DIR" \
               2>&1 | tee build/game-asset/logs/generation.log
@@ -226,21 +228,32 @@ jobs:
           sudo apt-get install -y --no-install-recommends blender python3-numpy libegl1 libgl1 libglib2.0-0
       - name: Compile generators
         run: |
-          python3 -m py_compile tools/generate_game_asset.py tools/validate_game_asset_bundle.py
+          python3 -m py_compile tools/generate_game_asset.py tools/generate_game_asset_v2.py tools/validate_game_asset_bundle.py
       - name: Generate and validate fixture
         shell: bash
         run: |
-          set -euo pipefail
+          set -o pipefail
           REQUEST="tests/fixtures/${{ matrix.fixture }}"
           SLUG="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["slug"])' "$REQUEST")"
           OUT="build/smoke/$SLUG"
-          blender --background --factory-startup --python tools/generate_game_asset.py -- \
-            --request "$REQUEST" --output-dir "$OUT"
+          mkdir -p "$OUT"
+          set +e
+          blender --background --factory-startup --python tools/generate_game_asset_v2.py -- \
+            --request "$REQUEST" --output-dir "$OUT" 2>&1 | tee "$OUT/generation.log"
+          status=${PIPESTATUS[0]}
+          set -e
+          if [[ $status -ne 0 ]]; then
+            tail -n 160 "$OUT/generation.log"
+            exit $status
+          fi
           python3 tools/validate_game_asset_bundle.py \
-            --bundle "$OUT" --slug "$SLUG" --report "$OUT/$SLUG.validation.json"
-      - name: Upload smoke preview
+            --bundle "$OUT" --slug "$SLUG" --report "$OUT/$SLUG.validation.json" \
+            2>&1 | tee "$OUT/validation.log"
+      - name: Upload smoke preview and diagnostics
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: smoke-${{ matrix.fixture }}-${{ github.run_id }}
           path: build/smoke
+          if-no-files-found: warn
           retention-days: 14
