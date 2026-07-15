@@ -140,6 +140,7 @@ func _break_zone(zone_id: String, zone: Dictionary, context: Dictionary) -> void
 			speed_multiplier *= clampf(float(zone.get("speed_multiplier", 0.72)), 0.1, 1.0)
 			if broken_zones.size() >= 2 and String(profile.get("category", "")) == "robot_biped":
 				movement_mode = "crawl"
+				_configure_crawl_collision()
 		"disable_detection":
 			detection_enabled = false
 		"shutdown":
@@ -147,10 +148,14 @@ func _break_zone(zone_id: String, zone: Dictionary, context: Dictionary) -> void
 			movement_mode = "shutdown"
 		"open_hole":
 			movement_mode = "breached"
+			_disable_owner_collisions()
 		"unlock":
 			movement_mode = "unlocked"
+			_disable_owner_collisions()
 		"disable_gui":
 			detection_enabled = false
+		"break":
+			_disable_owner_collisions()
 	zone_broken.emit(zone_id, effect)
 
 func _find_targets(patterns: Array) -> Array[Node3D]:
@@ -162,6 +167,28 @@ func _find_targets(patterns: Array) -> Array[Node3D]:
 			if node is Node3D and not found.has(node):
 				found.append(node as Node3D)
 	return found
+
+func _disable_owner_collisions() -> void:
+	var owner_node := get_parent()
+	for node in owner_node.find_children("*", "CollisionShape3D", true, false):
+		var collision := node as CollisionShape3D
+		if collision != null:
+			collision.set_deferred("disabled", true)
+	if owner_node is CollisionObject3D:
+		(owner_node as CollisionObject3D).collision_layer = 0
+		(owner_node as CollisionObject3D).collision_mask = 0
+
+func _configure_crawl_collision() -> void:
+	var owner_node := get_parent()
+	for node in owner_node.find_children("*", "CollisionShape3D", true, false):
+		var collision := node as CollisionShape3D
+		if collision == null or not collision.shape is CapsuleShape3D:
+			continue
+		var old_shape := collision.shape as CapsuleShape3D
+		var crawl_shape := old_shape.duplicate() as CapsuleShape3D
+		crawl_shape.height = maxf(crawl_shape.radius * 2.2, crawl_shape.height * 0.46)
+		collision.shape = crawl_shape
+		collision.position.y = -maxf(old_shape.height * 0.18, 0.15)
 
 func _detach_visual(target: Node3D, context: Dictionary) -> void:
 	if not is_instance_valid(target):
