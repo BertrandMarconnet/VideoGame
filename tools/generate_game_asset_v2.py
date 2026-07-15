@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Compatibility entry point for the category-aware asset generator.
 
-The Ubuntu runner can expose different Blender glTF operator arguments. This wrapper loads the
-validated generator definitions without executing its entry point, then replaces only material
-creation and GLB export with version-tolerant implementations.
+The Ubuntu runner can expose different Blender defaults and glTF operator arguments. This wrapper
+loads the generator definitions without executing its entry point, then replaces only environment
+initialization, material creation and GLB export with version-tolerant implementations.
 """
 from __future__ import annotations
 
@@ -19,6 +19,27 @@ if marker not in text:
 text = text.rsplit(marker, 1)[0]
 namespace: dict[str, object] = {"__file__": str(SOURCE), "__name__": "generic_asset_module"}
 exec(compile(text, str(SOURCE), "exec"), namespace)
+
+
+def compatible_reset() -> None:
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    scene = bpy.context.scene
+    scene.unit_settings.system = "METRIC"
+    scene.unit_settings.scale_length = 1.0
+    try:
+        scene.render.engine = "BLENDER_EEVEE_NEXT"
+    except Exception:
+        scene.render.engine = "BLENDER_EEVEE"
+    scene.render.resolution_x = 720
+    scene.render.resolution_y = 720
+    scene.render.resolution_percentage = 100
+    scene.render.image_settings.file_format = "PNG"
+    scene.render.film_transparent = False
+    if scene.world is None:
+        scene.world = bpy.data.worlds.new("BlackoutAssetWorld")
+    scene.world.color = (0.025, 0.03, 0.036)
+    scene.frame_start = 1
+    scene.frame_end = 48
 
 
 def compatible_material(name, definition, emission=None, texture=None):
@@ -82,6 +103,7 @@ def compatible_export_glb(path: Path) -> None:
     bpy.ops.export_scene.gltf(**options)
 
 
+namespace["reset"] = compatible_reset
 namespace["material"] = compatible_material
 namespace["export_glb"] = compatible_export_glb
 namespace["main"]()
