@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "id": "specter_5",
+  "name": "SPECTER-5",
+  "category": "robot_biped",
+  "glb": "res://assets/generated/specter_5/specter_5.glb",
+  "preview": "res://assets/generated/specter_5/specter_5.png",
+  "damage_profile": "res://assets/generated/specter_5/specter_5.damage.json",
+  "integration": "replace_procedural",
+  "dimensions_m": {
+    "width": 0.9,
+    "height": 2.45,
+    "depth": 0.55
+  },
+  "rig": "rigid_biped",
+  "animations": [
+    "Idle-loop",
+    "Walk-loop",
+    "Run-loop",
+    "Attack",
+    "Crawl-loop",
+    "Shutdown"
+  ],
+  "generator_profile": "specter_biped",
+  "fallback": "procedural"
+}

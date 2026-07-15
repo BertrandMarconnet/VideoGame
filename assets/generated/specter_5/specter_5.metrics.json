@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "asset": "SPECTER-5",
+  "slug": "specter_5",
+  "generator": "Blackout category-aware Blender generator v1",
+  "category": "robot_biped",
+  "mesh_objects": 59,
+  "vertices": 1936,
+  "triangles": 3636,
+  "bones": 14,
+  "animations": [
+    "Idle-loop",
+    "Walk-loop",
+    "Run-loop",
+    "Attack",
+    "Crawl-loop",
+    "Shutdown"
+  ],
+  "materials": [
+    "BP_DarkMetal",
+    "BP_Joints",
+    "BP_Primary",
+    "BP_RedSensor",
+    "CollisionHidden",
+    "PreviewGround"
+  ],
+  "collision_helpers": 1,
+  "damage_zones": 4,
+  "reference_images_used": 0
+}
