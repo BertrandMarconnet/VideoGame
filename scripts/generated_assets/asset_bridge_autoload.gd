@@ -6,6 +6,9 @@ var bridge: GeneratedAssetBridge
 var _scan_scheduled := false
 
 func _ready() -> void:
+	# Keep the runtime singleton name distinct from the global class at parse time, then expose the
+	# stable node path used by gameplay scripts after instantiation.
+	name = "GeneratedAssetBridge"
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	bridge = BridgeScript.new()
 	bridge.name = "RuntimeBridge"
