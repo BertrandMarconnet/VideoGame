@@ -67,33 +67,38 @@ La campagne commence à l’extérieur de ToyGuard Industries, sous la pluie. Le
 - `C` : déployer ou rappeler KITE-01 ;
 - `Échap` : retour joueur, fermeture d’interface ou pause.
 
-## Générateur CRAWLER-7 de production — sans clé API
+## Générateur générique d'assets — sans clé API
 
-Le dépôt n’utilise plus TripoSR comme générateur final : les essais monoculaires n’étaient pas assez fidèles et ne fournissaient ni segmentation mécanique, ni rig, ni animations exploitables.
+Le dépôt utilise des générateurs Blender contrôlés plutôt qu'une reconstruction monoculaire imprévisible. L'interface **Issues → Générer un asset de jeu** accepte :
 
-La nouvelle chaîne fabrique un CRAWLER-7 low-poly déterministe avec Blender :
+- robots bipèdes ou quadrupèdes ;
+- props interactifs ;
+- murs segmentés ;
+- portes et sas ;
+- modules d'environnement ;
+- consoles, écrans et GUI 3D.
 
-- pièces mécaniques séparées ;
-- armature quadrupède de 13 os ;
-- matériaux industriels et capteurs rouges émissifs ;
-- collisions simples ;
-- animations `Idle`, `Walk`, `Run`, `Attack` et `Shutdown` ;
-- aperçu PNG et rapports de validation ;
-- réimport Blender et contrôle Godot 4.7 avant ajout au dépôt.
+Une à six images peuvent être jointes. Elles guident la palette, les proportions et les textures d'écran. La catégorie choisie sélectionne le générateur adapté afin de produire une géométrie low-poly exploitable, un rig si nécessaire et un profil de dégâts localisés.
 
-### Interface la plus simple
-
-1. ouvrir **Issues** ;
-2. cliquer sur **New issue** ;
-3. choisir **Générer CRAWLER-7 production** ;
-4. conserver la qualité **Web / PS1** ;
-5. cocher la confirmation et valider.
-
-Aucune image, clé API, installation locale ou compte fournisseur n’est demandé. Le résultat validé est placé dans :
+Chaque asset validé est placé dans :
 
 ```text
-assets/output 3d model/crawler_7_production.glb
+assets/generated/<asset>/
 ```
+
+Le bundle contient le GLB, l'aperçu, les métriques, le manifeste `.asset.json` et le profil `.damage.json`. Le catalogue `assets/generated/catalog.json` est chargé automatiquement par l'autoload `GeneratedAssetBridge`.
+
+## Destruction localisée
+
+- CRAWLER-7 ralentit lorsqu'une patte est détruite ;
+- SPECTER-5 peut perdre une jambe, puis ramper si les deux jambes sont coupées ;
+- les capteurs peuvent être neutralisés indépendamment ;
+- le placo, la brique, le béton, le verre, le bois et les métaux réagissent différemment ;
+- les murs destructibles sont segmentés afin qu'un impact ouvre un trou local plutôt que supprimer toute la paroi ;
+- le pied-de-biche est efficace sur le placo, beaucoup moins sur la brique ;
+- une charge de SPECTER peut traverser certaines maçonneries non porteuses.
+
+Les modèles procéduraux restent disponibles comme solution de repli lorsque le GLB n'existe pas ou ne passe pas la validation.
 
 ## Validation
 
@@ -106,6 +111,7 @@ Le déploiement reconstruit `scripts/main.gd`, exécute `gdlint`, importe le pro
 - `docs/STORYBOARD_IMPLEMENTATION_MATRIX.md` : correspondance entre storyboard et jeu ;
 - `docs/SOUNDTRACK_SUNO.md` : placement narratif des musiques ;
 - `docs/ASSET_PIPELINE.md` : licences et budgets 3D Web ;
+- `docs/GENERATED_ASSET_AND_DAMAGE_PIPELINE.md` : formulaire, génération, catalogue et dégâts localisés ;
 - `docs/CRAWLER7_PRODUCTION_PIPELINE.md` : génération, rig, animations et contrôles ;
 - `docs/OPEN_SOURCE_3D_DECISION.md` : comparaison des solutions open source ;
 - `docs/REPOSITORY_AUDIT_2026-07-15.md` : audit ciblé du pipeline 3D.
