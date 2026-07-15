@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blackout-protocol.local/schemas/damage_profile.schema.json",
+  "title": "Blackout Protocol localized damage profile",
+  "type": "object",
+  "required": ["schema_version", "asset_id", "mode", "default_material", "zones", "tool_rules"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "asset_id": {"type": "string", "pattern": "^[a-z0-9_]{1,64}$"},
+    "mode": {"enum": ["none", "localized", "detachable", "segmented_wall", "material_advanced"]},
+    "default_material": {"type": "string"},
+    "zones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "material_id", "max_health", "node_patterns", "on_break"],
+        "properties": {
+          "id": {"type": "string"},
+          "material_id": {"type": "string"},
+          "max_health": {"type": "number", "exclusiveMinimum": 0},
+          "detachable": {"type": "boolean"},
+          "node_patterns": {"type": "array", "items": {"type": "string"}},
+          "speed_multiplier": {"type": "number", "minimum": 0, "maximum": 1},
+          "on_break": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "tool_rules": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0}},
+    "descriptions": {"type": "object"}
+  },
+  "additionalProperties": true
+}
