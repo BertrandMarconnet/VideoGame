@@ -42,6 +42,7 @@ func _primary_action() -> void:
 		_show_status("AUCUNE INTERACTION À PORTÉE")
 		return
 	var collider := hit.get("collider") as Node
+	var hit_position := hit.get("position", Vector3.ZERO) as Vector3
 	if collider is RigidBody3D and collider.get_meta("grabbable", false):
 		_interact()
 	elif collider and collider.has_meta("terminal"):
@@ -49,9 +50,9 @@ func _primary_action() -> void:
 	elif collider and collider.get_meta("ambient_agent", false):
 		_inspect_agent_v12(collider as CharacterBody3D)
 	elif collider and collider.get_meta("destructible", false):
-		_damage_destructible(collider, 18.0, hit.get("position", Vector3.ZERO))
+		_damage_destructible(collider, 18.0, hit_position, "flashlight_bash", Vector3.UP * 1.2)
 	elif collider and collider.get_meta("robot", false):
-		_damage_robot(collider as CharacterBody3D, 6.0, 0.4)
+		_damage_robot(collider as CharacterBody3D, 16.0, 0.4, hit_position, "flashlight_bash", Vector3.UP * 1.5)
 	else:
 		_show_status("ÉLÉMENT STRUCTUREL — utilisez le clic droit pour l'analyser.")
 
@@ -82,19 +83,36 @@ func _on_prop_body_entered(other: Node, prop: RigidBody3D) -> void:
 	if not is_instance_valid(prop):
 		return
 	var impact := prop.linear_velocity.length() * prop.mass
+	var tool_id := String(prop.get_meta("tool_id", "thrown_prop"))
+	var impulse := prop.linear_velocity * minf(prop.mass, 12.0)
 	if other.get_meta("robot", false) and impact > 22.0:
-		_damage_robot(other as CharacterBody3D, clamp(impact * 0.18, 7.0, 42.0), 1.8)
+		_damage_robot(other as CharacterBody3D, clamp(impact * 0.18, 7.0, 42.0), 1.8, prop.global_position, tool_id, impulse)
 	if other.get_meta("destructible", false) and impact > 28.0:
-		_damage_destructible(other, clamp(impact * 0.22, 8.0, 52.0), prop.global_position)
+		_damage_destructible(other, clamp(impact * 0.22, 8.0, 52.0), prop.global_position, tool_id, impulse)
 
-func _damage_destructible(body: Node, amount: float, at: Vector3) -> void:
+func _damage_destructible(body: Node, amount: float, at: Vector3, tool_id := "flashlight_bash", impulse := Vector3.ZERO) -> void:
+	var bridge := get_node_or_null("/root/GeneratedAssetBridge")
+	if bridge != null and bridge.has_method("apply_damage"):
+		var result := bridge.call("apply_damage", body, {
+			"amount": amount,
+			"hit_position": at,
+			"tool_id": tool_id,
+			"damage_type": "impact",
+			"impulse": impulse
+		}) as Dictionary
+		if bool(result.get("handled", false)):
+			_show_status(String(result.get("status", "STRUCTURE ENDOMMAGÉE")))
+			if bool(result.get("broken", false)):
+				destroyed_decor += 1
+				_athena_observe_v12("destruction")
+			return
 	var max_health := float(body.get_meta("max_health", body.get_meta("health", 75.0)))
 	if not body.has_meta("max_health"):
 		body.set_meta("max_health", max_health)
 	var hp := float(body.get_meta("health", max_health)) - amount
 	body.set_meta("health", hp)
 	_show_status("STRUCTURE ENDOMMAGÉE — %d%%" % int(max(hp, 0.0) / max(max_health, 1.0) * 100.0))
-	if hp <= 0.0:
+	if hp <= 0.0 and body is StaticBody3D:
 		_break_destructible(body as StaticBody3D, at)
 
 func _break_destructible(body: StaticBody3D, at: Vector3) -> void:
