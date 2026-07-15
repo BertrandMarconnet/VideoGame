@@ -195,7 +195,7 @@ func _detach_visual(target: Node3D, context: Dictionary) -> void:
 		rigid.apply_central_impulse(impulse)
 		_runtime_debris.append(rigid)
 		while _runtime_debris.size() > max_runtime_debris:
-			var oldest := _runtime_debris.pop_front()
+			var oldest: RigidBody3D = _runtime_debris.pop_front() as RigidBody3D
 			if is_instance_valid(oldest):
 				oldest.queue_free()
 	target.visible = false
