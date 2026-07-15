@@ -13,6 +13,9 @@ on:
           - tests/fixtures/game_asset_specter.json
           - tests/fixtures/game_asset_wall.json
           - tests/fixtures/game_asset_prop.json
+          - tests/fixtures/game_asset_door.json
+          - tests/fixtures/game_asset_environment.json
+          - tests/fixtures/game_asset_gui.json
         default: tests/fixtures/game_asset_specter.json
       commit_output:
         description: Commit the validated bundle to main
@@ -230,6 +233,9 @@ jobs:
           - game_asset_specter.json
           - game_asset_wall.json
           - game_asset_prop.json
+          - game_asset_door.json
+          - game_asset_environment.json
+          - game_asset_gui.json
     steps:
       - uses: actions/checkout@v4
       - name: Install Blender
