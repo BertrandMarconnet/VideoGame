@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "asset_name": "SPECTER-5",
+  "slug": "specter_5",
+  "category": "robot_biped",
+  "generator_profile": "specter_biped",
+  "visual_profile": "PS1 industriel ToyGuard",
+  "dimensions_m": {"width": 0.9, "height": 2.45, "depth": 0.55},
+  "material_id": "metal_armored",
+  "rig": "rigid_biped",
+  "animations": ["idle", "walk", "run", "attack", "crawl", "shutdown"],
+  "destruction_mode": "detachable",
+  "damage_zones_description": "Chaque jambe est détachable; deux jambes détruites activent crawl.",
+  "interactions_description": "crowbar=2.2; thrown_prop=1.0",
+  "quality": "web",
+  "integration": "replace_procedural",
+  "reference_images": [],
+  "reference_image_errors": [],
+  "issue_number": 0,
+  "issue_url": ""
+}
