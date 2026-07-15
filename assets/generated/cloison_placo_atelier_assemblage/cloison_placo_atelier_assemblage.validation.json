@@ -1,0 +1,13 @@
+{
+  "valid": true,
+  "slug": "cloison_placo_atelier_assemblage",
+  "category": "wall",
+  "triangles": 1068,
+  "bones": 0,
+  "animations": [],
+  "damage_zones": 24,
+  "glb": {
+    "bytes": 93588,
+    "version": 2
+  }
+}

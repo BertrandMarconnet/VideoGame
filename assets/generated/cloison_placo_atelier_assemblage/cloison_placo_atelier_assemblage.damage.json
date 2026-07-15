@@ -1,0 +1,259 @@
+{
+  "schema_version": 1,
+  "asset_id": "cloison_placo_atelier_assemblage",
+  "mode": "segmented_wall",
+  "default_material": "drywall",
+  "zones": [
+    {
+      "id": "cell_0_0",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_0_0"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_0_1",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_0_1"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_0_2",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_0_2"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_0_3",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_0_3"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_0_4",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_0_4"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_0_5",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_0_5"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_1_0",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_1_0"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_1_1",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_1_1"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_1_2",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_1_2"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_1_3",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_1_3"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_1_4",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_1_4"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_1_5",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_1_5"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_2_0",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_2_0"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_2_1",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_2_1"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_2_2",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_2_2"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_2_3",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_2_3"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_2_4",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_2_4"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_2_5",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_2_5"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_3_0",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_3_0"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_3_1",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_3_1"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_3_2",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_3_2"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_3_3",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_3_3"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_3_4",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_3_4"
+      ],
+      "on_break": "open_hole"
+    },
+    {
+      "id": "cell_3_5",
+      "material_id": "drywall",
+      "max_health": 20,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_wall_3_5"
+      ],
+      "on_break": "open_hole"
+    }
+  ],
+  "tool_rules": {
+    "flashlight_bash": 0.45,
+    "plank": 0.8,
+    "crowbar": 2.2,
+    "thrown_prop": 1.0,
+    "specter_charge": 4.0
+  },
+  "descriptions": {
+    "zones": "Cellules locales de 0.8 à 1 m; chaque cellule détruite ouvre un passage local sans supprimer toute la paroi.",
+    "interactions": "flashlight_bash=0.55; plank=0.85; crowbar=2.4; thrown_prop=0.8; specter_charge=5.0"
+  }
+}

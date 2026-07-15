@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "id": "cloison_placo_atelier_assemblage",
+  "name": "Cloison placo atelier assemblage",
+  "category": "wall",
+  "glb": "res://assets/generated/cloison_placo_atelier_assemblage/cloison_placo_atelier_assemblage.glb",
+  "preview": "res://assets/generated/cloison_placo_atelier_assemblage/cloison_placo_atelier_assemblage.png",
+  "damage_profile": "res://assets/generated/cloison_placo_atelier_assemblage/cloison_placo_atelier_assemblage.damage.json",
+  "integration": "bridge_module",
+  "dimensions_m": {
+    "width": 4.0,
+    "height": 2.8,
+    "depth": 0.18
+  },
+  "rig": "none",
+  "animations": [],
+  "generator_profile": "segmented_wall",
+  "fallback": "procedural"
+}

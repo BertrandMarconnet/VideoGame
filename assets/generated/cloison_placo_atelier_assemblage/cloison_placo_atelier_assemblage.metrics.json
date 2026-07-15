@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "asset": "Cloison placo atelier assemblage",
+  "slug": "cloison_placo_atelier_assemblage",
+  "generator": "Blackout category-aware Blender generator v1",
+  "category": "wall",
+  "mesh_objects": 25,
+  "vertices": 584,
+  "triangles": 1068,
+  "bones": 0,
+  "animations": [],
+  "materials": [
+    "BP_DarkMetal",
+    "BP_Joints",
+    "BP_Primary",
+    "BP_RedSensor",
+    "CollisionHidden",
+    "PreviewGround"
+  ],
+  "collision_helpers": 1,
+  "damage_zones": 24,
+  "reference_images_used": 0
+}
