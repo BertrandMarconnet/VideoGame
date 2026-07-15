@@ -2,9 +2,30 @@ func _freeze_debris(piece: RigidBody3D) -> void:
 	if is_instance_valid(piece) and piece != held_body:
 		piece.freeze = true
 
-func _damage_robot(robot: CharacterBody3D, amount: float, stun_time: float) -> void:
+func _damage_robot(robot: CharacterBody3D, amount: float, stun_time: float, hit_position := Vector3.ZERO, tool_id := "flashlight_bash", impulse := Vector3.ZERO) -> void:
 	if not is_instance_valid(robot):
 		return
+	var bridge := get_node_or_null("/root/GeneratedAssetBridge")
+	if bridge != null and bridge.has_method("apply_damage"):
+		var result := bridge.call("apply_damage", robot, {
+			"amount": amount,
+			"hit_position": hit_position if hit_position != Vector3.ZERO else robot.global_position,
+			"tool_id": tool_id,
+			"damage_type": "impact",
+			"impulse": impulse,
+			"mass": 4.0
+		}) as Dictionary
+		if bool(result.get("handled", false)):
+			robot.set_meta("stun", max(float(robot.get_meta("stun", 0.0)), stun_time))
+			robot.set_meta("damage_speed_multiplier", float(result.get("speed_multiplier", 1.0)))
+			robot.set_meta("movement_mode", String(result.get("movement_mode", "normal")))
+			robot.set_meta("detection_enabled", bool(result.get("detection_enabled", true)))
+			_show_status(robot.name + " — " + String(result.get("status", "ZONE ENDOMMAGÉE")))
+			if bool(result.get("disabled", false)):
+				robot.velocity = Vector3.ZERO
+				_set_robot_animation(robot, "Shutdown")
+				_show_status(robot.name + " DÉSACTIVÉ PAR DÉGÂTS LOCALISÉS")
+			return
 	var hp := float(robot.get_meta("health", 100.0)) - amount
 	robot.set_meta("health", hp)
 	robot.set_meta("stun", max(float(robot.get_meta("stun", 0.0)), stun_time))
@@ -15,8 +36,13 @@ func _damage_robot(robot: CharacterBody3D, amount: float, stun_time: float) -> v
 		_show_status(robot.name + " DÉSACTIVÉ")
 
 func _update_robots(delta: float) -> void:
+	var bridge := get_node_or_null("/root/GeneratedAssetBridge")
 	for robot in robots:
 		if not is_instance_valid(robot):
+			continue
+		if bridge != null and bridge.has_method("is_disabled") and bool(bridge.call("is_disabled", robot)):
+			robot.velocity = Vector3.ZERO
+			_set_robot_animation(robot, "Shutdown")
 			continue
 		var stun: float = maxf(float(robot.get_meta("stun", 0.0)) - delta, 0.0)
 		robot.set_meta("stun", stun)
@@ -24,12 +50,31 @@ func _update_robots(delta: float) -> void:
 		robot.set_meta("attack_cd", attack_cd)
 		if stun > 0.0:
 			robot.velocity = Vector3.ZERO
+			_set_robot_animation(robot, "Idle-loop")
 			continue
 		var personality := String(robot.get_meta("personality"))
 		if personality == "specter":
 			_update_specter(robot, delta)
 		else:
 			_update_crawler(robot, delta)
+
+func _robot_damage_speed(robot: Node) -> float:
+	var bridge := get_node_or_null("/root/GeneratedAssetBridge")
+	if bridge != null and bridge.has_method("get_speed_multiplier"):
+		return clampf(float(bridge.call("get_speed_multiplier", robot)), 0.1, 1.0)
+	return clampf(float(robot.get_meta("damage_speed_multiplier", 1.0)), 0.1, 1.0)
+
+func _robot_movement_mode(robot: Node) -> String:
+	var bridge := get_node_or_null("/root/GeneratedAssetBridge")
+	if bridge != null and bridge.has_method("get_movement_mode"):
+		return String(bridge.call("get_movement_mode", robot))
+	return String(robot.get_meta("movement_mode", "normal"))
+
+func _robot_detection_enabled(robot: Node) -> bool:
+	var bridge := get_node_or_null("/root/GeneratedAssetBridge")
+	if bridge != null and bridge.has_method("is_detection_enabled"):
+		return bool(bridge.call("is_detection_enabled", robot))
+	return bool(robot.get_meta("detection_enabled", true))
 
 func _update_specter(robot: CharacterBody3D, _delta: float) -> void:
 	var distance := robot.global_position.distance_to(player.global_position)
@@ -39,42 +84,77 @@ func _update_specter(robot: CharacterBody3D, _delta: float) -> void:
 		robot.visible = false
 		return
 	robot.visible = true
+	var mode := _robot_movement_mode(robot)
+	var damage_speed := _robot_damage_speed(robot)
 	if not observed:
 		var target := player.global_position
 		var direction := target - robot.global_position
 		direction.y = 0
-		var speed := 2.0 if not can_attack else 3.4
-		if direction.length() > (8.0 if not can_attack else 1.3):
+		var base_speed := 1.25 if mode == "crawl" else (2.0 if not can_attack else 3.4)
+		var speed := base_speed * damage_speed
+		if direction.length() > (6.0 if mode == "crawl" else (8.0 if not can_attack else 1.3)):
 			robot.velocity = direction.normalized() * speed
 			robot.look_at(Vector3(player.global_position.x, robot.global_position.y, player.global_position.z), Vector3.UP)
 			robot.move_and_slide()
+			_set_robot_animation(robot, "Crawl-loop" if mode == "crawl" else ("Run-loop" if can_attack else "Walk-loop"))
 		else:
 			robot.velocity = Vector3.ZERO
+			_set_robot_animation(robot, "Idle-loop")
 	else:
 		robot.velocity = Vector3.ZERO
-	if can_attack and distance < 1.45 and float(robot.get_meta("attack_cd")) <= 0.0:
-		_hurt_player(14.0, "SPECTER-5 a attendu que vous détourniez le regard.")
-		robot.set_meta("attack_cd", 2.4)
+		_set_robot_animation(robot, "Idle-loop")
+	var attack_range := 1.05 if mode == "crawl" else 1.45
+	if can_attack and distance < attack_range and float(robot.get_meta("attack_cd")) <= 0.0:
+		_hurt_player(9.0 if mode == "crawl" else 14.0, "SPECTER-5 poursuit l'attaque malgré ses dégâts.")
+		robot.set_meta("attack_cd", 2.8 if mode == "crawl" else 2.4)
+		_set_robot_animation(robot, "Attack")
 
 func _update_crawler(robot: CharacterBody3D, _delta: float) -> void:
 	var active := objective_stage > 0 or (elapsed > 185.0 and fear_profile == "POURSUITE")
+	if not _robot_detection_enabled(robot):
+		active = active and robot.global_position.distance_to(player.global_position) < 9.0
 	if not active:
 		robot.visible = elapsed > 85.0 and int(elapsed) % 27 < 5
 		robot.velocity = Vector3.ZERO
+		_set_robot_animation(robot, "Idle-loop")
 		return
 	robot.visible = true
 	var direction := player.global_position - robot.global_position
 	direction.y = 0
 	if direction.length() > 1.15:
-		var speed := 4.1 if player.velocity.length() > 6.0 else 3.0
+		var base_speed := 4.1 if player.velocity.length() > 6.0 else 3.0
+		var speed := base_speed * _robot_damage_speed(robot)
 		robot.velocity = direction.normalized() * speed
 		robot.look_at(Vector3(player.global_position.x, robot.global_position.y, player.global_position.z), Vector3.UP)
 		robot.move_and_slide()
+		_set_robot_animation(robot, "Run-loop" if speed > 2.8 else "Walk-loop")
 	else:
 		robot.velocity = Vector3.ZERO
+		_set_robot_animation(robot, "Idle-loop")
 		if float(robot.get_meta("attack_cd")) <= 0.0:
 			_hurt_player(11.0, "CRAWLER-7 attaque au niveau du sol.")
 			robot.set_meta("attack_cd", 1.7)
+			_set_robot_animation(robot, "Attack")
+
+func _set_robot_animation(robot: Node, clip_name: String) -> void:
+	var visual := robot.get_node_or_null("GeneratedVisual")
+	if visual == null:
+		return
+	var player_node := visual.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if player_node == null:
+		for candidate in visual.find_children("*", "AnimationPlayer", true, false):
+			player_node = candidate as AnimationPlayer
+			break
+	if player_node == null:
+		return
+	var resolved := clip_name
+	if not player_node.has_animation(resolved):
+		for animation_name in player_node.get_animation_list():
+			if String(animation_name).contains(clip_name):
+				resolved = String(animation_name)
+				break
+	if player_node.has_animation(resolved) and player_node.current_animation != resolved:
+		player_node.play(resolved, 0.18)
 
 func _is_observed(robot: Node3D) -> bool:
 	var to_robot := robot.global_position - camera.global_position
