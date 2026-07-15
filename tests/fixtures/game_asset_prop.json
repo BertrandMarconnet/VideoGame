@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "asset_name": "Industrial crowbar",
+  "slug": "industrial_crowbar",
+  "category": "prop",
+  "generator_profile": "generic_prop",
+  "visual_profile": "Prop industriel générique",
+  "dimensions_m": {"width": 0.08, "height": 0.75, "depth": 0.08},
+  "material_id": "metal_light",
+  "rig": "none",
+  "animations": ["idle"],
+  "destruction_mode": "localized",
+  "damage_zones_description": "Objet saisissable et outil de frappe.",
+  "interactions_description": "drywall=2.2; brick=0.55; metal=0.35",
+  "quality": "web",
+  "integration": "bridge_module",
+  "reference_images": [],
+  "reference_image_errors": [],
+  "issue_number": 0,
+  "issue_url": ""
+}
