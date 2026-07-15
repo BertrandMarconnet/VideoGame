@@ -5,6 +5,7 @@
 	robot.add_child(eye)
 	for side in [-1.0, 1.0]:
 		var leg := MeshInstance3D.new()
+		leg.name = "LeftLeg" if side < 0.0 else "RightLeg"
 		var leg_mesh := CylinderMesh.new()
 		leg_mesh.top_radius = 0.09
 		leg_mesh.bottom_radius = 0.11
