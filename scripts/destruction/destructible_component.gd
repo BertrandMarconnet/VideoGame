@@ -7,7 +7,7 @@ signal destruction_state_changed(state: Dictionary)
 
 const MaterialResponseDBScript := preload("res://scripts/destruction/material_response_db.gd")
 
-var material_db: MaterialResponseDB
+var material_db: Object
 var profile: Dictionary = {}
 var zones: Dictionary = {}
 var broken_zones: Dictionary = {}
@@ -20,7 +20,7 @@ var max_runtime_debris := 16
 var _runtime_debris: Array[RigidBody3D] = []
 
 func _ready() -> void:
-	material_db = MaterialResponseDBScript.new()
+	material_db = MaterialResponseDBScript.new() as Object
 	debris_parent = get_tree().current_scene as Node3D
 
 func configure(profile_data: Dictionary) -> void:
@@ -37,7 +37,8 @@ func configure(profile_data: Dictionary) -> void:
 		var zone := (zone_variant as Dictionary).duplicate(true)
 		var zone_id := String(zone.get("id", "zone_%d" % zones.size()))
 		var material_id := String(zone.get("material_id", profile.get("default_material", "metal_light")))
-		var max_health := maxf(float(zone.get("max_health", material_db.base_health(material_id))), 1.0)
+		var fallback_health := float(material_db.call("base_health", material_id))
+		var max_health := maxf(float(zone.get("max_health", fallback_health)), 1.0)
 		zone["id"] = zone_id
 		zone["material_id"] = material_id
 		zone["max_health"] = max_health
@@ -59,8 +60,8 @@ func apply_damage(context: Dictionary) -> Dictionary:
 	var damage_type := String(context.get("damage_type", "impact"))
 	var base_damage := maxf(float(context.get("amount", 0.0)), 0.0)
 	var material_id := String(zone.get("material_id", profile.get("default_material", "metal_light")))
-	var multiplier := material_db.damage_multiplier(material_id, tool_id, damage_type)
-	var damage := base_damage * multiplier
+	var multiplier: float = float(material_db.call("damage_multiplier", material_id, tool_id, damage_type))
+	var damage: float = base_damage * multiplier
 	if damage <= 0.0:
 		return {"handled": true, "zone_id": zone_id, "damage": 0.0, "remaining_ratio": float(zone.get("health", 1.0)) / float(zone.get("max_health", 1.0)), "status": "AUCUN EFFET SUR CE MATÉRIAU"}
 	var health := maxf(float(zone.get("health", zone.get("max_health", 1.0))) - damage, 0.0)
