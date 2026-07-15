@@ -1,0 +1,179 @@
+name: Générer un asset de jeu
+about: Génère un GLB, son manifeste, son profil de dégâts et son aperçu pour Godot.
+title: "[ASSET] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Cette interface fabrique un asset low-poly à partir d'un **profil contrôlé** et de vos images de référence.
+        Les images servent à la palette, aux proportions et à la texture des écrans. La géométrie est produite par le générateur adapté à la catégorie afin d'éviter les reconstructions incohérentes.
+
+  - type: input
+    id: asset_name
+    attributes:
+      label: Nom de l'asset
+      description: Exemple : SPECTER-5, mur placo atelier, console Sentinel.
+      placeholder: SPECTER-5
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Catégorie
+      options:
+        - Robot bipède
+        - Robot quadrupède
+        - Prop / objet interactif
+        - Mur / cloison modulaire
+        - Porte / sas
+        - Module d'environnement
+        - Console / écran / GUI 3D
+    validations:
+      required: true
+
+  - type: textarea
+    id: reference_images
+    attributes:
+      label: Images de référence
+      description: Glissez ici 1 à 6 images. Pour un robot, privilégiez face, droite, arrière et trois-quarts.
+      placeholder: Glisser-déposer les images ici
+    validations:
+      required: false
+
+  - type: dropdown
+    id: visual_profile
+    attributes:
+      label: Profil visuel
+      options:
+        - PS1 industriel ToyGuard
+        - Métal militaire rétro-futuriste
+        - Bunker S-01 béton et acier
+        - Interface CRT / Sentinel OS
+        - Prop industriel générique
+    validations:
+      required: true
+
+  - type: input
+    id: width
+    attributes:
+      label: Largeur cible en mètres
+      value: "1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: height
+    attributes:
+      label: Hauteur cible en mètres
+      value: "1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: depth
+    attributes:
+      label: Profondeur cible en mètres
+      value: "1.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: material
+    attributes:
+      label: Matériau principal
+      options:
+        - Métal léger
+        - Métal blindé
+        - Plastique technique
+        - Verre
+        - Placo
+        - Brique
+        - Béton
+        - Bois
+    validations:
+      required: true
+
+  - type: dropdown
+    id: rig
+    attributes:
+      label: Rig / articulation
+      options:
+        - Aucun
+        - Mécanique bipède
+        - Mécanique quadrupède
+        - Charnière simple
+        - Pièces rigides segmentées
+    validations:
+      required: true
+
+  - type: textarea
+    id: animations
+    attributes:
+      label: Animations souhaitées
+      description: Liste séparée par des virgules. Exemple : idle, walk, run, attack, crawl, shutdown.
+      value: idle
+    validations:
+      required: true
+
+  - type: dropdown
+    id: destruction
+    attributes:
+      label: Destructibilité
+      options:
+        - Aucune
+        - Dégâts localisés
+        - Membres / pièces détachables
+        - Mur segmenté avec trous locaux
+        - Avancée selon le matériau
+    validations:
+      required: true
+
+  - type: textarea
+    id: damage_zones
+    attributes:
+      label: Zones critiques et conséquences
+      description: Exemple : jambe gauche = vitesse -35%; deux jambes = ramper; capteur = vision réduite.
+      placeholder: left_leg: detach, speed 0.65; right_leg: detach; sensor: disable_detection
+    validations:
+      required: false
+
+  - type: textarea
+    id: interactions
+    attributes:
+      label: Outils et interactions
+      description: Exemple : lampe faible, planche moyenne, pied-de-biche fort sur placo, SPECTER très fort sur brique.
+      placeholder: flashlight=0.4; plank=0.8; crowbar=2.0; specter_charge=4.0
+    validations:
+      required: false
+
+  - type: dropdown
+    id: quality
+    attributes:
+      label: Qualité
+      options:
+        - Web / mobile PS1 — recommandé
+        - Standard
+        - Hero asset
+    validations:
+      required: true
+
+  - type: dropdown
+    id: integration
+    attributes:
+      label: Intégration dans le jeu
+      options:
+        - Ajouter au catalogue seulement
+        - Remplacer automatiquement le modèle procédural correspondant
+        - Générer un module instanciable depuis l'AssetBridge
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: Je confirme les droits d'utilisation des images et la génération de l'asset dans le dépôt.
+          required: true
