@@ -7,12 +7,12 @@ const MaterialResponseDBScript := preload("res://scripts/destruction/material_re
 
 var world_root: Node3D
 var catalog: Dictionary = {}
-var material_db: MaterialResponseDB
+var material_db: Object
 var registered: Dictionary = {}
 
 func initialize(root: Node3D) -> void:
 	world_root = root
-	material_db = MaterialResponseDBScript.new()
+	material_db = MaterialResponseDBScript.new() as Object
 	_reload_catalog()
 
 func _reload_catalog() -> void:
@@ -53,7 +53,7 @@ func register_robot(robot: CharacterBody3D, personality: String) -> void:
 func register_static_destructible(body: Node3D, material_id: String, max_health := 0.0, zone_id := "core") -> void:
 	if body == null or registered.has(body.get_instance_id()):
 		return
-	var health := max_health if max_health > 0.0 else material_db.base_health(material_id)
+	var health := max_health if max_health > 0.0 else float(material_db.call("base_health", material_id))
 	var profile := {
 		"schema_version": 1,
 		"asset_id": body.name.to_snake_case(),
@@ -110,7 +110,7 @@ func create_segmented_wall(parent: Node3D, at: Vector3, size: Vector3, material_
 			cell.add_child(collision)
 			var zone_id := "cell_%02d_%02d" % [row, column]
 			cell.set_meta("damage_zone_id", zone_id)
-			cell.set_meta("destructible", not material_db.is_structural(material_id))
+			cell.set_meta("destructible", not bool(material_db.call("is_structural", material_id)))
 			cell.set_meta("material_id", material_id)
 			root.add_child(cell)
 			var profile := {
@@ -122,7 +122,7 @@ func create_segmented_wall(parent: Node3D, at: Vector3, size: Vector3, material_
 				"zones": [{
 					"id": zone_id,
 					"material_id": material_id,
-					"max_health": material_db.base_health(material_id),
+					"max_health": float(material_db.call("base_health", material_id)),
 					"detachable": true,
 					"node_patterns": [mesh.name],
 					"on_break": "open_hole"
@@ -278,7 +278,6 @@ func _fallback_robot_profile(asset_id: String) -> Dictionary:
 	return {"schema_version":1,"asset_id":asset_id,"category":"robot_quadruped","mode":"detachable","default_material":"metal_armored","zones":zones,"tool_rules":{}}
 
 func _wall_material(material_id: String, row: int, column: int) -> StandardMaterial3D:
-	var profile := material_db.get_profile(material_id)
 	var material := StandardMaterial3D.new()
 	var base := Color(0.45, 0.45, 0.43)
 	match material_id:
