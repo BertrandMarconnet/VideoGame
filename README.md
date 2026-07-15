@@ -67,33 +67,33 @@ La campagne commence à l’extérieur de ToyGuard Industries, sous la pluie. Le
 - `C` : déployer ou rappeler KITE-01 ;
 - `Échap` : retour joueur, fermeture d’interface ou pause.
 
-## Générateur 3D clé en main — sans clé API
+## Générateur CRAWLER-7 de production — sans clé API
 
-La génération 3D ne demande plus Meshy, aucune clé API et aucun ordinateur configuré comme runner.
+Le dépôt n’utilise plus TripoSR comme générateur final : les essais monoculaires n’étaient pas assez fidèles et ne fournissaient ni segmentation mécanique, ni rig, ni animations exploitables.
+
+La nouvelle chaîne fabrique un CRAWLER-7 low-poly déterministe avec Blender :
+
+- pièces mécaniques séparées ;
+- armature quadrupède de 13 os ;
+- matériaux industriels et capteurs rouges émissifs ;
+- collisions simples ;
+- animations `Idle`, `Walk`, `Run`, `Attack` et `Shutdown` ;
+- aperçu PNG et rapports de validation ;
+- réimport Blender et contrôle Godot 4.7 avant ajout au dépôt.
 
 ### Interface la plus simple
 
 1. ouvrir **Issues** ;
 2. cliquer sur **New issue** ;
-3. choisir **Générer un modèle 3D** ;
-4. donner un nom et glisser une image ;
-5. valider.
+3. choisir **Générer CRAWLER-7 production** ;
+4. conserver la qualité **Web / PS1** ;
+5. cocher la confirmation et valider.
 
-GitHub exécute TripoSR sur son runner CPU, optimise le résultat avec Blender, vérifie l’import avec Godot 4.7, puis place automatiquement le fichier dans :
-
-```text
-assets/output 3d model/<nom>.glb
-```
-
-Pour générer **SPECTER-5** immédiatement, les quatre vues sont déjà présentes dans :
+Aucune image, clé API, installation locale ou compte fournisseur n’est demandé. Le résultat validé est placé dans :
 
 ```text
-assets/Input image/specter_5/
+assets/output 3d model/crawler_7_production.glb
 ```
-
-Il est aussi possible d’ouvrir **Actions → Generate 3D model — no key → Run workflow** et de conserver les valeurs proposées.
-
-Le calcul CPU est gratuit mais plus lent qu’un service GPU : le premier essai peut durer de quelques dizaines de minutes à plusieurs heures.
 
 ## Validation
 
@@ -106,5 +106,6 @@ Le déploiement reconstruit `scripts/main.gd`, exécute `gdlint`, importe le pro
 - `docs/STORYBOARD_IMPLEMENTATION_MATRIX.md` : correspondance entre storyboard et jeu ;
 - `docs/SOUNDTRACK_SUNO.md` : placement narratif des musiques ;
 - `docs/ASSET_PIPELINE.md` : licences et budgets 3D Web ;
-- `docs/TRIPOSR_GITHUB_PIPELINE.md` : générateur sans clé ;
-- `docs/REPOSITORY_AUDIT_2026-07-13.md` : audit des workflows, PR et permissions.
+- `docs/CRAWLER7_PRODUCTION_PIPELINE.md` : génération, rig, animations et contrôles ;
+- `docs/OPEN_SOURCE_3D_DECISION.md` : comparaison des solutions open source ;
+- `docs/REPOSITORY_AUDIT_2026-07-15.md` : audit ciblé du pipeline 3D.
