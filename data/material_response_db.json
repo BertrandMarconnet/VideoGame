@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "materials": {
+    "drywall": {
+      "base_health": 20,
+      "density": 0.35,
+      "fracture": "crumbly",
+      "damage_multipliers": {
+        "flashlight_bash": 0.55,
+        "plank": 0.85,
+        "crowbar": 2.4,
+        "thrown_prop": 0.8,
+        "specter_charge": 5.0
+      }
+    },
+    "brick": {
+      "base_health": 55,
+      "density": 1.8,
+      "fracture": "masonry",
+      "damage_multipliers": {
+        "flashlight_bash": 0.08,
+        "plank": 0.15,
+        "crowbar": 0.55,
+        "thrown_prop": 0.35,
+        "specter_charge": 3.5
+      }
+    },
+    "concrete": {
+      "base_health": 160,
+      "density": 2.4,
+      "fracture": "structural",
+      "damage_multipliers": {
+        "flashlight_bash": 0.0,
+        "plank": 0.0,
+        "crowbar": 0.08,
+        "thrown_prop": 0.05,
+        "specter_charge": 0.35
+      }
+    },
+    "wood": {
+      "base_health": 34,
+      "density": 0.7,
+      "fracture": "splinter",
+      "damage_multipliers": {
+        "flashlight_bash": 0.5,
+        "plank": 0.75,
+        "crowbar": 1.8,
+        "thrown_prop": 0.9,
+        "specter_charge": 3.0
+      }
+    },
+    "glass": {
+      "base_health": 12,
+      "density": 0.4,
+      "fracture": "shatter",
+      "damage_multipliers": {
+        "flashlight_bash": 1.4,
+        "plank": 1.8,
+        "crowbar": 2.8,
+        "thrown_prop": 2.0,
+        "specter_charge": 5.0
+      }
+    },
+    "technical_plastic": {
+      "base_health": 28,
+      "density": 0.8,
+      "fracture": "crack",
+      "damage_multipliers": {
+        "flashlight_bash": 0.7,
+        "plank": 0.9,
+        "crowbar": 1.5,
+        "thrown_prop": 1.0,
+        "specter_charge": 2.5
+      }
+    },
+    "metal_light": {
+      "base_health": 42,
+      "density": 1.5,
+      "fracture": "bend",
+      "damage_multipliers": {
+        "flashlight_bash": 0.22,
+        "plank": 0.3,
+        "crowbar": 0.9,
+        "thrown_prop": 0.55,
+        "specter_charge": 2.2
+      }
+    },
+    "metal_armored": {
+      "base_health": 100,
+      "density": 3.0,
+      "fracture": "armor",
+      "damage_multipliers": {
+        "flashlight_bash": 0.05,
+        "plank": 0.08,
+        "crowbar": 0.35,
+        "thrown_prop": 0.25,
+        "specter_charge": 1.4
+      }
+    }
+  }
+}
