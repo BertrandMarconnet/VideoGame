@@ -26,6 +26,7 @@ on:
       - "tools/generate_game_asset.py"
       - "tools/generate_game_asset_v2.py"
       - "tools/generate_specter5_production.py"
+      - "tools/generate_specter5_production_v2.py"
       - "tools/parse_game_asset_issue.py"
       - "tools/build_asset_sidecars.py"
       - "tools/validate_game_asset_bundle.py"
@@ -81,6 +82,7 @@ jobs:
             tools/generate_game_asset.py \
             tools/generate_game_asset_v2.py \
             tools/generate_specter5_production.py \
+            tools/generate_specter5_production_v2.py \
             tools/build_asset_sidecars.py \
             tools/validate_game_asset_bundle.py \
             tools/update_generated_asset_catalog.py
@@ -127,7 +129,7 @@ jobs:
               --output-dir "$BUNDLE_DIR"
           elif [[ "$GENERATOR_PROFILE" == "specter_biped" ]]; then
             blender --background --factory-startup \
-              --python tools/generate_specter5_production.py -- \
+              --python tools/generate_specter5_production_v2.py -- \
               --request "$REQUEST_JSON" \
               --output-dir "$BUNDLE_DIR" \
               2>&1 | tee build/game-asset/logs/generation.log
@@ -236,7 +238,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends blender python3-numpy libegl1 libgl1 libglib2.0-0
       - name: Compile generators
         run: |
-          python3 -m py_compile tools/generate_game_asset.py tools/generate_game_asset_v2.py tools/generate_specter5_production.py tools/validate_game_asset_bundle.py
+          python3 -m py_compile tools/generate_game_asset.py tools/generate_game_asset_v2.py tools/generate_specter5_production.py tools/generate_specter5_production_v2.py tools/validate_game_asset_bundle.py
       - name: Generate and validate fixture
         shell: bash
         run: |
@@ -246,7 +248,7 @@ jobs:
           PROFILE="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["generator_profile"])' "$REQUEST")"
           OUT="build/smoke/$SLUG"
           mkdir -p "$OUT"
-          GENERATOR="tools/generate_specter5_production.py"
+          GENERATOR="tools/generate_specter5_production_v2.py"
           if [[ "$PROFILE" != "specter_biped" ]]; then
             GENERATOR="tools/generate_game_asset_v2.py"
           fi
