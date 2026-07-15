@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "asset_name": "ToyGuard corridor module smoke",
+  "slug": "toyguard_corridor_module_smoke",
+  "category": "environment",
+  "generator_profile": "environment_module",
+  "visual_profile": "PS1 industriel ToyGuard",
+  "dimensions_m": {"width": 4.0, "height": 3.0, "depth": 5.0},
+  "material_id": "concrete",
+  "rig": "none",
+  "animations": ["idle"],
+  "destruction_mode": "material_advanced",
+  "damage_zones_description": "Structure porteuse intacte, accessoires et panneaux remplaçables.",
+  "interactions_description": "crowbar=0.08; specter_charge=0.35",
+  "quality": "web",
+  "integration": "bridge_module",
+  "reference_images": [],
+  "reference_image_errors": [],
+  "issue_number": 0,
+  "issue_url": ""
+}
