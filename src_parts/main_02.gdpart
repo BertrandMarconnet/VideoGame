@@ -42,10 +42,17 @@ func _build_ceiling_light(at: Vector3, damaged: bool) -> void:
 		add_child(light)
 		flicker_lights.append(light)
 
-func _build_destructible_wall(at: Vector3, size: Vector3, label: String) -> StaticBody3D:
+func _build_destructible_wall(at: Vector3, size: Vector3, label: String) -> Node3D:
+	var material_id := "brick" if label.contains("Secret") else "drywall"
+	var bridge := get_node_or_null("/root/GeneratedAssetBridge")
+	if bridge != null and bridge.has_method("create_segmented_wall"):
+		var segmented := bridge.call("create_segmented_wall", self, at, size, material_id, label) as Node3D
+		if segmented != null:
+			return segmented
 	var body := _static_box(size, at, _material(Color(0.19, 0.2, 0.21), 0.45, 0.78), label)
 	body.set_meta("destructible", true)
-	body.set_meta("health", 75.0)
+	body.set_meta("material_id", material_id)
+	body.set_meta("health", 20.0 if material_id == "drywall" else 55.0)
 	body.set_meta("size", size)
 	return body
 
@@ -61,6 +68,7 @@ func _static_box(size: Vector3, at: Vector3, material: Material, label: String) 
 	body.name = label
 	body.position = at
 	var mesh := MeshInstance3D.new()
+	mesh.name = label + "Visual"
 	var box := BoxMesh.new()
 	box.size = size
 	mesh.mesh = box
@@ -81,6 +89,7 @@ func _static_box(size: Vector3, at: Vector3, material: Material, label: String) 
 	var volume := size.x * size.y * size.z
 	if not protected and volume <= 160.0:
 		body.set_meta("destructible", true)
+		body.set_meta("material_id", "metal_light")
 		body.set_meta("health", clamp(size.length() * 12.0, 35.0, 110.0))
 	add_child(body)
 	return body

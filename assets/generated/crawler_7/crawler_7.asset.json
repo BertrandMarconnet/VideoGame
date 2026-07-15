@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "id": "crawler_7",
+  "name": "CRAWLER-7",
+  "category": "robot_quadruped",
+  "glb": "res://assets/output 3d model/crawler_7_production.glb",
+  "preview": "res://assets/output 3d model/crawler_7_production.png",
+  "damage_profile": "res://assets/generated/crawler_7/crawler_7.damage.json",
+  "integration": "replace_procedural",
+  "dimensions_m": {"width": 2.6, "height": 1.2, "depth": 2.5},
+  "rig": "rigid_quadruped",
+  "animations": ["Idle-loop", "Walk-loop", "Run-loop", "Attack", "Shutdown"],
+  "generator_profile": "crawler7",
+  "fallback": "procedural"
+}

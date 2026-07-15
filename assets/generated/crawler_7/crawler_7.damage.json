@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "asset_id": "crawler_7",
+  "mode": "detachable",
+  "default_material": "metal_armored",
+  "zones": [
+    {"id":"lf_leg","material_id":"metal_light","max_health":28,"detachable":true,"node_patterns":["LF_*","DZ_LF_*"],"speed_multiplier":0.78,"on_break":"reduce_speed"},
+    {"id":"rf_leg","material_id":"metal_light","max_health":28,"detachable":true,"node_patterns":["RF_*","DZ_RF_*"],"speed_multiplier":0.78,"on_break":"reduce_speed"},
+    {"id":"lr_leg","material_id":"metal_light","max_health":28,"detachable":true,"node_patterns":["LR_*","DZ_LR_*"],"speed_multiplier":0.78,"on_break":"reduce_speed"},
+    {"id":"rr_leg","material_id":"metal_light","max_health":28,"detachable":true,"node_patterns":["RR_*","DZ_RR_*"],"speed_multiplier":0.78,"on_break":"reduce_speed"},
+    {"id":"sensor","material_id":"glass","max_health":18,"detachable":false,"node_patterns":["*Sensor*","*Lens*"],"on_break":"disable_detection"},
+    {"id":"body","material_id":"metal_armored","max_health":110,"detachable":false,"node_patterns":["*Body*","*Spine*","*Torso*"],"on_break":"shutdown"}
+  ],
+  "tool_rules": {
+    "flashlight_bash": 0.45,
+    "plank": 0.8,
+    "crowbar": 2.2,
+    "thrown_prop": 1.0,
+    "specter_charge": 4.0
+  },
+  "descriptions": {
+    "zones": "Chaque patte peut se détacher et réduire la vitesse. Les capteurs peuvent être neutralisés.",
+    "interactions": "Les outils improvisés sont peu efficaces sur le blindage; viser les articulations."
+  }
+}
