@@ -22,8 +22,14 @@ func _bootstrap() -> void:
 	if scene == null:
 		push_warning("GeneratedAssetBridge could not find the current 3D scene")
 		return
-	bridge.initialize(scene)
+	_ensure_initialized(scene)
 	_scan_scene(scene)
+
+func _ensure_initialized(scene: Node3D) -> void:
+	if bridge == null:
+		return
+	if bridge.world_root == null:
+		bridge.initialize(scene)
 
 func _on_node_added(_node: Node) -> void:
 	if _scan_scheduled:
@@ -34,7 +40,8 @@ func _on_node_added(_node: Node) -> void:
 func _rescan_current_scene() -> void:
 	_scan_scheduled = false
 	var scene := get_tree().current_scene as Node3D
-	if scene != null and bridge.world_root != null:
+	if scene != null:
+		_ensure_initialized(scene)
 		_scan_scene(scene)
 
 func _scan_scene(root: Node) -> void:
@@ -43,6 +50,8 @@ func _scan_scene(root: Node) -> void:
 		_register_candidate(node)
 
 func _register_candidate(node: Node) -> void:
+	if bridge == null or bridge.world_root == null:
+		return
 	if node is CharacterBody3D and node.get_meta("robot", false):
 		bridge.register_robot(node as CharacterBody3D, String(node.get_meta("personality", "crawler")))
 	elif node is Node3D and node.get_meta("destructible", false) and node.get_node_or_null("DestructibleComponent") == null:
@@ -68,7 +77,11 @@ func is_disabled(target: Node) -> bool:
 func create_segmented_wall(parent: Node3D, at: Vector3, size: Vector3, material_id: String, label: String) -> Node3D:
 	if bridge == null:
 		return null
+	_ensure_initialized(parent)
 	return bridge.create_segmented_wall(parent, at, size, material_id, label)
 
 func spawn_asset(asset_id: String, parent: Node3D, transform_value := Transform3D.IDENTITY) -> Node3D:
-	return bridge.spawn_asset(asset_id, parent, transform_value) if bridge != null else null
+	if bridge == null:
+		return null
+	_ensure_initialized(parent)
+	return bridge.spawn_asset(asset_id, parent, transform_value)
