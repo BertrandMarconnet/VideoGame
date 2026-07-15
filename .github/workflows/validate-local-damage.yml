@@ -14,10 +14,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: localized-damage-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   damage-behavior:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - name: Download Godot 4.7 stable
@@ -34,11 +38,18 @@ jobs:
       - name: Run localized damage behavior tests
         shell: bash
         run: |
-          set -euo pipefail
+          set -uo pipefail
           mkdir -p build/damage-tests
-          "$GODOT_BIN" --headless --path . --script res://tests/test_damage_system.gd \
+          set +e
+          timeout 120 "$GODOT_BIN" --headless --path . \
+            --script res://tests/test_damage_system.gd --quit-after 100 \
             > build/damage-tests/test.log 2>&1
+          status=$?
+          set -e
           cat build/damage-tests/test.log
+          if [[ $status -ne 0 ]]; then
+            exit $status
+          fi
           grep -q "DAMAGE_SYSTEM_TEST_OK" build/damage-tests/test.log
           if grep -Eqi 'SCRIPT ERROR|Invalid call|Parse Error|DAMAGE_TEST_FAIL' build/damage-tests/test.log; then
             exit 1
