@@ -27,7 +27,7 @@ on:
     types: [opened]
   pull_request:
     paths:
-      - tools/generate_crawler7_production.py
+      - tools/generate_crawler7_production_v2.py
       - tools/validate_rigged_glb.py
       - .github/workflows/generate-production-robot.yml
 
@@ -74,7 +74,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m py_compile tools/generate_crawler7_production.py tools/validate_rigged_glb.py
+          python3 -m py_compile tools/generate_crawler7_production_v2.py tools/validate_rigged_glb.py
 
       - name: Generate segmented robot, rig, materials and animations
         shell: bash
@@ -82,18 +82,20 @@ jobs:
           REQUESTED_QUALITY: ${{ inputs.quality || 'web' }}
         run: |
           set -euo pipefail
-          mkdir -p "$OUTPUT_DIR"
+          mkdir -p "$OUTPUT_DIR" build/production-robot
           blender --background --factory-startup \
-            --python tools/generate_crawler7_production.py -- \
+            --python tools/generate_crawler7_production_v2.py -- \
             --output "$OUTPUT_GLB" \
             --metrics "$OUTPUT_METRICS" \
             --preview "$OUTPUT_PREVIEW" \
-            --quality "$REQUESTED_QUALITY"
+            --quality "$REQUESTED_QUALITY" \
+            2>&1 | tee build/production-robot/generation.log
           test -s "$OUTPUT_GLB"
           test -s "$OUTPUT_PREVIEW"
           jq -e '.bones >= 13' "$OUTPUT_METRICS"
           jq -e '.animations | length >= 5' "$OUTPUT_METRICS"
           jq -e '.materials | length >= 4' "$OUTPUT_METRICS"
+          jq -e '.collision_helpers >= 5' "$OUTPUT_METRICS"
 
       - name: Re-import and validate GLB contents
         shell: bash
@@ -105,7 +107,8 @@ jobs:
             --report "$OUTPUT_VALIDATION" \
             --min-bones 13 \
             --min-animations 5 \
-            --min-materials 4
+            --min-materials 4 \
+            2>&1 | tee build/production-robot/reimport.log
           jq -e '.valid == true' "$OUTPUT_VALIDATION"
 
       - name: Validate Godot 4.7 import
@@ -119,9 +122,9 @@ jobs:
           GODOT_BIN="$(find .godot-bin -maxdepth 1 -type f -name 'Godot*' | head -n 1)"
           chmod +x "$GODOT_BIN"
           timeout 180 "$GODOT_BIN" --headless --editor --path . --quit-after 12 \
-            > godot-production-robot-import.log 2>&1
-          if grep -Eqi 'SCRIPT ERROR|Invalid call|Invalid get index|Attempt to call|ERROR:' godot-production-robot-import.log; then
-            cat godot-production-robot-import.log
+            > build/production-robot/godot-import.log 2>&1
+          if grep -Eqi 'SCRIPT ERROR|Invalid call|Invalid get index|Attempt to call|ERROR:' build/production-robot/godot-import.log; then
+            cat build/production-robot/godot-import.log
             exit 1
           fi
 
@@ -131,7 +134,7 @@ jobs:
           cat > "$OUTPUT_DIR/crawler_7_production.PROVENANCE.md" <<'EOF'
           # Provenance — CRAWLER-7 production asset
 
-          - Generator: deterministic Blender hard-surface generator maintained in this repository
+          - Generator: deterministic Blender hard-surface generator v2 maintained in this repository
           - External generation API: none
           - API key: none
           - Geometry: segmented modular mechanical construction
@@ -195,6 +198,6 @@ jobs:
           name: crawler-7-production-${{ github.run_id }}
           path: |
             assets/output 3d model/crawler_7_production*
-            godot-production-robot-import.log
+            build/production-robot
           if-no-files-found: warn
           retention-days: 30
