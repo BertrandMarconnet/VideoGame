@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "asset_name": "S-01 service door smoke",
+  "slug": "s01_service_door_smoke",
+  "category": "door",
+  "generator_profile": "industrial_door",
+  "visual_profile": "Bunker S-01 béton et acier",
+  "dimensions_m": {"width": 1.5, "height": 2.4, "depth": 0.18},
+  "material_id": "metal_armored",
+  "rig": "hinge",
+  "animations": ["open", "close"],
+  "destruction_mode": "localized",
+  "damage_zones_description": "Panneau et verrou traités comme zones locales.",
+  "interactions_description": "crowbar=0.35; specter_charge=1.4",
+  "quality": "web",
+  "integration": "bridge_module",
+  "reference_images": [],
+  "reference_image_errors": [],
+  "issue_number": 0,
+  "issue_url": ""
+}

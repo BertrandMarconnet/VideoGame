@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "asset_name": "Sentinel OS console smoke",
+  "slug": "sentinel_os_console_smoke",
+  "category": "gui_panel",
+  "generator_profile": "gui_panel",
+  "visual_profile": "Interface CRT / Sentinel OS",
+  "dimensions_m": {"width": 1.6, "height": 1.3, "depth": 0.65},
+  "material_id": "technical_plastic",
+  "rig": "none",
+  "animations": ["idle"],
+  "destruction_mode": "localized",
+  "damage_zones_description": "L'écran est une zone en verre indépendante du boîtier.",
+  "interactions_description": "flashlight_bash=1.4; crowbar=2.8",
+  "quality": "web",
+  "integration": "bridge_module",
+  "reference_images": [],
+  "reference_image_errors": [],
+  "issue_number": 0,
+  "issue_url": ""
+}
