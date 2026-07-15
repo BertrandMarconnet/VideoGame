@@ -1,0 +1,188 @@
+name: Generate production robot — rigged and animated
+
+on:
+  workflow_dispatch:
+    inputs:
+      quality:
+        description: Texture and preview quality
+        required: true
+        type: choice
+        options: [web, high]
+        default: web
+      commit_output:
+        description: Commit validated GLB to main
+        required: true
+        type: boolean
+        default: true
+  issues:
+    types: [opened]
+  pull_request:
+    paths:
+      - tools/generate_crawler7_production_v2.py
+      - tools/generate_crawler7_production_v4.py
+      - tools/generate_crawler7_production_v5.py
+      - tools/validate_rigged_glb.py
+      - .github/workflows/generate-production-robot.yml
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: production-crawler7-${{ github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build CRAWLER-7 production GLB
+    if: >-
+      ${{
+        github.event_name == 'pull_request' ||
+        (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) ||
+        (github.event_name == 'issues' && github.actor == github.repository_owner && startsWith(github.event.issue.title, '[ROBOT] CRAWLER-7'))
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      OUTPUT_DIR: assets/output 3d model
+      OUTPUT_GLB: assets/output 3d model/crawler_7_production.glb
+      OUTPUT_METRICS: assets/output 3d model/crawler_7_production.metrics.json
+      OUTPUT_PREVIEW: assets/output 3d model/crawler_7_production.png
+      OUTPUT_VALIDATION: assets/output 3d model/crawler_7_production.validation.json
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Blender runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            blender jq unzip curl python3-numpy \
+            libegl1 libgl1 libglib2.0-0 libx11-6 libxext6 libxi6 libxrender1
+
+      - name: Validate sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            tools/generate_crawler7_production_v2.py \
+            tools/generate_crawler7_production_v4.py \
+            tools/generate_crawler7_production_v5.py \
+            tools/validate_rigged_glb.py
+
+      - name: Generate detailed segmented robot
+        shell: bash
+        env:
+          REQUESTED_QUALITY: ${{ inputs.quality || 'web' }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUTPUT_DIR" build/production-robot
+          blender --background --factory-startup \
+            --python tools/generate_crawler7_production_v5.py -- \
+            --output "$OUTPUT_GLB" \
+            --metrics "$OUTPUT_METRICS" \
+            --preview "$OUTPUT_PREVIEW" \
+            --quality "$REQUESTED_QUALITY" \
+            2>&1 | tee build/production-robot/generation.log
+          test -s "$OUTPUT_GLB"
+          test -s "$OUTPUT_PREVIEW"
+          jq -e '.bones >= 13' "$OUTPUT_METRICS"
+          jq -e '.animations | length >= 5' "$OUTPUT_METRICS"
+          jq -e '.materials | length >= 4' "$OUTPUT_METRICS"
+          jq -e '.collision_helpers >= 5' "$OUTPUT_METRICS"
+          jq -e '.triangles >= 3500 and .triangles <= 12000' "$OUTPUT_METRICS"
+          jq -e '.generator == "Blender deterministic hard-surface v5"' "$OUTPUT_METRICS"
+
+      - name: Re-import and inspect GLB
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender --background --factory-startup \
+            --python tools/validate_rigged_glb.py -- \
+            --input "$OUTPUT_GLB" \
+            --report "$OUTPUT_VALIDATION" \
+            --min-bones 13 --min-animations 5 --min-materials 4 \
+            2>&1 | tee build/production-robot/reimport.log
+          jq -e '.valid == true' "$OUTPUT_VALIDATION"
+
+      - name: Validate Godot 4.7 import
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p scripts
+          cat src_parts/main_*.gdpart > scripts/main.gd
+          tag="4.7-stable"
+          curl -fsSL --retry 5 --retry-delay 3 -o godot.zip \
+            "https://github.com/godotengine/godot/releases/download/${tag}/Godot_v${tag}_linux.x86_64.zip"
+          unzip -q godot.zip -d .godot-bin
+          GODOT_BIN="$(find .godot-bin -maxdepth 1 -type f -name 'Godot*' | head -n 1)"
+          chmod +x "$GODOT_BIN"
+          timeout 180 "$GODOT_BIN" --headless --editor --path . --quit-after 12 \
+            > build/production-robot/godot-import.log 2>&1
+          if grep -Eqi 'SCRIPT ERROR|Invalid call|Invalid get index|Attempt to call|ERROR:' build/production-robot/godot-import.log; then
+            cat build/production-robot/godot-import.log
+            exit 1
+          fi
+
+      - name: Write provenance
+        shell: bash
+        run: |
+          cat > "$OUTPUT_DIR/crawler_7_production.PROVENANCE.md" <<'EOF'
+          # Provenance — CRAWLER-7 production
+
+          Generated by the repository's deterministic Blender hard-surface generator v5.
+          No external generation API, API key, commercial credit or hosted 3D service is used.
+          The GLB contains layered segmented mechanical parts, a 13-bone rigid quadruped rig,
+          embedded industrial materials, simplified collisions and five animation clips.
+          EOF
+
+      - name: Commit validated files
+        if: ${{ github.event_name != 'pull_request' && (github.event_name == 'issues' || inputs.commit_output == true) }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "blackout-production-asset-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$OUTPUT_DIR/crawler_7_production.glb" \
+                  "$OUTPUT_DIR/crawler_7_production.png" \
+                  "$OUTPUT_DIR/crawler_7_production.metrics.json" \
+                  "$OUTPUT_DIR/crawler_7_production.validation.json" \
+                  "$OUTPUT_DIR/crawler_7_production.PROVENANCE.md"
+          if ! git diff --cached --quiet; then
+            git commit -m "Generate rigged animated CRAWLER-7 production GLB"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+
+      - name: Close successful issue
+        if: ${{ success() && github.event_name == 'issues' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --body "✅ CRAWLER-7 production généré : [GLB](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/output%203d%20model/crawler_7_production.glb) · [aperçu](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/output%203d%20model/crawler_7_production.png) · [validation](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/output%203d%20model/crawler_7_production.validation.json)"
+          gh issue close "$ISSUE_NUMBER" --reason completed
+
+      - name: Report issue failure
+        if: ${{ failure() && github.event_name == 'issues' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --body "❌ Aucun GLB n'a été ajouté. Diagnostic : ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+      - name: Upload preview, GLB and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crawler-7-production-${{ github.run_id }}
+          path: |
+            assets/output 3d model/crawler_7_production*
+            build/production-robot
+          if-no-files-found: warn
+          retention-days: 30
