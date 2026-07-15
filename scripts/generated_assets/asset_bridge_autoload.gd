@@ -2,7 +2,7 @@ extends Node
 
 const BridgeScript := preload("res://scripts/generated_assets/asset_bridge.gd")
 
-var bridge: GeneratedAssetBridge
+var bridge: Variant
 var _scan_scheduled := false
 
 func _ready() -> void:
