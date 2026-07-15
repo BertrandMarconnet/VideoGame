@@ -1,0 +1,23 @@
+{
+  "input": "assets/output 3d model/crawler_7_production.glb",
+  "meshes": 139,
+  "armatures": 1,
+  "bones": 13,
+  "animations": [
+    "Attack_CRAWLER7_Rig",
+    "Idle-loop_CRAWLER7_Rig",
+    "Run-loop_CRAWLER7_Rig",
+    "Shutdown_CRAWLER7_Rig",
+    "Walk-loop_CRAWLER7_Rig"
+  ],
+  "materials": [
+    "CRAWLER7_Black",
+    "CRAWLER7_BrownArmor",
+    "CRAWLER7_DarkMetal",
+    "CRAWLER7_Joints",
+    "CRAWLER7_RedSensors"
+  ],
+  "triangles": 8984,
+  "errors": [],
+  "valid": true
+}
