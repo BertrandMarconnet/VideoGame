@@ -8,11 +8,24 @@
     "schema_version": {"const": 1},
     "id": {"type": "string", "pattern": "^[a-z0-9_]{1,64}$"},
     "name": {"type": "string", "minLength": 1, "maxLength": 96},
-    "category": {"enum": ["robot_biped", "robot_quadruped", "prop", "wall", "door", "environment", "gui_panel"]},
+    "category": {
+      "enum": [
+        "robot_biped",
+        "robot_quadruped",
+        "character_humanoid",
+        "fps_viewmodel",
+        "articulated_machine",
+        "prop",
+        "wall",
+        "door",
+        "environment",
+        "gui_panel"
+      ]
+    },
     "glb": {"type": "string", "pattern": "^res://assets/"},
     "preview": {"type": "string"},
     "damage_profile": {"type": "string", "pattern": "^res://assets/"},
-    "integration": {"enum": ["catalog_only", "replace_procedural", "bridge_module"]},
+    "integration": {"enum": ["catalog_only", "replace_procedural", "bridge_module", "fps_viewmodel"]},
     "dimensions_m": {
       "type": "object",
       "required": ["width", "height", "depth"],
@@ -24,6 +37,11 @@
     },
     "rig": {"type": "string"},
     "animations": {"type": "array", "items": {"type": "string"}},
+    "reference_mode": {"enum": ["single_view", "orthographic_four", "multi_view", "storyboard", "none"]},
+    "texture_mode": {"enum": ["reference_atlas", "palette_only", "screen_image", "flat"]},
+    "collision_mode": {"enum": ["auto", "box", "capsule", "local_boxes", "segmented_cells", "none"]},
+    "geometry_template": {"type": "string"},
+    "segmentation_parts": {"type": "array", "maxItems": 16, "uniqueItems": true, "items": {"type": "string"}},
     "generator_profile": {"type": "string"},
     "fallback": {"enum": ["procedural", "none"]}
   },
