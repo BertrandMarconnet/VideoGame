@@ -11,6 +11,9 @@ on:
         type: choice
         options:
           - tests/fixtures/game_asset_specter.json
+          - tests/fixtures/game_asset_character.json
+          - tests/fixtures/game_asset_fps_viewmodel.json
+          - tests/fixtures/game_asset_machine.json
           - tests/fixtures/game_asset_wall.json
           - tests/fixtures/game_asset_prop.json
           - tests/fixtures/game_asset_door.json
@@ -144,7 +147,7 @@ jobs:
               2>&1 | tee build/game-asset/logs/generation.log
           fi
 
-      - name: Validate GLB, manifest and localized damage profile
+      - name: Validate GLB, rig, animations, texture metadata and localized damage
         shell: bash
         run: |
           set -euo pipefail
@@ -197,7 +200,7 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         shell: bash
         run: |
-          gh issue comment "$ISSUE_NUMBER" --body "✅ Asset **$SLUG** généré et validé : [GLB](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.glb) · [aperçu](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.png) · [profil de dégâts](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.damage.json)"
+          gh issue comment "$ISSUE_NUMBER" --body "✅ Asset **$SLUG** généré, texturé et validé : [GLB](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.glb) · [aperçu](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.png) · [manifeste](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.asset.json) · [profil de dégâts](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.damage.json)"
           gh issue close "$ISSUE_NUMBER" --reason completed
 
       - name: Report failed issue generation
@@ -231,6 +234,9 @@ jobs:
       matrix:
         fixture:
           - game_asset_specter.json
+          - game_asset_character.json
+          - game_asset_fps_viewmodel.json
+          - game_asset_machine.json
           - game_asset_wall.json
           - game_asset_prop.json
           - game_asset_door.json
@@ -264,7 +270,7 @@ jobs:
           status=${PIPESTATUS[0]}
           set -e
           if [[ $status -ne 0 ]]; then
-            tail -n 160 "$OUT/generation.log"
+            tail -n 200 "$OUT/generation.log"
             exit $status
           fi
           python3 tools/validate_game_asset_bundle.py \
