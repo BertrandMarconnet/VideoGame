@@ -1,5 +1,5 @@
 name: "🎛️ Générer un asset 3D complet"
-description: "Formulaire guidé avec menus, cases à cocher, fichiers, animations, dégâts, sons et intégration Godot."
+description: "Formulaire guidé avec menus, cases à cocher, images, animations, dégâts, sons et intégration Godot."
 title: "[ASSET] "
 labels: []
 body:
@@ -8,9 +8,9 @@ body:
       value: |
         # BLACKOUT PROTOCOL — GÉNÉRATEUR D'ASSET 3D
 
-        Ce formulaire GitHub contient les **menus déroulants, cases à cocher et boutons de chargement** nécessaires pour générer un bundle complet : GLB, rig, animations, sons, zones destructibles et intégration Godot.
+        Remplissez les menus et les cases ci-dessous. Après création de l'issue, GitHub Actions génère automatiquement le bundle : **GLB + rig + animations + textures + sons + dégâts localisés + intégration Godot**.
 
-        Pour une sélection visuelle sur mannequin et des aperçus animés, utiliser aussi le [configurateur visuel](https://bertrandmarconnet.github.io/VideoGame/asset-generator.html), puis revenir dans ce formulaire.
+        Pour sélectionner visuellement les animations et les zones destructibles, utilisez d'abord le [configurateur visuel](https://bertrandmarconnet.github.io/VideoGame/asset-generator.html). Les images et sons devront ensuite être glissés dans les zones prévues ci-dessous.
 
   - type: input
     id: asset_name
@@ -25,7 +25,7 @@ body:
     id: category
     attributes:
       label: "Catégorie"
-      description: "Sélectionner le type d'asset à produire."
+      description: "Sélectionner la famille technique de l'asset."
       options:
         - "Robot bipède"
         - "Robot quadrupède"
@@ -45,19 +45,19 @@ body:
     id: role
     attributes:
       label: "Rôle du modèle dans le jeu"
-      description: "Décrire son comportement, ses interactions et son usage dans le niveau."
-      placeholder: "Robot de poursuite qui continue à ramper après la perte des jambes."
+      description: "Décrire son usage, son comportement, ses interactions et les conséquences attendues lorsqu'il est endommagé."
+      placeholder: "Robot de poursuite qui continue à ramper après la perte des deux jambes."
     validations:
       required: true
 
-  - type: upload
+  - type: textarea
     id: reference_images
     attributes:
       label: "Images de référence"
-      description: "Ajouter 1 à 6 images cohérentes du même modèle. Face, profil droit, arrière et trois-quarts sont recommandés."
+      description: "Glisser-déposer ici 1 à 6 images PNG, JPG, JPEG ou WebP du même modèle. Pour un robot : face, profil droit, arrière et trois-quarts. Ne pas utiliser le bouton général de pièce jointe en dehors de ce champ."
+      placeholder: "Glissez les images dans cette zone. Les liens GitHub apparaîtront automatiquement."
     validations:
       required: true
-      accept: ".png,.jpg,.jpeg,.webp"
 
   - type: dropdown
     id: reference_mode
@@ -120,17 +120,11 @@ body:
     validations:
       required: true
 
-  - type: markdown
-    attributes:
-      value: |
-        ## Animations
-        Cocher uniquement les clips utiles. Des animations supplémentaires peuvent être ajoutées dans le champ suivant.
-
   - type: checkboxes
     id: standard_animations
     attributes:
-      label: "Animations à générer"
-      description: "Sélection multiple autorisée."
+      label: "Animations standard"
+      description: "Cocher uniquement les clips utiles. Plusieurs choix sont possibles."
       options:
         - label: "idle — attente et micro-mouvements en boucle"
         - label: "walk — marche en boucle"
@@ -159,17 +153,11 @@ body:
       description: "Séparer les noms par des virgules."
       placeholder: "scan, stagger, turn_left, recharge"
 
-  - type: markdown
-    attributes:
-      value: |
-        ## Parties séparables et dégâts
-        Cocher les éléments devant être indépendants, détachables ou dotés d'une conséquence fonctionnelle.
-
   - type: checkboxes
     id: destructible_parts
     attributes:
-      label: "Parties séparables ou destructibles"
-      description: "Sélection multiple autorisée."
+      label: "Parties séparables / destructibles"
+      description: "Cocher les éléments devant être indépendants, détachables ou dotés d'une conséquence fonctionnelle."
       options:
         - label: "tête"
         - label: "capteur"
@@ -193,14 +181,14 @@ body:
   - type: input
     id: custom_parts
     attributes:
-      label: "Parties supplémentaires à séparer"
+      label: "Parties supplémentaires"
       placeholder: "épaule gauche, câble dorsal, cellule 04, clavier, roue"
 
   - type: textarea
     id: damage_zones
     attributes:
       label: "Zones critiques et conséquences"
-      description: "Indiquer une règle par zone."
+      description: "Indiquer une règle par zone ou par combinaison de zones."
       placeholder: "jambe gauche = détachement et vitesse ×0.65 ; deux jambes = crawl ; capteur = détection réduite ; torse = arrêt"
     validations:
       required: true
@@ -208,17 +196,11 @@ body:
   - type: textarea
     id: interactions
     attributes:
-      label: "Outils et interactions de dégâts"
+      label: "Outils et interactions"
       description: "Multiplicateurs appliqués selon l'outil et le matériau."
       value: "flashlight_bash=0.4; plank=0.8; crowbar=2.0; thrown_prop=1.0; specter_charge=4.0"
     validations:
       required: true
-
-  - type: markdown
-    attributes:
-      value: |
-        ## Sons synchronisés
-        Le bundle peut contenir des sons procéduraux ou des fichiers personnels associés aux animations.
 
   - type: dropdown
     id: sound_mode
@@ -236,8 +218,8 @@ body:
   - type: checkboxes
     id: sound_presets
     attributes:
-      label: "Familles sonores à produire"
-      description: "Sélection multiple autorisée."
+      label: "Familles sonores"
+      description: "Sélectionner les familles à synchroniser avec les animations."
       options:
         - label: "servo"
         - label: "step"
@@ -247,19 +229,17 @@ body:
         - label: "electric"
         - label: "ambience"
 
-  - type: upload
+  - type: textarea
     id: model_sounds
     attributes:
-      label: "Sons personnels du modèle"
-      description: "Facultatif. Ajouter des fichiers WAV, OGG ou MP3."
-    validations:
-      required: false
-      accept: ".wav,.ogg,.mp3"
+      label: "Sons du modèle"
+      description: "Facultatif. Glisser ici jusqu'à 8 fichiers WAV, OGG ou MP3. Laisser vide en mode sons procéduraux."
+      placeholder: "Glissez les fichiers audio dans cette zone si nécessaire."
 
   - type: textarea
     id: sound_sync
     attributes:
-      label: "Synchronisation animation et son"
+      label: "Synchronisation animation ↔ son"
       description: "Format : animation = clip @ temps_normalisé. Ajouter @ loop pour une boucle."
       value: |
         walk = step @ 0.18
