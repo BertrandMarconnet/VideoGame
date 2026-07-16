@@ -45,7 +45,12 @@ jobs:
 
           body = form['body']
           abort('body must be a non-empty array') unless body.is_a?(Array) && !body.empty?
-          allowed_types = %w[markdown textarea input dropdown checkboxes upload]
+          abort("Issue form is too large: #{body.length} body elements") if body.length > 25
+
+          # Textarea is deliberately used for attachments because it is available on every account
+          # and supports drag-and-drop files. The newer upload field is not used here because it has
+          # repeatedly caused GitHub to fall back silently to a blank issue in this repository.
+          allowed_types = %w[markdown textarea input dropdown checkboxes]
           ids = []
           labels = []
           interactive = 0
@@ -80,14 +85,15 @@ jobs:
               abort("body[#{index}] options must all be strings") unless option_labels.all? { |value| value.is_a?(String) && !value.strip.empty? }
               abort("body[#{index}] options must be unique") unless option_labels.uniq.length == option_labels.length
             end
-
-            if type == 'upload'
-              validations = element['validations'] || {}
-              accept = validations['accept']
-              abort("body[#{index}] upload accept must be a string") if accept && !accept.is_a?(String)
-            end
           end
 
+          expected_ids = %w[
+            asset_name category role reference_images reference_mode dimensions material build_profile
+            standard_animations custom_animations destructible_parts custom_parts damage_zones interactions
+            sound_mode sound_presets model_sounds sound_sync delivery confirmation
+          ]
+          missing = expected_ids - ids
+          abort("Missing required form fields: #{missing.join(', ')}") unless missing.empty?
           abort('Issue form must contain at least one interactive field') if interactive.zero?
-          puts "Valid issue form: #{path} (#{interactive} interactive fields)"
+          puts "Valid issue form: #{path} (#{interactive} interactive fields, #{body.length} body elements)"
           RUBY
