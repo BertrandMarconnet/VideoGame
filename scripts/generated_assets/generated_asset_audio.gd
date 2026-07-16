@@ -86,7 +86,7 @@ func _process(_delta: float) -> void:
 		_stop_animation_loops(previous_animation)
 		previous_animation = animation
 		previous_normalized = -0.001
-	_trigger_crossed_events(animation, previous_normalized, normalized, false)
+		_trigger_crossed_events(animation, previous_normalized, normalized, false)
 	elif normalized + 0.001 < previous_normalized:
 		_trigger_crossed_events(animation, previous_normalized, 1.0, true)
 		_trigger_crossed_events(animation, -0.001, normalized, true)
