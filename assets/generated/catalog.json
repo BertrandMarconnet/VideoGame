@@ -99,6 +99,32 @@
     },
     {
       "schema_version": 1,
+      "id": "specter_05_publication_validation",
+      "name": "SPECTER-05 publication validation",
+      "category": "robot_biped",
+      "glb": "res://assets/generated/specter_05_publication_validation/specter_05_publication_validation.glb",
+      "preview": "res://assets/generated/specter_05_publication_validation/specter_05_publication_validation.png",
+      "damage_profile": "res://assets/generated/specter_05_publication_validation/specter_05_publication_validation.damage.json",
+      "integration": "bridge_module",
+      "dimensions_m": {
+        "width": 1.0,
+        "height": 2.0,
+        "depth": 1.0
+      },
+      "rig": "rigid_biped",
+      "animations": [
+        "Idle-loop",
+        "Walk-loop",
+        "Run-loop",
+        "Attack",
+        "Crawl-loop",
+        "Shutdown"
+      ],
+      "generator_profile": "specter_biped",
+      "fallback": "procedural"
+    },
+    {
+      "schema_version": 1,
       "id": "specter_5",
       "name": "SPECTER-5",
       "category": "robot_biped",
