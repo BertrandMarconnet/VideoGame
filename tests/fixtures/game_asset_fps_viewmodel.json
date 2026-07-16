@@ -10,7 +10,7 @@
   "segmentation_parts": ["hand", "tool_body", "lens", "battery"],
   "dimensions_m": {"width": 0.34, "height": 0.30, "depth": 0.62},
   "material_id": "metal_light",
-  "texture_mode": "palette_only",
+  "texture_mode": "reference_atlas",
   "rig": "fps_hand",
   "animations": ["idle", "use", "bash", "inspect"],
   "collision_mode": "none",
@@ -19,7 +19,7 @@
   "interactions_description": "flashlight_bash=1.0; crowbar=2.0",
   "quality": "web",
   "integration": "fps_viewmodel",
-  "reference_images": [],
+  "reference_images": ["tests/fixtures/reference_toyguard.ppm"],
   "reference_image_errors": [],
   "issue_number": 0,
   "issue_url": ""
