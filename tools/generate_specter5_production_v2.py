@@ -7,7 +7,7 @@ from pathlib import Path
 
 import bpy
 
-from build_asset_audio import build as build_audio
+from build_asset_audio_v2 import build as build_audio
 from sanitize_generated_glb import sanitize as sanitize_glb
 
 SOURCE = Path(__file__).with_name("generate_specter5_production.py")
@@ -64,11 +64,6 @@ def reference_build_materials(request):
 
 
 def export_without_helpers(path: Path) -> None:
-    """Export only gameplay meshes and the armature.
-
-    Blender's GLB exporter otherwise includes the black ``Body-colonly`` box even when it is hidden
-    for rendering and displayed as wireframe.
-    """
     path.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.object.select_all(action="DESELECT")
     for obj in bpy.context.scene.objects:
