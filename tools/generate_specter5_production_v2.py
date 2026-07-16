@@ -95,6 +95,31 @@ def selected_make_action(rig, name, frames):
     return original_make_action(rig, name, frames)
 
 
+def _selected_damage_zones(req, defaults):
+    selected = {_animation_key(str(value)) for value in req.get("segmentation_parts", [])}
+    if not selected:
+        return defaults
+    material_id = str(req.get("material_id", "metal_light"))
+    definitions = {
+        "tete": {"id":"head","material_id":material_id,"max_health":34,"detachable":True,"node_patterns":["DZ_sensor_head"],"on_break":"disable_detection"},
+        "capteur": {"id":"sensor","material_id":"glass","max_health":16,"detachable":False,"node_patterns":["DZ_sensor_lens"],"on_break":"disable_detection"},
+        "torse_corps_central": {"id":"torso","material_id":"metal_armored","max_health":100,"detachable":False,"node_patterns":["DZ_torso_*"],"on_break":"shutdown"},
+        "corps_central": {"id":"torso","material_id":"metal_armored","max_health":100,"detachable":False,"node_patterns":["DZ_torso_*"],"on_break":"shutdown"},
+        "bras_gauche": {"id":"left_arm","material_id":material_id,"max_health":32,"detachable":True,"node_patterns":["DZ_l_arm_*"],"on_break":"disable_left_arm"},
+        "bras_droit": {"id":"right_arm","material_id":material_id,"max_health":32,"detachable":True,"node_patterns":["DZ_r_arm_*"],"on_break":"disable_right_arm"},
+        "jambe_gauche": {"id":"left_leg","material_id":material_id,"max_health":35,"detachable":True,"node_patterns":["DZ_l_leg_*"],"speed_multiplier":0.65,"on_break":"limp"},
+        "jambe_droite": {"id":"right_leg","material_id":material_id,"max_health":35,"detachable":True,"node_patterns":["DZ_r_leg_*"],"speed_multiplier":0.65,"on_break":"limp"},
+    }
+    result = []
+    ids = set()
+    for part in req.get("segmentation_parts", []):
+        definition = definitions.get(_animation_key(str(part)))
+        if definition is not None and definition["id"] not in ids:
+            result.append(definition)
+            ids.add(definition["id"])
+    return result if len(result) >= 3 else defaults
+
+
 def selected_build_biped(req, mats):
     rig, clips, zones = original_build_biped(req, mats)
     known = {_animation_key(str(name)): str(name) for name in clips}
@@ -103,8 +128,6 @@ def selected_build_biped(req, mats):
         key = _animation_key(custom_name)
         if key in known:
             continue
-        # A custom name receives a safe neutral loop so it is immediately usable and can later be
-        # refined in Blender without breaking the generated rig or Godot import.
         display_name = custom_name.strip().replace("_", "-")[:48]
         original_make_action(
             rig,
@@ -116,7 +139,7 @@ def selected_build_biped(req, mats):
             ],
         )
         selected_clips.append(display_name)
-    return rig, selected_clips, zones
+    return rig, selected_clips, _selected_damage_zones(req, zones)
 
 
 def export_without_helpers(path: Path) -> None:
