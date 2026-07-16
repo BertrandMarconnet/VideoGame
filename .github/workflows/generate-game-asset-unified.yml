@@ -35,6 +35,7 @@ on:
       - "tools/generate_specter5_production*.py"
       - "tools/parse_game_asset_issue*.py"
       - "tools/test_asset_issue_download.py"
+      - "tools/publish_generated_asset.sh"
       - "tools/build_asset_sidecars.py"
       - "tools/validate_game_asset_bundle.py"
       - "tools/update_generated_asset_catalog.py"
@@ -46,7 +47,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: game-asset-${{ github.event.issue.number || github.ref }}
+  group: game-asset-main
   cancel-in-progress: false
 
 jobs:
@@ -61,12 +62,12 @@ jobs:
       }}
     runs-on: ubuntu-latest
     steps:
-      - name: Post the working menu link
+      - name: Post the working form link
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "⚠️ Cette issue contient des images mais pas les paramètres techniques nécessaires ; aucune génération n'a été lancée. Utilise l'unique formulaire : https://github.com/${GITHUB_REPOSITORY}/issues/new?template=generate-game-asset.yml. Le titre doit commencer par **[ASSET]** et l'issue doit contenir la catégorie, les dimensions, le matériau, le profil et la livraison."
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "⚠️ Cette issue contient des images mais pas les paramètres techniques nécessaires ; aucune génération n'a été lancée. Utilise l'unique formulaire : https://github.com/${GITHUB_REPOSITORY}/issues/new?template=generate-game-asset.yml."
 
   generate:
     name: Generate requested asset bundle
@@ -115,6 +116,7 @@ jobs:
             tools/build_asset_sidecars.py \
             tools/validate_game_asset_bundle.py \
             tools/update_generated_asset_catalog.py
+          bash -n tools/publish_generated_asset.sh
           python3 tools/test_asset_issue_download.py
 
       - name: Prepare normalized request
@@ -184,7 +186,8 @@ jobs:
           BUNDLE_DIR="$BUNDLE_ROOT/$SLUG"
           python3 tools/validate_game_asset_bundle.py \
             --bundle "$BUNDLE_DIR" --slug "$SLUG" \
-            --report "$BUNDLE_DIR/$SLUG.validation.json"
+            --report "$BUNDLE_DIR/$SLUG.validation.json" \
+            2>&1 | tee build/game-asset/logs/validation.log
           python3 tools/update_generated_asset_catalog.py \
             --catalog "$BUNDLE_ROOT/catalog.json" \
             --asset "$BUNDLE_DIR/$SLUG.asset.json"
@@ -207,18 +210,11 @@ jobs:
             exit 1
           fi
 
-      - name: Commit validated bundle
+      - name: Publish validated bundle to main
         if: ${{ success() && (github.event_name == 'issues' || inputs.commit_output == true) }}
         run: |
-          set -euo pipefail
-          git config user.name "blackout-asset-bot"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$BUNDLE_ROOT/$SLUG" "$BUNDLE_ROOT/catalog.json"
-          if ! git diff --cached --quiet; then
-            git commit -m "Generate validated game asset $SLUG"
-            git pull --rebase origin main
-            git push origin HEAD:main
-          fi
+          bash tools/publish_generated_asset.sh \
+            "$BUNDLE_ROOT" "$SLUG" build/game-asset/logs/publish.log
 
       - name: Report successful issue generation
         if: ${{ success() && github.event_name == 'issues' }}
@@ -238,14 +234,36 @@ jobs:
           set -euo pipefail
           comment_file="build/game-asset/failure-comment.md"
           mkdir -p "$(dirname "$comment_file")"
+          label="Erreur non classée"
+          log_file=""
+          for candidate in \
+            build/game-asset/logs/publish.log \
+            build/game-asset/logs/godot-import.log \
+            build/game-asset/logs/validation.log \
+            build/game-asset/logs/generation.log \
+            build/game-asset/logs/request.log; do
+            if [[ -s "$candidate" ]]; then
+              log_file="$candidate"
+              case "$candidate" in
+                *publish.log) label="Erreur de publication Git" ;;
+                *godot-import.log) label="Erreur d'import Godot" ;;
+                *validation.log) label="Erreur de validation du bundle" ;;
+                *generation.log) label="Erreur de génération Blender" ;;
+                *request.log) label="Erreur de préparation de la demande" ;;
+              esac
+              break
+            fi
+          done
           {
             echo "❌ Aucun asset n'a été ajouté."
             echo
-            if [[ -f build/game-asset/logs/request.log ]]; then
-              echo "**Erreur de préparation détectée :**"
+            echo "**$label :**"
+            if [[ -n "$log_file" ]]; then
               echo '```text'
-              tail -n 18 build/game-asset/logs/request.log
+              tail -n 24 "$log_file"
               echo '```'
+            else
+              echo "Aucun journal ciblé n'a été produit."
             fi
             echo "Diagnostic complet : ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           } > "$comment_file"
@@ -294,6 +312,7 @@ jobs:
             tools/generate_game_asset.py tools/generate_game_asset_v2.py tools/generate_game_asset_v3.py \
             tools/generate_specter5_production.py tools/generate_specter5_production_v2.py \
             tools/validate_game_asset_bundle.py
+          bash -n tools/publish_generated_asset.sh
           python3 tools/test_asset_issue_download.py
       - name: Generate and validate fixture
         run: |
