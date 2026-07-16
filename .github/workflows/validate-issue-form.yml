@@ -1,0 +1,93 @@
+name: Validate the single asset issue form
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/workflows/validate-issue-form.yml"
+  pull_request:
+    paths:
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/workflows/validate-issue-form.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Parse and validate the GitHub Issue Form
+        shell: bash
+        run: |
+          set -euo pipefail
+          ruby <<'RUBY'
+          require 'yaml'
+
+          directory = '.github/ISSUE_TEMPLATE'
+          forms = Dir.glob(File.join(directory, '*.{yml,yaml}')).reject { |path| File.basename(path) == 'config.yml' }
+          abort("Expected exactly one issue form, found #{forms.length}: #{forms.join(', ')}") unless forms.length == 1
+
+          path = forms.first
+          form = YAML.safe_load(File.read(path), permitted_classes: [], aliases: false)
+          abort('Issue form must be a mapping') unless form.is_a?(Hash)
+
+          %w[name description body].each do |key|
+            abort("Missing top-level key: #{key}") unless form.key?(key)
+          end
+          abort('name must be a non-empty string') unless form['name'].is_a?(String) && !form['name'].strip.empty?
+          abort('description must be a non-empty string') unless form['description'].is_a?(String) && !form['description'].strip.empty?
+
+          body = form['body']
+          abort('body must be a non-empty array') unless body.is_a?(Array) && !body.empty?
+          allowed_types = %w[markdown textarea input dropdown checkboxes upload]
+          ids = []
+          labels = []
+          interactive = 0
+
+          body.each_with_index do |element, index|
+            abort("body[#{index}] must be a mapping") unless element.is_a?(Hash)
+            type = element['type']
+            abort("body[#{index}] has unsupported type #{type.inspect}") unless allowed_types.include?(type)
+            attributes = element['attributes']
+            abort("body[#{index}] is missing attributes") unless attributes.is_a?(Hash)
+
+            if type == 'markdown'
+              value = attributes['value']
+              abort("body[#{index}] markdown requires a value") unless value.is_a?(String) && !value.strip.empty?
+              next
+            end
+
+            interactive += 1
+            id = element['id']
+            label = attributes['label']
+            abort("body[#{index}] requires a valid id") unless id.is_a?(String) && id.match?(/\A[a-zA-Z0-9_-]+\z/)
+            abort("duplicate id: #{id}") if ids.include?(id)
+            ids << id
+            abort("body[#{index}] requires a non-empty label") unless label.is_a?(String) && !label.strip.empty?
+            abort("duplicate label: #{label}") if labels.include?(label)
+            labels << label
+
+            if %w[dropdown checkboxes].include?(type)
+              options = attributes['options']
+              abort("body[#{index}] requires options") unless options.is_a?(Array) && !options.empty?
+              option_labels = options.map { |option| option.is_a?(Hash) ? option['label'] : option }
+              abort("body[#{index}] options must all be strings") unless option_labels.all? { |value| value.is_a?(String) && !value.strip.empty? }
+              abort("body[#{index}] options must be unique") unless option_labels.uniq.length == option_labels.length
+            end
+
+            if type == 'upload'
+              validations = element['validations'] || {}
+              accept = validations['accept']
+              abort("body[#{index}] upload accept must be a string") if accept && !accept.is_a?(String)
+            end
+          end
+
+          abort('Issue form must contain at least one interactive field') if interactive.zero?
+          puts "Valid issue form: #{path} (#{interactive} interactive fields)"
+          RUBY
