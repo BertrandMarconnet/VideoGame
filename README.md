@@ -6,6 +6,16 @@ Vertical slice jouable d’un survival-horror industriel en vue subjective, dév
 
 **https://bertrandmarconnet.github.io/VideoGame/**
 
+## Générer un asset 3D
+
+**Menu guidé avec chargement d’images, listes, cases à cocher et préremplissage GitHub :**
+
+**https://bertrandmarconnet.github.io/VideoGame/asset-generator.html**
+
+Le formulaire GitHub direct reste accessible ici :
+
+**https://github.com/BertrandMarconnet/VideoGame/issues/new?template=generate-game-asset.yml**
+
 Après un déploiement, utiliser `Ctrl+F5` une seule fois afin d’éviter qu’un ancien export Web reste dans le cache du navigateur.
 
 ## Canon du premier chapitre
@@ -69,7 +79,7 @@ La campagne commence à l’extérieur de ToyGuard Industries, sous la pluie. Le
 
 ## Générateur unifié d'assets — sans clé API
 
-L'unique interface est **Issues → Générer un asset de jeu**. Elle accepte de une à six images et couvre :
+L'interface recommandée est le **menu guidé Web** ci-dessus. Elle accepte de une à six images, affiche les vues recommandées et prépare automatiquement le formulaire GitHub pour :
 
 - robots bipèdes et quadrupèdes ;
 - personnages humanoïdes low-poly ;
@@ -81,7 +91,7 @@ L'unique interface est **Issues → Générer un asset de jeu**. Elle accepte de
 - modules d'environnement ;
 - consoles, écrans et GUI 3D.
 
-Le formulaire permet de définir les dimensions, les parties séparées, le matériau, le mode de texture, le rig, les animations, les collisions, la destructibilité, les conséquences fonctionnelles et l'intégration dans Godot.
+Le menu permet de définir les dimensions, les parties séparées, le matériau, le mode de texture, le rig, les animations, les collisions, la destructibilité, les conséquences fonctionnelles et l'intégration dans Godot.
 
 Les images fournies sont exploitées pour extraire la palette, produire un atlas pixelisé PS1, texturer les écrans et guider la famille visuelle. La géométrie reste produite par un générateur contrôlé adapté à la catégorie : cette approche conserve des pivots, des noms de pièces, un rig et des zones de dégâts utilisables, contrairement à une reconstruction monoculaire imprévisible.
 
@@ -128,6 +138,7 @@ Le déploiement reconstruit `scripts/main.gd`, exécute `gdlint`, importe le pro
 - `docs/STORYBOARD_IMPLEMENTATION_MATRIX.md` : correspondance entre storyboard et jeu ;
 - `docs/SOUNDTRACK_SUNO.md` : placement narratif des musiques ;
 - `docs/ASSET_PIPELINE.md` : licences et budgets 3D Web ;
+- `docs/ASSET_REFERENCE_IMAGE_GUIDE.md` : vues, cadrages et poses à fournir ;
 - `docs/GENERATED_ASSET_AND_DAMAGE_PIPELINE.md` : formulaire, génération, catalogue, passerelle et dégâts localisés ;
 - `docs/CRAWLER7_PRODUCTION_PIPELINE.md` : génération, rig, animations et contrôles ;
 - `docs/OPEN_SOURCE_3D_DECISION.md` : comparaison des solutions open source ;
