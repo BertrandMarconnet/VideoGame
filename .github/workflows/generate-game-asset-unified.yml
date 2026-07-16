@@ -29,6 +29,7 @@ on:
     paths:
       - ".github/ISSUE_TEMPLATE/generate-game-asset.yml"
       - ".github/workflows/generate-game-asset-unified.yml"
+      - "web/asset-generator.html"
       - "tools/generate_game_asset*.py"
       - "tools/generate_specter5_production*.py"
       - "tools/parse_game_asset_issue.py"
@@ -47,13 +48,35 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  guide-unstructured-request:
+    name: Explain why an image-only issue cannot generate an asset
+    if: >-
+      ${{
+        github.event_name == 'issues' &&
+        github.actor == github.repository_owner &&
+        !startsWith(github.event.issue.title, '[ASSET]') &&
+        (contains(github.event.issue.body, 'user-attachments/assets') || contains(github.event.issue.body, 'private-user-images.githubusercontent.com'))
+      }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post the working menu link
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "⚠️ Cette issue contient des images mais pas les paramètres techniques nécessaires ; aucune génération n'a été lancée. Utilise le menu graphique : https://bertrandmarconnet.github.io/VideoGame/asset-generator.html ou le formulaire direct : https://github.com/${GITHUB_REPOSITORY}/issues/new?template=generate-game-asset.yml. Le titre doit commencer par **[ASSET]** et l'issue doit contenir les menus catégorie, dimensions, matériau, profil et livraison."
+
   generate:
     name: Generate requested asset bundle
     if: >-
       ${{
         github.event_name != 'pull_request' &&
         github.actor == github.repository_owner &&
-        (github.event_name == 'workflow_dispatch' || startsWith(github.event.issue.title, '[ASSET]'))
+        (
+          github.event_name == 'workflow_dispatch' ||
+          startsWith(github.event.issue.title, '[ASSET]') ||
+          (contains(github.event.issue.body, '### Catégorie') && contains(github.event.issue.body, '### Images de référence'))
+        )
       }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -184,8 +207,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --body "✅ Asset **$SLUG** généré et validé : [GLB](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.glb) · [aperçu](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.png) · [manifeste](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.asset.json) · [profil de dégâts](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.damage.json)"
-          gh issue close "$ISSUE_NUMBER" --reason completed
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "✅ Asset **$SLUG** généré et validé : [GLB](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.glb) · [aperçu](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.png) · [manifeste](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.asset.json) · [profil de dégâts](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.damage.json)"
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
 
       - name: Report failed issue generation
         if: ${{ failure() && github.event_name == 'issues' }}
@@ -193,7 +216,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --body "❌ Aucun asset n'a été ajouté. Diagnostic : ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "❌ Aucun asset n'a été ajouté. Diagnostic : ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Upload bundle and diagnostics
         if: always()
