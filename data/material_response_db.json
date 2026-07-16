@@ -73,6 +73,18 @@
         "specter_charge": 2.5
       }
     },
+    "technical_fabric": {
+      "base_health": 18,
+      "density": 0.45,
+      "fracture": "tear",
+      "damage_multipliers": {
+        "flashlight_bash": 0.35,
+        "plank": 0.45,
+        "crowbar": 1.6,
+        "thrown_prop": 0.5,
+        "specter_charge": 2.0
+      }
+    },
     "metal_light": {
       "base_health": 42,
       "density": 1.5,
