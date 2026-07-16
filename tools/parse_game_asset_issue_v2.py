@@ -25,6 +25,11 @@ def is_allowed_attachment_host(host: str | None) -> bool:
     return normalized.startswith("github-production-user-asset-") and normalized.endswith(".amazonaws.com")
 
 
+def is_allowed_image_host(host: str | None) -> bool:
+    """Backward-compatible alias used by the attachment regression test."""
+    return is_allowed_attachment_host(host)
+
+
 def detect_image_extension(data: bytes, content_type: str) -> str:
     if data.startswith(b"\x89PNG\r\n\x1a\n"):
         return ".png"
