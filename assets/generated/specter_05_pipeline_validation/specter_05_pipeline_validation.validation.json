@@ -1,0 +1,24 @@
+{
+  "valid": true,
+  "slug": "specter_05_pipeline_validation",
+  "category": "robot_biped",
+  "triangles": 3572,
+  "mesh_objects": 59,
+  "bones": 14,
+  "animations": [
+    "Idle-loop",
+    "Walk-loop",
+    "Run-loop",
+    "Attack",
+    "Crawl-loop",
+    "Shutdown"
+  ],
+  "damage_zones": 4,
+  "texture_mode": "palette_only",
+  "collision_mode": "auto",
+  "reference_images_used": 4,
+  "glb": {
+    "bytes": 372288,
+    "version": 2
+  }
+}
