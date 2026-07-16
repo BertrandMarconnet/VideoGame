@@ -1,170 +1,276 @@
 name: Générer un asset de jeu
-description: Menu guidé pour générer un GLB low-poly, ses textures, son rig, ses animations, ses parties destructibles et son intégration Godot.
-title: "[ASSET] "
-labels: []
-assignees:
-  - BertrandMarconnet
-body:
-  - type: markdown
-    attributes:
-      value: |
-        # Blackout Protocol — Générateur d'asset 3D
+ description: Menu guidé pour produire un GLB low-poly avec rig, animations, sons synchronisés, parties destructibles et intégration Godot.
+ title: "[ASSET] "
+ labels: []
+ assignees:
+   - BertrandMarconnet
+ body:
+   - type: markdown
+     attributes:
+       value: |
+         # Blackout Protocol — Générateur d'asset complet
 
-        Remplissez les menus ci-dessous puis chargez **1 à 6 images du même modèle**. Après validation, GitHub Actions génère et contrôle le bundle avant de l'ajouter au jeu.
+         Le formulaire crée un bundle directement exploitable dans Godot : **GLB + aperçu + rig + animations + sons + dégâts localisés + manifeste**.
 
-        **Vues recommandées :**
-        - robot/personnage : face, droite, arrière, trois-quarts, corps entier, pose neutre ;
-        - quadrupède : face, profil, arrière, trois-quarts surélevé, quatre pattes visibles ;
-        - main FPS + objet : vue joueur, profil, dessus, dessous/poignée, objet seul ;
-        - prop : trois-quarts, profil, arrière, dessus si asymétrique ;
-        - mur/porte/environnement : face orthographique, profil/épaisseur, arrière, trois-quarts et dimensions ;
-        - console/GUI : face, profil, trois-quarts et image d'écran séparée.
+         Pour choisir les animations et les zones destructibles sur des mannequins animés, utilisez d'abord le **[configurateur visuel](https://bertrandmarconnet.github.io/VideoGame/asset-generator.html)**. Il préremplit ensuite ce formulaire.
 
-        Toutes les images doivent montrer la **même variante**, sans partie coupée, sur fond simple et sans grand-angle.
+         **Références recommandées :** face, profil droit, arrière et trois-quarts ; même variante, objet entier, fond simple, sans grand-angle.
 
-  - type: input
-    id: asset_name
-    attributes:
-      label: Nom de l'asset
-      description: Nom court et unique.
-      placeholder: SPECTER-5, lampe FPS, sas S-01, cloison atelier
-    validations:
-      required: true
+   - type: input
+     id: asset_name
+     attributes:
+       label: Nom de l'asset
+       placeholder: SPECTER-5, lampe FPS, sas S-01, cloison atelier
+     validations:
+       required: true
 
-  - type: dropdown
-    id: category
-    attributes:
-      label: Catégorie
-      description: Détermine la famille de géométrie, le rig et les contrôles attendus.
-      options:
-        - Robot bipède
-        - Robot quadrupède
-        - Personnage humanoïde
-        - Vue FPS : main + objet
-        - Machine / bras industriel articulé
-        - Prop / objet interactif
-        - Mur / cloison modulaire
-        - Porte / sas
-        - Module d'environnement
-        - Console / écran / GUI 3D
-      default: 0
-    validations:
-      required: true
+   - type: dropdown
+     id: category
+     attributes:
+       label: Catégorie
+       options:
+         - Robot bipède
+         - Robot quadrupède
+         - Personnage humanoïde
+         - Vue FPS : main + objet
+         - Machine / bras industriel articulé
+         - Prop / objet interactif
+         - Mur / cloison modulaire
+         - Porte / sas
+         - Module d'environnement
+         - Console / écran / GUI 3D
+       default: 0
+     validations:
+       required: true
 
-  - type: upload
-    id: reference_images
-    attributes:
-      label: Images de référence
-      description: Glissez 1 à 6 fichiers PNG, JPG, JPEG ou WebP. Pour un robot, quatre vues cohérentes sont fortement recommandées.
-    validations:
-      required: true
-      accept: ".png,.jpg,.jpeg,.webp"
+   - type: textarea
+     id: role
+     attributes:
+       label: Rôle du modèle dans le jeu
+       description: Décrivez son usage, son comportement, ses interactions et les conséquences attendues lorsqu'il est endommagé.
+       placeholder: Robot de poursuite qui continue à ramper après la perte des deux jambes.
+     validations:
+       required: true
 
-  - type: dropdown
-    id: reference_mode
-    attributes:
-      label: Organisation des images
-      options:
-        - Quatre vues orthographiques cohérentes
-        - Plusieurs vues libres du même asset
-        - Une vue principale / trois-quarts
-        - Storyboard / concept art d'ambiance
-      default: 0
-    validations:
-      required: true
+   - type: upload
+     id: reference_images
+     attributes:
+       label: Images de référence
+       description: Chargez 1 à 6 fichiers PNG, JPG, JPEG ou WebP du même modèle.
+     validations:
+       required: true
+       accept: ".png,.jpg,.jpeg,.webp"
 
-  - type: input
-    id: dimensions
-    attributes:
-      label: Dimensions cibles L × H × P en mètres
-      description: Largeur, hauteur et profondeur maximales réelles, séparées par x.
-      placeholder: 0.80 x 2.45 x 0.55
-      value: "1.00 x 1.00 x 1.00"
-    validations:
-      required: true
+   - type: dropdown
+     id: reference_mode
+     attributes:
+       label: Organisation des images
+       options:
+         - Quatre vues orthographiques cohérentes
+         - Plusieurs vues libres du même asset
+         - Une vue principale / trois-quarts
+         - Storyboard / concept art d'ambiance
+       default: 0
+     validations:
+       required: true
 
-  - type: dropdown
-    id: material
-    attributes:
-      label: Matériau principal
-      description: Pilote la résistance, les dégâts et le type de rupture.
-      options:
-        - Métal léger
-        - Métal blindé
-        - Plastique technique
-        - Caoutchouc / tissu technique
-        - Verre
-        - Placo
-        - Brique
-        - Béton
-        - Bois
-      default: 0
-    validations:
-      required: true
+   - type: input
+     id: dimensions
+     attributes:
+       label: Dimensions cibles L × H × P en mètres
+       placeholder: 0.80 x 2.45 x 0.55
+       value: "1.00 x 1.00 x 1.00"
+     validations:
+       required: true
 
-  - type: dropdown
-    id: build_profile
-    attributes:
-      label: Profil de génération
-      description: Le mode automatique applique le profil recommandé pour la catégorie.
-      options:
-        - Automatique selon la catégorie — recommandé
-        - Robot ou personnage articulé
-        - Vue FPS main et objet articulés
-        - Machine articulée
-        - Prop modulaire segmenté
-        - Mur destructible cellulaire
-        - Porte ou sas articulé
-        - Environnement modulaire
-        - Console ou GUI 3D
-      default: 0
-    validations:
-      required: true
+   - type: dropdown
+     id: material
+     attributes:
+       label: Matériau principal
+       options:
+         - Métal léger
+         - Métal blindé
+         - Plastique technique
+         - Caoutchouc / tissu technique
+         - Verre
+         - Placo
+         - Brique
+         - Béton
+         - Bois
+       default: 0
+     validations:
+       required: true
 
-  - type: textarea
-    id: asset_spec
-    attributes:
-      label: Spécification gameplay, parties, animations et dégâts
-      description: Conservez les clés ci-dessous. Complétez surtout ROLE, SEGMENTATION, ANIMATIONS et DAMAGE_ZONES.
-      value: |
-        ROLE: Décrire où et comment le modèle est utilisé dans le jeu.
-        VISUAL_PROFILE: PS1 industriel ToyGuard
-        GEOMETRY_TEMPLATE: Automatique selon la catégorie
-        TEXTURE_MODE: Atlas PS1 généré depuis les images
-        RIG: Automatique selon la catégorie
-        ANIMATIONS: idle
-        COLLISION: Automatique selon la catégorie
-        DESTRUCTION: Dégâts localisés
-        SEGMENTATION: corps, partie mobile 1, partie mobile 2, capteur
-        DAMAGE_ZONES: partie mobile = détachement ou perte de fonction
-        INTERACTIONS: flashlight_bash=0.4; plank=0.8; crowbar=2.0; thrown_prop=1.0; specter_charge=4.0
-    validations:
-      required: true
+   - type: dropdown
+     id: build_profile
+     attributes:
+       label: Profil de génération
+       options:
+         - Automatique selon la catégorie — recommandé
+         - Robot ou personnage articulé
+         - Vue FPS main et objet articulés
+         - Machine articulée
+         - Prop modulaire segmenté
+         - Mur destructible cellulaire
+         - Porte ou sas articulé
+         - Environnement modulaire
+         - Console ou GUI 3D
+       default: 0
+     validations:
+       required: true
 
-  - type: dropdown
-    id: delivery
-    attributes:
-      label: Qualité et intégration
-      options:
-        - Web / mobile PS1 + intégrer au jeu — recommandé
-        - Web / mobile PS1 + catalogue seulement
-        - Standard + intégrer au jeu
-        - Hero asset + catalogue seulement
-        - Vue FPS Web + intégrer sous la caméra
-      default: 0
-    validations:
-      required: true
+   - type: checkboxes
+     id: standard_animations
+     attributes:
+       label: Animations standard
+       description: Cochez les clips utiles. Le générateur ignore automatiquement les clips incompatibles avec la catégorie.
+       options:
+         - label: idle — attente / micro-mouvements en boucle
+         - label: walk — marche en boucle
+         - label: run — course ou déplacement rapide
+         - label: attack — attaque / frappe principale
+         - label: crawl — progression au sol ou après démembrement
+         - label: shutdown — arrêt, chute ou mise hors service
+         - label: interact — interaction avec un terminal ou un objet
+         - label: use — utilisation d'un outil ou d'une vue FPS
+         - label: bash — coup porté avec l'objet FPS
+         - label: inspect — inspection de l'objet tenu
+         - label: work — cycle de travail d'une machine
+         - label: alarm — réaction d'alarme
+         - label: open — ouverture
+         - label: close — fermeture
+         - label: lock — verrouillage
+         - label: unlock — déverrouillage
+         - label: boot — démarrage d'une console
+         - label: break — rupture / destruction
+         - label: fall — chute
 
-  - type: checkboxes
-    id: confirmation
-    attributes:
-      label: Vérifications obligatoires
-      options:
-        - label: Toutes les images représentent exactement la même variante du modèle.
-          required: true
-        - label: L'objet ou le personnage est entièrement visible et ses dimensions sont réalistes.
-          required: true
-        - label: Les parties mobiles, détachables ou destructibles sont nommées dans la spécification.
-          required: true
-        - label: Je confirme les droits d'utilisation des images et la génération dans le dépôt.
-          required: true
+   - type: input
+     id: custom_animations
+     attributes:
+       label: Animations supplémentaires
+       description: Séparez les noms par des virgules. Elles sont ajoutées aux animations cochées.
+       placeholder: scan, stagger, turn_left, recharge
+
+   - type: checkboxes
+     id: destructible_parts
+     attributes:
+       label: Parties séparables / destructibles
+       description: Cochez les zones pertinentes ; le configurateur visuel permet de les sélectionner directement sur un mannequin.
+       options:
+         - label: tête
+         - label: capteur
+         - label: torse / corps central
+         - label: bras gauche
+         - label: bras droit
+         - label: jambe gauche
+         - label: jambe droite
+         - label: patte avant gauche
+         - label: patte avant droite
+         - label: patte arrière gauche
+         - label: patte arrière droite
+         - label: main / poignée
+         - label: batterie
+         - label: lentille / écran
+         - label: panneau / porte
+         - label: charnière / verrou
+         - label: cellule de mur
+         - label: outil terminal
+
+   - type: input
+     id: custom_parts
+     attributes:
+       label: Parties supplémentaires
+       placeholder: épaule gauche, câble dorsal, cellule 04, clavier, roue
+
+   - type: textarea
+     id: damage_zones
+     attributes:
+       label: Zones critiques et conséquences
+       description: Une règle par zone, par exemple « deux jambes = passage à crawl ».
+       placeholder: jambe gauche = détachement et vitesse ×0.65 ; capteur = détection réduite ; torse = arrêt
+     validations:
+       required: true
+
+   - type: textarea
+     id: interactions
+     attributes:
+       label: Outils et interactions
+       value: "flashlight_bash=0.4; plank=0.8; crowbar=2.0; thrown_prop=1.0; specter_charge=4.0"
+     validations:
+       required: true
+
+   - type: dropdown
+     id: sound_mode
+     attributes:
+       label: Mode sonore
+       description: Les sons procéduraux sont légers et générés sans clé API. Le mode hybride ajoute vos propres clips.
+       options:
+         - Sons procéduraux adaptés à la catégorie — recommandé
+         - Utiliser uniquement mes sons
+         - Mélanger mes sons et les sons procéduraux
+         - Aucun son
+       default: 0
+     validations:
+       required: true
+
+   - type: checkboxes
+     id: sound_presets
+     attributes:
+       label: Familles sonores
+       options:
+         - label: servo
+         - label: step
+         - label: hydraulic
+         - label: impact
+         - label: alarm
+         - label: electric
+         - label: ambience
+
+   - type: upload
+     id: model_sounds
+     attributes:
+       label: Sons du modèle
+       description: Facultatif — jusqu'à 8 fichiers WAV, OGG ou MP3. Utilisez le mode « mes sons » ou « hybride ».
+     validations:
+       required: false
+       accept: ".wav,.ogg,.mp3"
+
+   - type: textarea
+     id: sound_sync
+     attributes:
+       label: Synchronisation animation ↔ son
+       description: Format « animation = nom_du_clip @ temps_normalisé ». Ajoutez « @ loop » pour une boucle.
+       value: |
+         walk = step @ 0.18
+         walk = step @ 0.68
+         attack = impact @ 0.46
+         idle = servo @ 0.00 @ loop
+
+   - type: dropdown
+     id: delivery
+     attributes:
+       label: Qualité et intégration
+       options:
+         - Web / mobile PS1 + intégrer au jeu — recommandé
+         - Web / mobile PS1 + catalogue seulement
+         - Standard + intégrer au jeu
+         - Hero asset + catalogue seulement
+         - Vue FPS Web + intégrer sous la caméra
+       default: 0
+     validations:
+       required: true
+
+   - type: checkboxes
+     id: confirmation
+     attributes:
+       label: Vérifications obligatoires
+       options:
+         - label: Toutes les images représentent exactement la même variante du modèle.
+           required: true
+         - label: Le modèle est entièrement visible et ses dimensions sont réalistes.
+           required: true
+         - label: Les parties mobiles, séparables ou destructibles sont identifiées.
+           required: true
+         - label: Je confirme les droits d'utilisation des images et des sons.
+           required: true
