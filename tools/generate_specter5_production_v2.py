@@ -2,6 +2,8 @@
 """Reference-aware SPECTER-5 production entry point."""
 from __future__ import annotations
 
+import json
+import re
 import sys
 from pathlib import Path
 
@@ -14,6 +16,24 @@ import bpy
 from build_asset_audio_v2 import build as build_audio
 from sanitize_generated_glb import sanitize as sanitize_glb
 
+
+def _arg_path(flag: str) -> Path:
+    if flag not in sys.argv:
+        raise RuntimeError(f"Missing generator argument: {flag}")
+    return Path(sys.argv[sys.argv.index(flag) + 1])
+
+
+def _animation_key(value: str) -> str:
+    value = value.lower().replace("-loop", "").replace("_loop", "")
+    return re.sub(r"[^a-z0-9]+", "_", value).strip("_")
+
+
+request_path = _arg_path("--request")
+output_dir = _arg_path("--output-dir")
+request_data = json.loads(request_path.read_text(encoding="utf-8"))
+requested_animations = [str(value) for value in request_data.get("animations", []) if str(value).strip()]
+requested_keys = {_animation_key(value) for value in requested_animations}
+
 SOURCE = Path(__file__).with_name("generate_specter5_production.py")
 text = SOURCE.read_text(encoding="utf-8")
 marker = 'ns["main"]()'
@@ -24,6 +44,8 @@ scope: dict[str, object] = {"__file__": str(SOURCE), "__name__": "specter_refere
 exec(compile(text, str(SOURCE), "exec"), scope)
 module_ns = scope["ns"]
 material = scope["compatible_material"]
+original_make_action = module_ns["make_action"]
+original_build_biped = module_ns["build_biped"]
 
 
 def reference_color(request) -> tuple[float, float, float] | None:
@@ -67,17 +89,53 @@ def reference_build_materials(request):
     }
 
 
+def selected_make_action(rig, name, frames):
+    if requested_keys and _animation_key(str(name)) not in requested_keys:
+        return None
+    return original_make_action(rig, name, frames)
+
+
+def selected_build_biped(req, mats):
+    rig, clips, zones = original_build_biped(req, mats)
+    known = {_animation_key(str(name)): str(name) for name in clips}
+    selected_clips = [str(name) for name in clips if not requested_keys or _animation_key(str(name)) in requested_keys]
+    for custom_name in requested_animations:
+        key = _animation_key(custom_name)
+        if key in known:
+            continue
+        # A custom name receives a safe neutral loop so it is immediately usable and can later be
+        # refined in Blender without breaking the generated rig or Godot import.
+        display_name = custom_name.strip().replace("_", "-")[:48]
+        original_make_action(
+            rig,
+            display_name,
+            [
+                (1, {}, (0.0, 0.0, 0.0)),
+                (24, {"head": (0.0, 0.18, 0.0)}, (0.0, 0.0, float(req["dimensions_m"]["height"]) * 0.004)),
+                (48, {}, (0.0, 0.0, 0.0)),
+            ],
+        )
+        selected_clips.append(display_name)
+    return rig, selected_clips, zones
+
+
 def export_without_helpers(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.object.select_all(action="DESELECT")
+    selected = []
     for obj in bpy.context.scene.objects:
         helper = obj.name.lower().endswith("-colonly") or obj.name.lower().endswith("_colonly") or obj.name.lower().startswith("preview")
         if obj.type in {"MESH", "ARMATURE"} and not helper:
             obj.select_set(True)
+            selected.append(obj)
+    if not selected:
+        raise RuntimeError("No visible mesh or armature selected for SPECTER GLB export")
+    bpy.context.view_layer.objects.active = next((obj for obj in selected if obj.type == "ARMATURE"), selected[0])
     wanted = {
         "filepath": str(path),
         "export_format": "GLB",
         "use_selection": True,
+        "export_selected": True,
         "export_apply": True,
         "export_yup": True,
         "export_animations": True,
@@ -87,21 +145,16 @@ def export_without_helpers(path: Path) -> None:
     }
     supported = {item.identifier for item in bpy.ops.export_scene.gltf.get_rna_type().properties}
     bpy.ops.export_scene.gltf(**{key: value for key, value in wanted.items() if key in supported})
-
-
-def _arg_path(flag: str) -> Path:
-    if flag not in sys.argv:
-        raise RuntimeError(f"Missing generator argument: {flag}")
-    return Path(sys.argv[sys.argv.index(flag) + 1])
+    if not path.is_file() or path.stat().st_size == 0:
+        raise RuntimeError(f"SPECTER exporter did not create {path}")
 
 
 module_ns["build_materials"] = reference_build_materials
+module_ns["make_action"] = selected_make_action
+module_ns["build_biped"] = selected_build_biped
 module_ns["export_glb"] = export_without_helpers
 module_ns["main"]()
 
-request_path = _arg_path("--request")
-output_dir = _arg_path("--output-dir")
-slug = __import__("json").loads(request_path.read_text(encoding="utf-8"))["slug"]
-glb_path = output_dir / f"{slug}.glb"
-sanitize_glb(glb_path, output_dir / f"{slug}.sanitize.json")
+glb_path = output_dir / f"{request_data['slug']}.glb"
+sanitize_glb(glb_path, output_dir / f"{request_data['slug']}.sanitize.json")
 build_audio(request_path, output_dir)
