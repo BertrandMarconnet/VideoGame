@@ -1,24 +1,20 @@
-# Générateur 3D simple
+# Anciennes images de référence
 
-Aucune clé API et aucun runner personnel ne sont nécessaires.
+Ce dossier conserve des images historiques utilisées pendant les premiers essais de génération 3D.
 
-## Méthode la plus simple
+Il n'est plus une entrée du pipeline et aucun modèle n'est généré automatiquement depuis son contenu. Les workflows TripoSR et « Generate 3D model — no key » ont été retirés.
 
-1. Ouvrir l’onglet **Issues** du dépôt.
-2. Cliquer sur **New issue**.
-3. Choisir **Générer un modèle 3D**.
-4. Donner un nom, puis glisser une image en vue trois-quarts.
-5. Cliquer sur **Submit new issue**.
+## Interface unique
 
-GitHub génère le fichier GLB, le contrôle avec Blender et Godot, le place dans
-`assets/output 3d model/`, puis répond dans l’issue avec le lien du modèle.
+Pour générer un asset :
 
-Pour SPECTER-5, les quatre images sont déjà rangées dans `specter_5/`. Il suffit aussi
-d’ouvrir **Actions → Generate 3D model — no key → Run workflow** et de conserver
-`asset = specter_5`.
+1. ouvrir **Issues** ;
+2. cliquer sur **New issue** ;
+3. choisir **Générer un asset de jeu** ;
+4. joindre une à six images ;
+5. renseigner la catégorie, la segmentation, le rig, les animations, les matériaux, les dégâts et l'intégration ;
+6. soumettre l'issue.
 
-## Limite technique
+Le bundle validé est écrit dans `assets/generated/<asset_id>/` et ajouté au catalogue chargé par Godot.
 
-TripoSR reconstruit la géométrie depuis une image principale. Les autres vues servent de
-références de contrôle. Le calcul est réalisé sur le CPU gratuit de GitHub et peut prendre
-de 20 minutes à plusieurs heures selon la charge et la qualité choisie.
+Les fichiers encore présents ici sont des références historiques ; ils peuvent être réutilisés en les joignant au formulaire actif.
