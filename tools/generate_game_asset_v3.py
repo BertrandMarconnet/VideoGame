@@ -11,7 +11,7 @@ import json
 import sys
 from pathlib import Path
 
-from build_asset_audio import build as build_audio
+from build_asset_audio_v2 import build as build_audio
 from sanitize_generated_glb import sanitize as sanitize_glb
 
 SOURCE = Path(__file__).with_name("generate_game_asset_v2.py")
