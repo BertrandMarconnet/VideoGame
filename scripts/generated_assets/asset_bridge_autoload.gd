@@ -1,6 +1,7 @@
 extends Node
 
 const BridgeScript := preload("res://scripts/generated_assets/asset_bridge.gd")
+const GeneratedAudioScript := preload("res://scripts/generated_assets/generated_asset_audio.gd")
 
 var bridge: Variant
 var _scan_scheduled := false
@@ -59,6 +60,25 @@ func _register_candidate(node: Node) -> void:
 		var material_id := String(node.get_meta("material_id", "metal_light"))
 		var health := float(node.get_meta("health", 0.0))
 		bridge.register_static_destructible(node as Node3D, material_id, health)
+	if node is Node3D and node.name == "GeneratedVisual":
+		var owner := node.get_parent()
+		if owner != null:
+			var asset_id := String(owner.get_meta("generated_asset_id", ""))
+			if not asset_id.is_empty():
+				_attach_audio(node as Node3D, get_asset(asset_id))
+	elif node is Node3D and node.has_meta("generated_asset_id"):
+		_attach_audio(node as Node3D, get_asset(String(node.get_meta("generated_asset_id", ""))))
+
+func _attach_audio(target: Node3D, entry: Dictionary) -> void:
+	if target == null or entry.is_empty() or target.get_node_or_null("GeneratedAssetAudio") != null:
+		return
+	var profile_path := String(entry.get("audio_profile", ""))
+	if profile_path.is_empty() or not FileAccess.file_exists(profile_path):
+		return
+	var component := GeneratedAudioScript.new()
+	component.name = "GeneratedAssetAudio"
+	target.add_child(component)
+	component.call_deferred("configure", profile_path)
 
 func reload_catalog() -> void:
 	if bridge == null:
@@ -113,7 +133,11 @@ func spawn_asset(asset_id: String, parent: Node3D, transform_value := Transform3
 	if bridge == null or parent == null:
 		return null
 	_ensure_initialized(parent)
-	return bridge.spawn_asset(asset_id, parent, transform_value)
+	var instance := bridge.spawn_asset(asset_id, parent, transform_value) as Node3D
+	if instance != null:
+		instance.set_meta("generated_asset_id", asset_id)
+		_attach_audio(instance, get_asset(asset_id))
+	return instance
 
 func spawn_fps_viewmodel(asset_id: String, camera: Camera3D, local_transform := Transform3D.IDENTITY) -> Node3D:
 	if camera == null:
