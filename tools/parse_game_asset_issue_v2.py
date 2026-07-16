@@ -60,7 +60,7 @@ def _download(url: str, destination: Path, maximum: int, detector, accept: str) 
     parsed = urllib.parse.urlparse(url)
     if parsed.scheme != "https" or not is_allowed_attachment_host(parsed.hostname):
         raise ValueError(f"Hôte de pièce jointe non autorisé : {parsed.hostname}")
-    request = urllib.request.Request(url, headers={"User-Agent": "BlackoutProtocolAssetBot/5.0", "Accept": accept})
+    request = urllib.request.Request(url, headers={"User-Agent": "BlackoutProtocolAssetBot/5.1", "Accept": accept})
     with urllib.request.urlopen(request, timeout=45) as response:
         final_host = urllib.parse.urlparse(response.geturl()).hostname
         if not is_allowed_attachment_host(final_host):
@@ -100,6 +100,10 @@ def _checked_values(text: str) -> list[str]:
     return result
 
 
+def _first_any(sections: dict[str, str], *labels: str) -> str:
+    return base.first_any(sections, *labels)
+
+
 def _augment_request() -> None:
     event_path = _arg_path("--event")
     output_path = _arg_path("--output")
@@ -108,13 +112,13 @@ def _augment_request() -> None:
     sections = base.parse_sections(str(issue.get("body", "")))
     request = json.loads(output_path.read_text(encoding="utf-8"))
 
-    checked_animations = _checked_values(base.first_any(sections, "Animations standard"))
-    custom_animations = base.parse_animations(base.first_any(sections, "Animations supplémentaires"), [])
+    checked_animations = _checked_values(_first_any(sections, "Animations standard", "Animations à générer"))
+    custom_animations = base.parse_animations(_first_any(sections, "Animations supplémentaires"), [])
     if checked_animations or custom_animations:
         request["animations"] = base.parse_animations(",".join(checked_animations + custom_animations), request.get("animations", []))
 
-    selected_parts = _checked_values(base.first_any(sections, "Parties séparables / destructibles"))
-    custom_parts = base.parse_parts(base.first_any(sections, "Parties supplémentaires"))
+    selected_parts = _checked_values(_first_any(sections, "Parties séparables / destructibles", "Parties séparables ou destructibles"))
+    custom_parts = base.parse_parts(_first_any(sections, "Parties supplémentaires", "Parties supplémentaires à séparer"))
     if selected_parts or custom_parts:
         request["segmentation_parts"] = base.parse_parts(",".join(selected_parts + custom_parts))
 
@@ -124,11 +128,11 @@ def _augment_request() -> None:
         "Mélanger mes sons et les sons procéduraux": "hybrid",
         "Aucun son": "none",
     }
-    request["sound_mode"] = mode_map.get(base.first_any(sections, "Mode sonore"), "procedural")
-    request["sound_presets"] = _checked_values(base.first_any(sections, "Familles sonores"))
-    request["sound_sync_description"] = base.first_any(sections, "Synchronisation animation ↔ son")
+    request["sound_mode"] = mode_map.get(_first_any(sections, "Mode sonore"), "procedural")
+    request["sound_presets"] = _checked_values(_first_any(sections, "Familles sonores", "Familles sonores à produire"))
+    request["sound_sync_description"] = _first_any(sections, "Synchronisation animation ↔ son", "Synchronisation animation et son")
 
-    audio_section = base.first_any(sections, "Sons du modèle")
+    audio_section = _first_any(sections, "Sons du modèle", "Sons personnels du modèle")
     audio_urls = base.extract_urls(audio_section)
     audio_dir = output_path.parent / "audio"
     audio_files: list[str] = []
