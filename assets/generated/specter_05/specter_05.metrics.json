@@ -26,6 +26,6 @@
     "PreviewGround"
   ],
   "collision_helpers": 1,
-  "damage_zones": 4,
+  "damage_zones": 7,
   "reference_images_used": 4
 }

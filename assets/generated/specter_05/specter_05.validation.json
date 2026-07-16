@@ -14,7 +14,7 @@
     "Shutdown",
     "scan"
   ],
-  "damage_zones": 4,
+  "damage_zones": 7,
   "audio_streams": 4,
   "audio_events": 7,
   "texture_mode": "palette_only",
