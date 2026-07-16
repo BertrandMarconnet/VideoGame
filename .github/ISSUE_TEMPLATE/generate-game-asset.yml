@@ -1,5 +1,5 @@
-name: Générer un asset de jeu
-description: Menu guidé pour produire un GLB low-poly avec rig, animations, sons synchronisés, parties destructibles et intégration Godot.
+name: "🎛️ Générer un asset 3D complet"
+description: "Formulaire guidé avec catégories, animations, zones destructibles, sons et intégration Godot."
 title: "[ASSET] "
 labels: []
 assignees:
@@ -8,19 +8,18 @@ body:
   - type: markdown
     attributes:
       value: |
-        # Blackout Protocol — Générateur d'asset complet
+        # BLACKOUT PROTOCOL — GÉNÉRATEUR D'ASSET 3D
 
-        Le formulaire crée un bundle directement exploitable dans Godot : **GLB + aperçu + rig + animations + sons + dégâts localisés + manifeste**.
+        Ce formulaire GitHub permet de choisir les paramètres du modèle avec des **menus déroulants et des cases à cocher**.
 
-        Pour choisir les animations et les zones destructibles sur des mannequins animés, utilisez d'abord le **[configurateur visuel](https://bertrandmarconnet.github.io/VideoGame/asset-generator.html)**. Il préremplit ensuite ce formulaire.
-
-        **Références recommandées :** face, profil droit, arrière et trois-quarts ; même variante, objet entier, fond simple, sans grand-angle.
+        Pour utiliser le menu graphique avec mannequins animés et sélection visuelle des parties, ouvrir le [configurateur visuel](https://bertrandmarconnet.github.io/VideoGame/asset-generator.html).
 
   - type: input
     id: asset_name
     attributes:
       label: Nom de l'asset
-      placeholder: SPECTER-5, lampe FPS, sas S-01, cloison atelier
+      description: Nom unique du modèle à générer.
+      placeholder: SPECTER-05, CRAWLER-07, lampe FPS, porte S-01
     validations:
       required: true
 
@@ -28,6 +27,7 @@ body:
     id: category
     attributes:
       label: Catégorie
+      description: Sélectionner le type d'asset à produire.
       options:
         - Robot bipède
         - Robot quadrupède
@@ -47,8 +47,8 @@ body:
     id: role
     attributes:
       label: Rôle du modèle dans le jeu
-      description: Décrivez son usage, son comportement, ses interactions et les conséquences attendues lorsqu'il est endommagé.
-      placeholder: Robot de poursuite qui continue à ramper après la perte des deux jambes.
+      description: Décrire son comportement, ses interactions et son usage dans le niveau.
+      placeholder: Robot de poursuite qui continue à ramper après la perte des jambes.
     validations:
       required: true
 
@@ -56,10 +56,9 @@ body:
     id: reference_images
     attributes:
       label: Images de référence
-      description: Chargez 1 à 6 fichiers PNG, JPG, JPEG ou WebP du même modèle.
+      description: Ajouter 1 à 6 images cohérentes du même modèle : face, profil, arrière et trois-quarts recommandés.
     validations:
       required: true
-      accept: ".png,.jpg,.jpeg,.webp"
 
   - type: dropdown
     id: reference_mode
@@ -78,7 +77,7 @@ body:
     id: dimensions
     attributes:
       label: Dimensions cibles L × H × P en mètres
-      placeholder: 0.80 x 2.45 x 0.55
+      placeholder: 0.80 x 2.10 x 0.55
       value: "1.00 x 1.00 x 1.00"
     validations:
       required: true
@@ -119,16 +118,21 @@ body:
     validations:
       required: true
 
+  - type: markdown
+    attributes:
+      value: |
+        ## Animations
+        Cocher uniquement les mouvements réellement nécessaires pour limiter la taille du GLB et les coûts d'exécution Web/mobile.
+
   - type: checkboxes
     id: standard_animations
     attributes:
-      label: Animations standard
-      description: Cochez les clips utiles. Le générateur ignore automatiquement les clips incompatibles avec la catégorie.
+      label: Animations à générer
       options:
-        - label: idle — attente / micro-mouvements en boucle
+        - label: idle — attente et micro-mouvements en boucle
         - label: walk — marche en boucle
         - label: run — course ou déplacement rapide
-        - label: attack — attaque / frappe principale
+        - label: attack — attaque ou frappe principale
         - label: crawl — progression au sol ou après démembrement
         - label: shutdown — arrêt, chute ou mise hors service
         - label: interact — interaction avec un terminal ou un objet
@@ -142,21 +146,26 @@ body:
         - label: lock — verrouillage
         - label: unlock — déverrouillage
         - label: boot — démarrage d'une console
-        - label: break — rupture / destruction
+        - label: break — rupture ou destruction
         - label: fall — chute
 
   - type: input
     id: custom_animations
     attributes:
       label: Animations supplémentaires
-      description: Séparez les noms par des virgules. Elles sont ajoutées aux animations cochées.
+      description: Séparer les noms par des virgules.
       placeholder: scan, stagger, turn_left, recharge
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Parties séparables et dégâts
+        Cocher les éléments qui doivent être indépendants, détachables ou dotés d'une conséquence fonctionnelle.
 
   - type: checkboxes
     id: destructible_parts
     attributes:
       label: Parties séparables / destructibles
-      description: Cochez les zones pertinentes ; le configurateur visuel permet de les sélectionner directement sur un mannequin.
       options:
         - label: tête
         - label: capteur
@@ -187,8 +196,8 @@ body:
     id: damage_zones
     attributes:
       label: Zones critiques et conséquences
-      description: Une règle par zone, par exemple « deux jambes = passage à crawl ».
-      placeholder: jambe gauche = détachement et vitesse ×0.65 ; capteur = détection réduite ; torse = arrêt
+      description: Indiquer une règle par zone.
+      placeholder: jambe gauche = détachement et vitesse ×0.65 ; deux jambes = crawl ; capteur = détection réduite ; torse = arrêt
     validations:
       required: true
 
@@ -200,11 +209,16 @@ body:
     validations:
       required: true
 
+  - type: markdown
+    attributes:
+      value: |
+        ## Sons synchronisés
+        Le bundle peut contenir des sons procéduraux ou des fichiers personnels, associés à des marqueurs d'animation.
+
   - type: dropdown
     id: sound_mode
     attributes:
       label: Mode sonore
-      description: Les sons procéduraux sont légers et générés sans clé API. Le mode hybride ajoute vos propres clips.
       options:
         - Sons procéduraux adaptés à la catégorie — recommandé
         - Utiliser uniquement mes sons
@@ -230,22 +244,24 @@ body:
   - type: upload
     id: model_sounds
     attributes:
-      label: Sons du modèle
-      description: Facultatif — jusqu'à 8 fichiers WAV, OGG ou MP3. Utilisez le mode « mes sons » ou « hybride ».
+      label: Sons personnels du modèle
+      description: Facultatif — fichiers WAV, OGG ou MP3.
     validations:
       required: false
-      accept: ".wav,.ogg,.mp3"
 
   - type: textarea
     id: sound_sync
     attributes:
       label: Synchronisation animation ↔ son
-      description: Format « animation = nom_du_clip @ temps_normalisé ». Ajoutez « @ loop » pour une boucle.
+      description: Format « animation = clip @ temps_normalisé ». Ajouter « @ loop » pour une boucle.
       value: |
         walk = step @ 0.18
         walk = step @ 0.68
+        run = step @ 0.12
+        run = step @ 0.55
         attack = impact @ 0.46
         idle = servo @ 0.00 @ loop
+        shutdown = electric @ 0.35
 
   - type: dropdown
     id: delivery
