@@ -1,4 +1,4 @@
-name: Generate game asset — category aware
+name: Generate game asset — unified
 
 on:
   issues:
@@ -6,30 +6,31 @@ on:
   workflow_dispatch:
     inputs:
       request_file:
-        description: Request JSON already present in the repository
+        description: Validated request fixture
         required: true
         type: choice
         options:
           - tests/fixtures/game_asset_specter.json
+          - tests/fixtures/game_asset_character.json
+          - tests/fixtures/game_asset_fps_viewmodel.json
+          - tests/fixtures/game_asset_machine.json
           - tests/fixtures/game_asset_wall.json
           - tests/fixtures/game_asset_prop.json
           - tests/fixtures/game_asset_door.json
           - tests/fixtures/game_asset_environment.json
           - tests/fixtures/game_asset_gui.json
-        default: tests/fixtures/game_asset_specter.json
+        default: tests/fixtures/game_asset_fps_viewmodel.json
       commit_output:
         description: Commit the validated bundle to main
         required: true
         type: boolean
-        default: true
+        default: false
   pull_request:
     paths:
       - ".github/ISSUE_TEMPLATE/generate-game-asset.yml"
-      - ".github/workflows/generate-game-asset.yml"
-      - "tools/generate_game_asset.py"
-      - "tools/generate_game_asset_v2.py"
-      - "tools/generate_specter5_production.py"
-      - "tools/generate_specter5_production_v2.py"
+      - ".github/workflows/generate-game-asset-unified.yml"
+      - "tools/generate_game_asset*.py"
+      - "tools/generate_specter5_production*.py"
       - "tools/parse_game_asset_issue.py"
       - "tools/build_asset_sidecars.py"
       - "tools/validate_game_asset_bundle.py"
@@ -62,13 +63,11 @@ jobs:
       BUNDLE_ROOT: assets/generated
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Install Blender and validation tools
-        shell: bash
         run: |
           set -euo pipefail
           sudo apt-get update
@@ -76,14 +75,13 @@ jobs:
             blender jq unzip curl python3-numpy ca-certificates \
             libegl1 libgl1 libglib2.0-0 libx11-6 libxext6 libxi6 libxrender1
 
-      - name: Validate Python sources
-        shell: bash
+      - name: Compile asset tools
         run: |
-          set -euo pipefail
           python3 -m py_compile \
             tools/parse_game_asset_issue.py \
             tools/generate_game_asset.py \
             tools/generate_game_asset_v2.py \
+            tools/generate_game_asset_v3.py \
             tools/generate_specter5_production.py \
             tools/generate_specter5_production_v2.py \
             tools/build_asset_sidecars.py \
@@ -91,18 +89,15 @@ jobs:
             tools/update_generated_asset_catalog.py
 
       - name: Prepare normalized request
-        shell: bash
         env:
           EVENT_PATH: ${{ github.event_path }}
           MANUAL_REQUEST: ${{ inputs.request_file }}
         run: |
           set -euo pipefail
           mkdir -p "$(dirname "$REQUEST_JSON")" "$IMAGE_DIR"
-          if [[ "${GITHUB_EVENT_NAME}" == "issues" ]]; then
+          if [[ "$GITHUB_EVENT_NAME" == "issues" ]]; then
             python3 tools/parse_game_asset_issue.py \
-              --event "$EVENT_PATH" \
-              --output "$REQUEST_JSON" \
-              --image-dir "$IMAGE_DIR"
+              --event "$EVENT_PATH" --output "$REQUEST_JSON" --image-dir "$IMAGE_DIR"
           else
             test -f "$MANUAL_REQUEST"
             cp "$MANUAL_REQUEST" "$REQUEST_JSON"
@@ -111,8 +106,7 @@ jobs:
           echo "SLUG=$(jq -r '.slug' "$REQUEST_JSON")" >> "$GITHUB_ENV"
           echo "GENERATOR_PROFILE=$(jq -r '.generator_profile' "$REQUEST_JSON")" >> "$GITHUB_ENV"
 
-      - name: Generate controlled asset geometry
-        shell: bash
+      - name: Generate controlled GLB bundle
         run: |
           set -euo pipefail
           BUNDLE_DIR="$BUNDLE_ROOT/$SLUG"
@@ -133,32 +127,27 @@ jobs:
           elif [[ "$GENERATOR_PROFILE" == "specter_biped" ]]; then
             blender --background --factory-startup \
               --python tools/generate_specter5_production_v2.py -- \
-              --request "$REQUEST_JSON" \
-              --output-dir "$BUNDLE_DIR" \
+              --request "$REQUEST_JSON" --output-dir "$BUNDLE_DIR" \
               2>&1 | tee build/game-asset/logs/generation.log
           else
             blender --background --factory-startup \
-              --python tools/generate_game_asset_v2.py -- \
-              --request "$REQUEST_JSON" \
-              --output-dir "$BUNDLE_DIR" \
+              --python tools/generate_game_asset_v3.py -- \
+              --request "$REQUEST_JSON" --output-dir "$BUNDLE_DIR" \
               2>&1 | tee build/game-asset/logs/generation.log
           fi
 
-      - name: Validate GLB, manifest and localized damage profile
-        shell: bash
+      - name: Validate GLB, texture metadata, rig, animations and damage zones
         run: |
           set -euo pipefail
           BUNDLE_DIR="$BUNDLE_ROOT/$SLUG"
           python3 tools/validate_game_asset_bundle.py \
-            --bundle "$BUNDLE_DIR" \
-            --slug "$SLUG" \
+            --bundle "$BUNDLE_DIR" --slug "$SLUG" \
             --report "$BUNDLE_DIR/$SLUG.validation.json"
           python3 tools/update_generated_asset_catalog.py \
             --catalog "$BUNDLE_ROOT/catalog.json" \
             --asset "$BUNDLE_DIR/$SLUG.asset.json"
 
-      - name: Validate Godot 4.7 import and runtime bridge
-        shell: bash
+      - name: Validate Godot 4.7 import and bridge
         run: |
           set -euo pipefail
           mkdir -p scripts .godot-bin build/game-asset/logs
@@ -178,7 +167,6 @@ jobs:
 
       - name: Commit validated bundle
         if: ${{ success() && (github.event_name == 'issues' || inputs.commit_output == true) }}
-        shell: bash
         run: |
           set -euo pipefail
           git config user.name "blackout-asset-bot"
@@ -195,9 +183,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
-        shell: bash
         run: |
-          gh issue comment "$ISSUE_NUMBER" --body "✅ Asset **$SLUG** généré et validé : [GLB](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.glb) · [aperçu](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.png) · [profil de dégâts](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.damage.json)"
+          gh issue comment "$ISSUE_NUMBER" --body "✅ Asset **$SLUG** généré et validé : [GLB](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.glb) · [aperçu](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.png) · [manifeste](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.asset.json) · [profil de dégâts](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.damage.json)"
           gh issue close "$ISSUE_NUMBER" --reason completed
 
       - name: Report failed issue generation
@@ -205,7 +192,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
-        shell: bash
         run: |
           gh issue comment "$ISSUE_NUMBER" --body "❌ Aucun asset n'a été ajouté. Diagnostic : ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
@@ -231,6 +217,9 @@ jobs:
       matrix:
         fixture:
           - game_asset_specter.json
+          - game_asset_character.json
+          - game_asset_fps_viewmodel.json
+          - game_asset_machine.json
           - game_asset_wall.json
           - game_asset_prop.json
           - game_asset_door.json
@@ -242,11 +231,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends blender python3-numpy libegl1 libgl1 libglib2.0-0
-      - name: Compile generators
+      - name: Compile tools
         run: |
-          python3 -m py_compile tools/generate_game_asset.py tools/generate_game_asset_v2.py tools/generate_specter5_production.py tools/generate_specter5_production_v2.py tools/validate_game_asset_bundle.py
+          python3 -m py_compile \
+            tools/generate_game_asset.py tools/generate_game_asset_v2.py tools/generate_game_asset_v3.py \
+            tools/generate_specter5_production.py tools/generate_specter5_production_v2.py \
+            tools/validate_game_asset_bundle.py
       - name: Generate and validate fixture
-        shell: bash
         run: |
           set -o pipefail
           REQUEST="tests/fixtures/${{ matrix.fixture }}"
@@ -254,9 +245,9 @@ jobs:
           PROFILE="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["generator_profile"])' "$REQUEST")"
           OUT="build/smoke/$SLUG"
           mkdir -p "$OUT"
-          GENERATOR="tools/generate_specter5_production_v2.py"
-          if [[ "$PROFILE" != "specter_biped" ]]; then
-            GENERATOR="tools/generate_game_asset_v2.py"
+          GENERATOR="tools/generate_game_asset_v3.py"
+          if [[ "$PROFILE" == "specter_biped" ]]; then
+            GENERATOR="tools/generate_specter5_production_v2.py"
           fi
           set +e
           blender --background --factory-startup --python "$GENERATOR" -- \
@@ -264,13 +255,13 @@ jobs:
           status=${PIPESTATUS[0]}
           set -e
           if [[ $status -ne 0 ]]; then
-            tail -n 160 "$OUT/generation.log"
+            tail -n 200 "$OUT/generation.log"
             exit $status
           fi
           python3 tools/validate_game_asset_bundle.py \
             --bundle "$OUT" --slug "$SLUG" --report "$OUT/$SLUG.validation.json" \
             2>&1 | tee "$OUT/validation.log"
-      - name: Upload smoke preview and diagnostics
+      - name: Upload preview and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:

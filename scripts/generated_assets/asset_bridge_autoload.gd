@@ -6,8 +6,6 @@ var bridge: Variant
 var _scan_scheduled := false
 
 func _ready() -> void:
-	# Keep the runtime singleton name distinct from the global class at parse time, then expose the
-	# stable node path used by gameplay scripts after instantiation.
 	name = "GeneratedAssetBridge"
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	bridge = BridgeScript.new()
@@ -62,6 +60,28 @@ func _register_candidate(node: Node) -> void:
 		var health := float(node.get_meta("health", 0.0))
 		bridge.register_static_destructible(node as Node3D, material_id, health)
 
+func reload_catalog() -> void:
+	if bridge == null:
+		return
+	bridge.call("_reload_catalog")
+
+func has_asset(asset_id: String) -> bool:
+	return bool(bridge.has_asset(asset_id)) if bridge != null else false
+
+func get_asset(asset_id: String) -> Dictionary:
+	return bridge.get_asset(asset_id) as Dictionary if bridge != null else {}
+
+func list_assets(category := "") -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if bridge == null:
+		return result
+	for asset_id in bridge.catalog.keys():
+		var entry := bridge.get_asset(String(asset_id)) as Dictionary
+		if category.is_empty() or String(entry.get("category", "")) == category:
+			result.append(entry)
+	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return String(a.get("id", "")) < String(b.get("id", "")))
+	return result
+
 func apply_damage(target: Node, context: Dictionary) -> Dictionary:
 	return bridge.apply_damage(target, context) if bridge != null else {"handled": false}
 
@@ -77,6 +97,12 @@ func is_detection_enabled(target: Node) -> bool:
 func is_disabled(target: Node) -> bool:
 	return bridge.is_disabled(target) if bridge != null else false
 
+func register_destructible(target: Node3D, material_id: String, health := 0.0, zone_id := "core") -> void:
+	if bridge == null or target == null:
+		return
+	_ensure_initialized(target)
+	bridge.register_static_destructible(target, material_id, health, zone_id)
+
 func create_segmented_wall(parent: Node3D, at: Vector3, size: Vector3, material_id: String, label: String) -> Node3D:
 	if bridge == null:
 		return null
@@ -84,7 +110,41 @@ func create_segmented_wall(parent: Node3D, at: Vector3, size: Vector3, material_
 	return bridge.create_segmented_wall(parent, at, size, material_id, label)
 
 func spawn_asset(asset_id: String, parent: Node3D, transform_value := Transform3D.IDENTITY) -> Node3D:
-	if bridge == null:
+	if bridge == null or parent == null:
 		return null
 	_ensure_initialized(parent)
 	return bridge.spawn_asset(asset_id, parent, transform_value)
+
+func spawn_fps_viewmodel(asset_id: String, camera: Camera3D, local_transform := Transform3D.IDENTITY) -> Node3D:
+	if camera == null:
+		return null
+	var entry := get_asset(asset_id)
+	if entry.is_empty() or String(entry.get("category", "")) != "fps_viewmodel":
+		push_warning("Asset %s is not an FPS viewmodel" % asset_id)
+		return null
+	var instance := spawn_asset(asset_id, camera, local_transform)
+	if instance == null:
+		return null
+	instance.name = "GeneratedFPSViewmodel_%s" % asset_id
+	instance.set_meta("generated_fps_viewmodel", true)
+	for node in instance.find_children("*", "GeometryInstance3D", true, false):
+		var geometry := node as GeometryInstance3D
+		if geometry != null:
+			geometry.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return instance
+
+func replace_visual(target: Node3D, asset_id: String, preserve_collisions := true) -> Node3D:
+	if target == null:
+		return null
+	var instance := spawn_asset(asset_id, target, Transform3D.IDENTITY)
+	if instance == null:
+		return null
+	instance.name = "GeneratedVisual_%s" % asset_id
+	for child in target.get_children():
+		if child == instance or child.name == "DestructibleComponent":
+			continue
+		if preserve_collisions and (child is CollisionShape3D or child is CollisionObject3D):
+			continue
+		if child is MeshInstance3D:
+			(child as MeshInstance3D).visible = false
+	return instance

@@ -1,48 +1,92 @@
-# Pipeline générique d'assets et de destruction locale
+# Pipeline générique d'assets, d'intégration et de destruction locale
 
-## Entrée utilisateur
+## Interface unique
 
-L'interface **Issues → Générer un asset de jeu** demande :
+L'unique entrée utilisateur est **Issues → Générer un asset de jeu**.
 
-- la catégorie technique de l'asset ;
-- une à six images de référence facultatives ;
+Le formulaire accepte de une à six images et demande :
+
+- la catégorie technique ;
+- le type de références : vue principale, quatre vues orthographiques, vues libres ou storyboard ;
 - les dimensions métriques ;
+- la structure géométrique ;
+- les parties à séparer ;
 - le matériau ;
+- le mode de texture ;
 - le rig et les animations ;
-- le mode de destructibilité ;
-- les zones critiques et les conséquences ;
-- l'intégration souhaitée dans le jeu.
+- la collision Godot ;
+- la destructibilité et les zones critiques ;
+- l'intégration souhaitée.
 
-Le pipeline n'affirme pas reconstruire fidèlement toute géométrie cachée à partir d'une image. Les images guident la palette, les proportions et les textures d'écran. Un générateur contrôlé est sélectionné selon la catégorie : bipède, quadrupède, prop, mur, porte, environnement ou GUI 3D.
+L'issue est fermée automatiquement uniquement après validation du GLB, du manifeste, du profil de dégâts et de l'import Godot.
+
+## Familles prises en charge
+
+| Catégorie | Géométrie | Rig / animation | Segmentation et dégâts |
+|---|---|---|---|
+| Robot bipède | générateur bipède ou profil SPECTER-5 | bipède, marche, course, attaque, crawl, arrêt | membres, capteur, torse |
+| Robot quadrupède | générateur quadrupède ou profil CRAWLER-7 | quadrupède, marche, course, attaque, arrêt | quatre pattes, capteur, corps |
+| Personnage humanoïde | silhouette humanoïde PS1 | squelette humanoïde et clips locomoteurs | tête, torse et membres |
+| Vue FPS main + objet | main gantée et outil tenu | avant-bras, main et outil ; idle/use/bash/inspect | corps de l'outil, lentille, batterie |
+| Machine articulée | base, colonne, bras, poignet et outil | rig mécanique ; travail, alarme, arrêt | bras, outil et capteur |
+| Prop interactif | monobloc ou pièces listées dans le formulaire | rig rigide optionnel | une zone par partie séparée |
+| Mur | cellules modulaires | aucun rig | trou local et retrait de collision par cellule |
+| Porte / sas | cadre, panneau, verrou | charnière ; open/close | panneau et verrou séparés |
+| Environnement | sol, panneaux, parois et accessoires modulaires | éléments mobiles optionnels | matériaux structurels ou destructibles |
+| Console / GUI 3D | boîtier et écran | animation facultative | écran en verre indépendant |
+
+## Utilisation des images
+
+Les images sont réellement utilisées pour :
+
+- extraire une palette commune jusqu'à six références ;
+- produire un atlas pixelisé PS1 intégré au GLB ;
+- utiliser la première image comme texture d'écran lorsqu'un GUI est demandé ;
+- harmoniser les matériaux et la lecture visuelle ;
+- guider les dimensions et la segmentation saisies dans le formulaire.
+
+Le système ne prétend pas reconstruire automatiquement chaque détail caché. La géométrie est générée par profil contrôlé afin de conserver des pivots, des noms de pièces, un rig et des zones de dégâts utilisables dans le jeu.
 
 ## Sorties
 
-Chaque génération produit :
+Chaque génération validée produit dans `assets/generated/<asset_id>/` :
 
-- un GLB ;
-- un aperçu PNG ;
-- un manifeste `.asset.json` ;
-- un profil `.damage.json` ;
-- des métriques ;
-- un rapport de validation.
+- `<asset_id>.glb` ;
+- `<asset_id>.png` ;
+- `<asset_id>.asset.json` ;
+- `<asset_id>.damage.json` ;
+- `<asset_id>.metrics.json` ;
+- `<asset_id>.validation.json`.
 
-La génération est refusée lorsque le GLB est invalide, dépasse le budget, ne contient pas le rig attendu ou lorsque le profil de dégâts est incohérent.
+Le catalogue central est `assets/generated/catalog.json`.
 
 ## Passerelle Godot
 
-`GeneratedAssetBridge` est un autoload déclaré dans `project.godot`. Il charge `assets/generated/catalog.json`, puis :
+`GeneratedAssetBridge` est un autoload déclaré dans `project.godot`.
 
-- attache automatiquement les GLB aux personnages existants ;
-- masque uniquement les primitives visuelles, sans supprimer l'IA ni la collision de gameplay ;
-- conserve la primitive comme solution de repli si le GLB manque ;
-- attache un `DestructibleComponent` à chaque asset répertorié ;
-- permet l'instanciation de props, portes et modules depuis n'importe quelle scène.
+Il permet :
 
-API principale :
+- le remplacement visuel d'une primitive sans supprimer l'IA ou les collisions de gameplay ;
+- l'instanciation de props, portes, machines, environnements et GUI ;
+- le montage d'une vue FPS sous une `Camera3D` ;
+- l'attachement automatique d'un `DestructibleComponent` ;
+- le rechargement et l'interrogation du catalogue.
 
 ```gdscript
 var bridge := get_node("/root/GeneratedAssetBridge")
-var instance := bridge.spawn_asset("asset_id", self, Transform3D.IDENTITY)
+
+var prop := bridge.spawn_asset(
+    "industrial_crate",
+    self,
+    Transform3D(Basis.IDENTITY, Vector3(2.0, 0.0, -4.0))
+)
+
+var viewmodel := bridge.spawn_fps_viewmodel(
+    "flashlight_right_hand",
+    $Player/Camera3D,
+    Transform3D(Basis.IDENTITY, Vector3(0.22, -0.22, -0.52))
+)
+
 var result := bridge.apply_damage(target, {
     "amount": 20.0,
     "hit_position": hit_position,
@@ -58,22 +102,27 @@ Les coefficients sont centralisés dans `data/material_response_db.json`.
 
 - **placo** : sensible au pied-de-biche et aux impacts ;
 - **brique** : résiste aux outils improvisés, mais cède à une charge de SPECTER ;
-- **béton** : structurel ;
-- **verre** : se brise facilement ;
+- **béton** : structurel et non destructible par les outils courants ;
+- **verre** : rupture rapide ;
 - **bois** : rupture progressive ;
+- **plastique technique** : fissuration et perte de fonction ;
+- **caoutchouc / tissu technique** : faible transmission des impacts ;
 - **métal léger** : articulations et carrosseries ;
-- **métal blindé** : corps principaux des robots.
+- **métal blindé** : corps principaux et portes renforcées.
 
-## Robots
+## Validation obligatoire
 
-CRAWLER-7 possède quatre zones de pattes, un capteur et un corps. Chaque patte détruite réduit la vitesse. Le capteur détruit réduit la capacité de poursuite.
+Un asset n'est pas ajouté à `main` lorsque :
 
-SPECTER-5 possède deux zones de jambes, un capteur et un torse. Une jambe détruite provoque une démarche dégradée ; deux jambes détruites activent le mode `crawl` et l'animation `Crawl-loop` lorsque le GLB généré est disponible.
+- le GLB est invalide ou hors budget ;
+- le rig attendu est absent ;
+- le nombre de clips est insuffisant ;
+- les zones de dégâts sont incohérentes ;
+- les métadonnées de texture ou de collision sont invalides ;
+- l'import Godot 4.7 échoue.
 
-## Murs
+Les tests de pull request couvrent les robots, personnages, vue FPS, machines, props, murs, portes, modules d'environnement et GUI.
 
-Les cloisons destructibles sont construites sous forme de cellules avec une collision propre. La rupture d'une cellule masque seulement sa géométrie et retire sa collision, ce qui ouvre un trou local. Les cloisons en placo et en brique utilisent des résistances différentes. Les murs porteurs restent monolithiques et non destructibles.
+## Limite assumée
 
-## Limites
-
-Le système est conçu pour le style PS1/Web de Blackout Protocol. Il produit des assets cohérents et interactifs, mais il ne remplace pas une validation artistique. Une image complexe peut nécessiter un nouveau profil paramétrique plutôt qu'une reconstruction automatique incontrôlée.
+Le système vise les besoins récurrents de Blackout Protocol et le style PS1/Web. Il produit des assets structurés, texturés et interactifs. Une forme très spécifique peut encore nécessiter l'ajout d'un profil paramétrique dédié : cette extension doit passer par les mêmes tests avant utilisation dans le jeu.

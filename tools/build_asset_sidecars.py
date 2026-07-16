@@ -65,6 +65,11 @@ def main() -> None:
         "rig": request["rig"],
         "animations": metrics.get("animations", []),
         "generator_profile": request["generator_profile"],
+        "reference_mode": request.get("reference_mode", "none"),
+        "texture_mode": request.get("texture_mode", "palette_only"),
+        "collision_mode": request.get("collision_mode", "capsule"),
+        "geometry_template": request.get("geometry_template", "articulated_quadruped"),
+        "segmentation_parts": request.get("segmentation_parts", ["lf_leg", "rf_leg", "lr_leg", "rr_leg", "sensor", "body"]),
         "fallback": "procedural",
     }
     damage = {

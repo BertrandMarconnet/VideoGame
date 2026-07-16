@@ -8,8 +8,21 @@ import struct
 from pathlib import Path
 from typing import Any
 
-VALID_CATEGORIES = {"robot_biped", "robot_quadruped", "prop", "wall", "door", "environment", "gui_panel"}
+VALID_CATEGORIES = {
+    "robot_biped",
+    "robot_quadruped",
+    "character_humanoid",
+    "fps_viewmodel",
+    "articulated_machine",
+    "prop",
+    "wall",
+    "door",
+    "environment",
+    "gui_panel",
+}
 VALID_MODES = {"none", "localized", "detachable", "segmented_wall", "material_advanced"}
+VALID_TEXTURE_MODES = {"reference_atlas", "palette_only", "screen_image", "flat"}
+VALID_COLLISIONS = {"auto", "box", "capsule", "local_boxes", "segmented_cells", "none"}
 
 
 def read_json(path: Path) -> dict[str, Any]:
@@ -45,6 +58,15 @@ def validate_asset(asset: dict[str, Any], slug: str) -> None:
         raise ValueError("invalid metric dimensions")
     if not isinstance(asset["animations"], list):
         raise ValueError("animations must be an array")
+    texture_mode = asset.get("texture_mode", "palette_only")
+    if texture_mode not in VALID_TEXTURE_MODES:
+        raise ValueError("unsupported texture mode")
+    collision_mode = asset.get("collision_mode", "auto")
+    if collision_mode not in VALID_COLLISIONS:
+        raise ValueError("unsupported collision mode")
+    parts = asset.get("segmentation_parts", [])
+    if not isinstance(parts, list) or len(parts) != len(set(map(str, parts))):
+        raise ValueError("segmentation parts must be a unique array")
 
 
 def validate_damage(damage: dict[str, Any], slug: str, category: str) -> None:
@@ -65,15 +87,40 @@ def validate_damage(damage: dict[str, Any], slug: str, category: str) -> None:
         ids.add(zone_id)
         if float(zone.get("max_health", 0)) <= 0:
             raise ValueError(f"zone {zone_id} has invalid health")
-        if not isinstance(zone.get("node_patterns"), list):
+        if not isinstance(zone.get("node_patterns"), list) or not zone.get("node_patterns"):
             raise ValueError(f"zone {zone_id} has no node patterns")
-    if category.startswith("robot_") and damage.get("mode") != "none" and len(zones) < 3:
-        raise ValueError("a destructible robot requires at least three localized zones")
+    if category in {"robot_biped", "robot_quadruped", "character_humanoid", "fps_viewmodel", "articulated_machine"} and damage.get("mode") != "none" and len(zones) < 3:
+        raise ValueError("an articulated destructible asset requires at least three localized zones")
     if category == "wall" and damage.get("mode") in {"segmented_wall", "material_advanced"} and len(zones) < 2:
         raise ValueError("a segmented wall requires multiple cells")
     rules = damage.get("tool_rules")
     if not isinstance(rules, dict) or "flashlight_bash" not in rules or "crowbar" not in rules:
         raise ValueError("tool rules must include flashlight_bash and crowbar")
+
+
+def validate_rig_and_animations(asset: dict[str, Any], metrics: dict[str, Any]) -> None:
+    category = asset["category"]
+    bones = int(metrics.get("bones", 0))
+    animations = metrics.get("animations", [])
+    if not isinstance(animations, list):
+        raise ValueError("metrics animations must be an array")
+    if category in {"robot_biped", "robot_quadruped", "character_humanoid"}:
+        if bones < 10:
+            raise ValueError("biped/quadruped bundle does not contain a usable rig")
+        if len(animations) < 3:
+            raise ValueError("biped/quadruped bundle does not contain enough animations")
+    elif category == "fps_viewmodel":
+        if bones < 4 or len(animations) < 3:
+            raise ValueError("FPS viewmodel requires a hand/tool rig and at least three clips")
+    elif category == "articulated_machine":
+        if bones < 5 or len(animations) < 3:
+            raise ValueError("articulated machine requires a multi-joint rig and at least three clips")
+    elif category == "door" and asset.get("rig") != "none":
+        if bones < 2 or len(animations) < 2:
+            raise ValueError("animated door requires a hinge rig and open/close clips")
+    elif category == "prop" and asset.get("rig") == "rigid_segmented":
+        if bones < 2 or len(animations) < 1:
+            raise ValueError("segmented prop requires a rigid-part rig")
 
 
 def main() -> None:
@@ -102,23 +149,26 @@ def main() -> None:
     metrics = read_json(paths["metrics"])
     validate_asset(asset, args.slug)
     validate_damage(damage, args.slug, asset["category"])
+    validate_rig_and_animations(asset, metrics)
+
     triangles = int(metrics.get("triangles", 0))
     if triangles <= 0 or triangles > 60000:
         raise ValueError(f"invalid triangle count: {triangles}")
-    if asset["category"].startswith("robot_"):
-        if int(metrics.get("bones", 0)) < 10:
-            raise ValueError("robot bundle does not contain a usable rig")
-        if len(metrics.get("animations", [])) < 3:
-            raise ValueError("robot bundle does not contain enough animations")
+    if int(metrics.get("mesh_objects", 0)) <= 0:
+        raise ValueError("bundle contains no mesh objects")
 
     report = {
         "valid": True,
         "slug": args.slug,
         "category": asset["category"],
         "triangles": triangles,
+        "mesh_objects": int(metrics.get("mesh_objects", 0)),
         "bones": int(metrics.get("bones", 0)),
         "animations": metrics.get("animations", []),
         "damage_zones": len(damage.get("zones", [])),
+        "texture_mode": asset.get("texture_mode", "palette_only"),
+        "collision_mode": asset.get("collision_mode", "auto"),
+        "reference_images_used": int(metrics.get("reference_images_used", 0)),
         "glb": glb_info,
     }
     args.report.parent.mkdir(parents=True, exist_ok=True)

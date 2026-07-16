@@ -67,18 +67,23 @@ La campagne commence à l’extérieur de ToyGuard Industries, sous la pluie. Le
 - `C` : déployer ou rappeler KITE-01 ;
 - `Échap` : retour joueur, fermeture d’interface ou pause.
 
-## Générateur générique d'assets — sans clé API
+## Générateur unifié d'assets — sans clé API
 
-Le dépôt utilise des générateurs Blender contrôlés plutôt qu'une reconstruction monoculaire imprévisible. L'interface **Issues → Générer un asset de jeu** accepte :
+L'unique interface est **Issues → Générer un asset de jeu**. Elle accepte de une à six images et couvre :
 
-- robots bipèdes ou quadrupèdes ;
-- props interactifs ;
-- murs segmentés ;
-- portes et sas ;
+- robots bipèdes et quadrupèdes ;
+- personnages humanoïdes low-poly ;
+- vues FPS avec main et outil ;
+- machines et bras industriels articulés ;
+- props monoblocs ou segmentés ;
+- murs destructibles par cellules ;
+- portes et sas animés ;
 - modules d'environnement ;
 - consoles, écrans et GUI 3D.
 
-Une à six images peuvent être jointes. Elles guident la palette, les proportions et les textures d'écran. La catégorie choisie sélectionne le générateur adapté afin de produire une géométrie low-poly exploitable, un rig si nécessaire et un profil de dégâts localisés.
+Le formulaire permet de définir les dimensions, les parties séparées, le matériau, le mode de texture, le rig, les animations, les collisions, la destructibilité, les conséquences fonctionnelles et l'intégration dans Godot.
+
+Les images fournies sont exploitées pour extraire la palette, produire un atlas pixelisé PS1, texturer les écrans et guider la famille visuelle. La géométrie reste produite par un générateur contrôlé adapté à la catégorie : cette approche conserve des pivots, des noms de pièces, un rig et des zones de dégâts utilisables, contrairement à une reconstruction monoculaire imprévisible.
 
 Chaque asset validé est placé dans :
 
@@ -86,23 +91,35 @@ Chaque asset validé est placé dans :
 assets/generated/<asset>/
 ```
 
-Le bundle contient le GLB, l'aperçu, les métriques, le manifeste `.asset.json` et le profil `.damage.json`. Le catalogue `assets/generated/catalog.json` est chargé automatiquement par l'autoload `GeneratedAssetBridge`.
+Le bundle contient le GLB, l'aperçu, les métriques, le manifeste `.asset.json`, le profil `.damage.json` et un rapport de validation. Le catalogue `assets/generated/catalog.json` est chargé automatiquement par l'autoload `GeneratedAssetBridge`.
+
+La passerelle permet notamment :
+
+```gdscript
+var bridge := get_node("/root/GeneratedAssetBridge")
+var prop := bridge.spawn_asset("asset_id", self, Transform3D.IDENTITY)
+var viewmodel := bridge.spawn_fps_viewmodel("flashlight_right_hand", $Player/Camera3D)
+```
 
 ## Destruction localisée
 
 - CRAWLER-7 ralentit lorsqu'une patte est détruite ;
 - SPECTER-5 peut perdre une jambe, puis ramper si les deux jambes sont coupées ;
-- les capteurs peuvent être neutralisés indépendamment ;
-- le placo, la brique, le béton, le verre, le bois et les métaux réagissent différemment ;
+- les capteurs, lentilles, batteries, outils et articulations peuvent être neutralisés indépendamment ;
+- le placo, la brique, le béton, le verre, le bois, les plastiques, tissus techniques et métaux réagissent différemment ;
 - les murs destructibles sont segmentés afin qu'un impact ouvre un trou local plutôt que supprimer toute la paroi ;
 - le pied-de-biche est efficace sur le placo, beaucoup moins sur la brique ;
 - une charge de SPECTER peut traverser certaines maçonneries non porteuses.
 
 Les modèles procéduraux restent disponibles comme solution de repli lorsque le GLB n'existe pas ou ne passe pas la validation.
 
+## Limite assumée
+
+Le pipeline ne promet pas une copie parfaite de chaque détail caché à partir d'une photographie. Il produit une interprétation structurée et reproductible adaptée au style PS1/Web. Une forme très particulière peut demander l'ajout d'un profil paramétrique dédié, qui doit passer les mêmes tests avant intégration.
+
 ## Validation
 
-Le déploiement reconstruit `scripts/main.gd`, exécute `gdlint`, importe le projet avec Godot 4.7, charge `scenes/main.tscn`, exporte la version Web/PWA et vérifie le rendu dans Firefox avant publication.
+Le déploiement reconstruit `scripts/main.gd`, exécute `gdlint`, importe le projet avec Godot 4.7, charge `scenes/main.tscn`, exporte la version Web/PWA et vérifie le rendu dans Firefox avant publication. Le pipeline d'assets vérifie également le GLB, le budget de triangles, les os, les animations, les métadonnées de texture, les collisions et les zones de dégâts.
 
 ## Documentation
 
@@ -111,7 +128,7 @@ Le déploiement reconstruit `scripts/main.gd`, exécute `gdlint`, importe le pro
 - `docs/STORYBOARD_IMPLEMENTATION_MATRIX.md` : correspondance entre storyboard et jeu ;
 - `docs/SOUNDTRACK_SUNO.md` : placement narratif des musiques ;
 - `docs/ASSET_PIPELINE.md` : licences et budgets 3D Web ;
-- `docs/GENERATED_ASSET_AND_DAMAGE_PIPELINE.md` : formulaire, génération, catalogue et dégâts localisés ;
+- `docs/GENERATED_ASSET_AND_DAMAGE_PIPELINE.md` : formulaire, génération, catalogue, passerelle et dégâts localisés ;
 - `docs/CRAWLER7_PRODUCTION_PIPELINE.md` : génération, rig, animations et contrôles ;
 - `docs/OPEN_SOURCE_3D_DECISION.md` : comparaison des solutions open source ;
 - `docs/REPOSITORY_AUDIT_2026-07-15.md` : audit ciblé du pipeline 3D.

@@ -1,20 +1,22 @@
 name: Générer un asset de jeu
-about: Génère un GLB, son manifeste, son profil de dégâts et son aperçu pour Godot.
+about: Génère un GLB, ses textures, son rig, ses animations, ses zones de dégâts et son intégration Godot.
 title: "[ASSET] "
 labels: []
 body:
   - type: markdown
     attributes:
       value: |
-        Cette interface fabrique un asset low-poly à partir d'un **profil contrôlé** et de vos images de référence.
-        Les images servent à la palette, aux proportions et à la texture des écrans. La géométrie est produite par le générateur adapté à la catégorie afin d'éviter les reconstructions incohérentes.
+        Cette interface fabrique un asset low-poly **contrôlé et compatible Godot 4.7/Jolt/Web**.
+        Ajoutez de 1 à 6 images : elles guident la palette, les textures, les proportions et la famille visuelle.
+        Le système choisit ensuite un générateur adapté à la catégorie afin de produire une géométrie segmentée, un rig et des animations lorsque cela est pertinent.
+        Il ne prétend pas reconstruire automatiquement chaque détail caché d'une photographie : le résultat reste une interprétation PS1 cohérente avec le storyboard.
 
   - type: input
     id: asset_name
     attributes:
       label: Nom de l'asset
-      description: Exemple : SPECTER-5, mur placo atelier, console Sentinel.
-      placeholder: SPECTER-5
+      description: Exemple : SPECTER-5, lampe FPS, mur placo atelier, console Sentinel.
+      placeholder: Lampe FPS + main droite
     validations:
       required: true
 
@@ -25,6 +27,9 @@ body:
       options:
         - Robot bipède
         - Robot quadrupède
+        - Personnage humanoïde
+        - Vue FPS : main + objet
+        - Machine / bras industriel articulé
         - Prop / objet interactif
         - Mur / cloison modulaire
         - Porte / sas
@@ -37,10 +42,23 @@ body:
     id: reference_images
     attributes:
       label: Images de référence
-      description: Glissez ici 1 à 6 images. Pour un robot, privilégiez face, droite, arrière et trois-quarts.
+      description: Glissez ici 1 à 6 images. Pour un robot ou personnage, utilisez si possible face, droite, arrière et trois-quarts.
       placeholder: Glisser-déposer les images ici
     validations:
       required: false
+
+  - type: dropdown
+    id: reference_mode
+    attributes:
+      label: Type de références fournies
+      options:
+        - Une vue principale / trois-quarts
+        - Quatre vues orthographiques cohérentes
+        - Plusieurs vues libres du même asset
+        - Storyboard / concept art d'ambiance
+        - Aucune image, génération depuis le profil
+    validations:
+      required: true
 
   - type: dropdown
     id: visual_profile
@@ -52,8 +70,37 @@ body:
         - Bunker S-01 béton et acier
         - Interface CRT / Sentinel OS
         - Prop industriel générique
+        - Personnage technicien années 1980
     validations:
       required: true
+
+  - type: dropdown
+    id: geometry_template
+    attributes:
+      label: Structure géométrique
+      options:
+        - Automatique selon la catégorie
+        - Monobloc simple
+        - Pièces modulaires détachables
+        - Outil tenu en main
+        - Console / panneau technique
+        - Mur cellulaire
+        - Porte articulée
+        - Module environnemental
+        - Bipède articulé
+        - Quadrupède articulé
+        - Machine articulée
+    validations:
+      required: true
+
+  - type: textarea
+    id: segmentation_parts
+    attributes:
+      label: Parties à séparer / segmenter
+      description: Liste séparée par des virgules. Exemple : tête, poignée, batterie, lentille. Pour un robot : jambe gauche, jambe droite, bras, capteur, torse.
+      placeholder: tête, poignée, batterie, lentille
+    validations:
+      required: false
 
   - type: input
     id: width
@@ -87,11 +134,24 @@ body:
         - Métal léger
         - Métal blindé
         - Plastique technique
+        - Caoutchouc / tissu technique
         - Verre
         - Placo
         - Brique
         - Béton
         - Bois
+    validations:
+      required: true
+
+  - type: dropdown
+    id: texture_mode
+    attributes:
+      label: Texture
+      options:
+        - Atlas PS1 généré depuis les images
+        - Palette PS1 sans texture détaillée
+        - Première image utilisée comme écran / GUI
+        - Matériau plat seulement
     validations:
       required: true
 
@@ -103,6 +163,9 @@ body:
         - Aucun
         - Mécanique bipède
         - Mécanique quadrupède
+        - Humanoïde
+        - Main FPS articulée
+        - Machine articulée
         - Charnière simple
         - Pièces rigides segmentées
     validations:
@@ -112,8 +175,22 @@ body:
     id: animations
     attributes:
       label: Animations souhaitées
-      description: Liste séparée par des virgules. Exemple : idle, walk, run, attack, crawl, shutdown.
+      description: Liste séparée par des virgules. Exemples : idle, walk, run, attack, crawl, shutdown, open, close, use, bash, inspect.
       value: idle
+    validations:
+      required: true
+
+  - type: dropdown
+    id: collision
+    attributes:
+      label: Collision Godot
+      options:
+        - Automatique selon la catégorie
+        - Boîte simple
+        - Capsule personnage / robot
+        - Boîtes locales par partie
+        - Mur segmenté par cellule
+        - Aucune collision
     validations:
       required: true
 
@@ -134,7 +211,7 @@ body:
     id: damage_zones
     attributes:
       label: Zones critiques et conséquences
-      description: Exemple : jambe gauche = vitesse -35%; deux jambes = ramper; capteur = vision réduite.
+      description: Exemple : jambe gauche = vitesse -35%; deux jambes = ramper; capteur = vision réduite; lentille = lumière désactivée.
       placeholder: left_leg: detach, speed 0.65; right_leg: detach; sensor: disable_detection
     validations:
       required: false
@@ -144,7 +221,7 @@ body:
     attributes:
       label: Outils et interactions
       description: Exemple : lampe faible, planche moyenne, pied-de-biche fort sur placo, SPECTER très fort sur brique.
-      placeholder: flashlight=0.4; plank=0.8; crowbar=2.0; specter_charge=4.0
+      placeholder: flashlight_bash=0.4; plank=0.8; crowbar=2.0; specter_charge=4.0
     validations:
       required: false
 
@@ -167,6 +244,7 @@ body:
         - Ajouter au catalogue seulement
         - Remplacer automatiquement le modèle procédural correspondant
         - Générer un module instanciable depuis l'AssetBridge
+        - Générer une vue FPS instanciable depuis l'AssetBridge
     validations:
       required: true
 
