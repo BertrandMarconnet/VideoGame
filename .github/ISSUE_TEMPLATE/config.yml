@@ -1,2 +1,5 @@
 blank_issues_enabled: false
-contact_links: []
+contact_links:
+  - name: "🎛️ Configurateur visuel d'asset 3D"
+    url: "https://bertrandmarconnet.github.io/VideoGame/asset-generator.html"
+    about: "Menu recommandé avec cartes animées, sélection des parties destructibles, sons et synchronisation."
