@@ -1,5 +1,11 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Ouvrir le menu guidé de génération 3D
+    url: https://bertrandmarconnet.github.io/VideoGame/asset-generator.html
+    about: Charger les images, choisir les options et préparer automatiquement le formulaire GitHub.
+  - name: Ouvrir directement le formulaire GitHub
+    url: https://github.com/BertrandMarconnet/VideoGame/issues/new?template=generate-game-asset.yml
+    about: Utiliser directement les menus, cases à cocher et le champ de téléversement GitHub.
   - name: Guide des images pour la génération 3D
     url: https://github.com/BertrandMarconnet/VideoGame/blob/main/docs/ASSET_REFERENCE_IMAGE_GUIDE.md
     about: Consulter les vues, poses, cadrages et informations recommandés selon le type de modèle.
