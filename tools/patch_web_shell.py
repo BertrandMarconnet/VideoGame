@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-"""Inject a visible WebGL2 preflight into Godot's generated Web shell."""
+"""Inject the WebGL2 preflight and publish the guided asset-generator menu."""
 
 from __future__ import annotations
 
+import shutil
 import sys
 from pathlib import Path
 
 MARKER = "BLACKOUT_WEBGL_PREFLIGHT_V15"
+ASSET_MENU_MARKER = "BLACKOUT_ASSET_GENERATOR_MENU_V1"
 
 STYLE_AND_SCRIPT = r'''
 <!-- BLACKOUT_WEBGL_PREFLIGHT_V15 -->
+<!-- BLACKOUT_ASSET_GENERATOR_MENU_V1 -->
 <style>
   #blackout-webgl-error {
     position: fixed;
@@ -45,9 +48,7 @@ STYLE_AND_SCRIPT = r'''
     letter-spacing: .05em;
   }
   #blackout-webgl-error p,
-  #blackout-webgl-error li {
-    line-height: 1.55;
-  }
+  #blackout-webgl-error li { line-height: 1.55; }
   #blackout-webgl-error button {
     margin-top: 14px;
     padding: 11px 18px;
@@ -57,10 +58,47 @@ STYLE_AND_SCRIPT = r'''
     font: inherit;
     cursor: pointer;
   }
+  #blackout-asset-generator-link {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 2147483000;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 13px;
+    border: 1px solid #58d1ff;
+    border-radius: 7px;
+    color: #e2f8ff;
+    background: rgba(4, 27, 41, .92);
+    box-shadow: 0 0 22px rgba(46, 178, 229, .22);
+    text-decoration: none;
+    font: 700 12px/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
+    letter-spacing: .04em;
+  }
+  #blackout-asset-generator-link:hover {
+    background: rgba(11, 66, 91, .96);
+    border-color: #ffb02e;
+  }
+  @media (max-width: 720px) {
+    #blackout-asset-generator-link { top: 8px; right: 8px; padding: 9px 10px; font-size: 10px; }
+  }
 </style>
 <script>
 (() => {
   "use strict";
+  const addAssetGeneratorLink = () => {
+    if (document.getElementById("blackout-asset-generator-link")) return;
+    const link = document.createElement("a");
+    link.id = "blackout-asset-generator-link";
+    link.href = "./asset-generator.html";
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = "⚙ GÉNÉRER UN ASSET 3D";
+    link.title = "Ouvrir le menu guidé de génération 3D";
+    document.body.appendChild(link);
+  };
+
   const showCompatibilityError = () => {
     let panel = document.getElementById("blackout-webgl-error");
     if (!panel) {
@@ -87,6 +125,7 @@ STYLE_AND_SCRIPT = r'''
   };
 
   const checkWebGL2 = () => {
+    addAssetGeneratorLink();
     try {
       const probe = document.createElement("canvas");
       const context = probe.getContext("webgl2", {
@@ -117,6 +156,18 @@ STYLE_AND_SCRIPT = r'''
 '''
 
 
+def publish_asset_generator(html_path: Path) -> None:
+    repository_root = Path(__file__).resolve().parent.parent
+    source = repository_root / "web" / "asset-generator.html"
+    destination = html_path.parent / "asset-generator.html"
+    if not source.is_file():
+        raise FileNotFoundError(f"Asset generator source not found: {source}")
+    shutil.copyfile(source, destination)
+    if destination.stat().st_size < 4096:
+        raise RuntimeError(f"Published asset generator is unexpectedly small: {destination}")
+    print(f"Published guided asset generator to {destination}")
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print("Usage: patch_web_shell.py <index.html>", file=sys.stderr)
@@ -127,9 +178,15 @@ def main() -> int:
         print(f"Web shell not found: {html_path}", file=sys.stderr)
         return 2
 
+    try:
+        publish_asset_generator(html_path)
+    except Exception as exc:
+        print(f"Could not publish asset generator: {exc}", file=sys.stderr)
+        return 1
+
     html = html_path.read_text(encoding="utf-8")
-    if MARKER in html:
-        print("WebGL2 preflight already present")
+    if MARKER in html and ASSET_MENU_MARKER in html:
+        print("WebGL2 preflight and asset-generator link already present")
         return 0
     if "</head>" not in html:
         print("Generated Web shell has no </head> tag", file=sys.stderr)
@@ -137,7 +194,7 @@ def main() -> int:
 
     html = html.replace("</head>", f"{STYLE_AND_SCRIPT}\n</head>", 1)
     html_path.write_text(html, encoding="utf-8")
-    print(f"Injected {MARKER} into {html_path}")
+    print(f"Injected {MARKER} and {ASSET_MENU_MARKER} into {html_path}")
     return 0
 
 
