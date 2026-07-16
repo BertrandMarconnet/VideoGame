@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "asset_id": "specter_05",
-  "mode": "localized",
-  "default_material": "metal_armored",
+  "mode": "detachable",
+  "default_material": "metal_light",
   "zones": [
     {
       "id": "left_leg",
@@ -55,7 +55,7 @@
     "specter_charge": 4.0
   },
   "descriptions": {
-    "zones": "partie mobile = détachement ou perte de fonction",
+    "zones": "jambe gauche = détachement et vitesse ×0.65 ; jambe droite = détachement et vitesse ×0.65 ; deux jambes = passage à crawl ; capteur = détection réduite ; torse = arrêt",
     "interactions": "flashlight_bash=0.4; plank=0.8; crowbar=2.0; thrown_prop=1.0; specter_charge=4.0"
   }
 }

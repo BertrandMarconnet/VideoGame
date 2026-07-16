@@ -66,10 +66,13 @@
         "Run-loop",
         "Attack",
         "Crawl-loop",
-        "Shutdown"
+        "Shutdown",
+        "scan"
       ],
       "generator_profile": "specter_biped",
-      "fallback": "procedural"
+      "fallback": "procedural",
+      "audio_profile": "res://assets/generated/specter_05/specter_05.audio.json",
+      "sound_mode": "procedural"
     },
     {
       "schema_version": 1,

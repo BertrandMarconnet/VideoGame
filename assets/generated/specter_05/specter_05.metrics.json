@@ -14,7 +14,8 @@
     "Run-loop",
     "Attack",
     "Crawl-loop",
-    "Shutdown"
+    "Shutdown",
+    "scan"
   ],
   "materials": [
     "BP_DarkMetal",

@@ -11,14 +11,19 @@
     "Run-loop",
     "Attack",
     "Crawl-loop",
-    "Shutdown"
+    "Shutdown",
+    "scan"
   ],
   "damage_zones": 4,
+  "audio_streams": 4,
+  "audio_events": 7,
   "texture_mode": "palette_only",
   "collision_mode": "auto",
   "reference_images_used": 4,
   "glb": {
-    "bytes": 372288,
-    "version": 2
+    "bytes": 382060,
+    "version": 2,
+    "nodes": 73,
+    "visible_helpers": 0
   }
 }
