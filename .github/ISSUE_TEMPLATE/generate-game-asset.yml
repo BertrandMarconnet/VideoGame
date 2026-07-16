@@ -1,21 +1,39 @@
 name: Générer un asset de jeu
-about: Génère un GLB, ses textures, son rig, ses animations, ses zones de dégâts et son intégration Godot.
+description: Générer un GLB low-poly avec textures, rig, animations, segmentation, dégâts localisés et intégration Godot.
 title: "[ASSET] "
 labels: []
+assignees:
+  - BertrandMarconnet
 body:
   - type: markdown
     attributes:
       value: |
-        Cette interface fabrique un asset low-poly **contrôlé et compatible Godot 4.7/Jolt/Web**.
-        Ajoutez de 1 à 6 images : elles guident la palette, les textures, les proportions et la famille visuelle.
-        Le système choisit ensuite un générateur adapté à la catégorie afin de produire une géométrie segmentée, un rig et des animations lorsque cela est pertinent.
-        Il ne prétend pas reconstruire automatiquement chaque détail caché d'une photographie : le résultat reste une interprétation PS1 cohérente avec le storyboard.
+        # Générateur d'asset 3D — Blackout Protocol
+
+        Cette interface génère un asset **Godot 4.7 / Jolt / Web** structuré pour le jeu : GLB, aperçu, matériaux, rig, animations, collisions, parties segmentées, dégâts localisés et catalogue d'intégration.
+
+        **Pour maximiser la viabilité du modèle :**
+
+        | Type d'asset | Images recommandées |
+        |---|---|
+        | Robot bipède / personnage | Face, profil droit, dos, trois-quarts avant, pose neutre A-pose, corps entier |
+        | Robot quadrupède | Face, profil, arrière, trois-quarts surélevé, quatre pattes visibles |
+        | Main FPS + objet | Vue joueur, profil, dessus, dessous/arrière de poignée, objet seul si complexe |
+        | Machine articulée | Face, profil, arrière, trois-quarts, dessus, gros plans des axes et de l'outil |
+        | Prop | Trois-quarts, profil, arrière ; ajouter dessus/dessous pour les formes complexes |
+        | Mur / environnement | Face orthographique, arrière, côté avec épaisseur, trois-quarts, texture, dimensions |
+        | Porte / sas | Face fermée, arrière, profil, vue ouverte, charnières et verrou |
+        | Console / écran | Face orthographique, profil, trois-quarts, image séparée du contenu écran |
+
+        Utilisez le **même modèle, les mêmes proportions, couleurs et accessoires** sur toutes les vues. Préférez un fond uni, une lumière diffuse, aucun flou, aucun grand-angle et aucun élément coupé.
+
+        Guide complet : https://github.com/BertrandMarconnet/VideoGame/blob/main/docs/ASSET_REFERENCE_IMAGE_GUIDE.md
 
   - type: input
     id: asset_name
     attributes:
       label: Nom de l'asset
-      description: Exemple : SPECTER-5, lampe FPS, mur placo atelier, console Sentinel.
+      description: Nom court et unique. Exemple : SPECTER-5, lampe FPS, sas S-01, console Sentinel.
       placeholder: Lampe FPS + main droite
     validations:
       required: true
@@ -24,6 +42,7 @@ body:
     id: category
     attributes:
       label: Catégorie
+      description: Choisir la famille qui détermine la géométrie, le rig, les collisions et les tests attendus.
       options:
         - Robot bipède
         - Robot quadrupède
@@ -35,28 +54,58 @@ body:
         - Porte / sas
         - Module d'environnement
         - Console / écran / GUI 3D
+      default: 0
     validations:
       required: true
 
-  - type: textarea
+  - type: upload
     id: reference_images
     attributes:
       label: Images de référence
-      description: Glissez ici 1 à 6 images. Pour un robot ou personnage, utilisez si possible face, droite, arrière et trois-quarts.
-      placeholder: Glisser-déposer les images ici
+      description: Glisser de préférence 4 à 6 vues cohérentes. Formats acceptés : PNG, JPG, JPEG et WebP. Une seule image reste possible, mais augmente le risque d'interprétation sur l'arrière, l'épaisseur et les articulations.
     validations:
       required: false
+      accept: ".png,.jpg,.jpeg,.webp"
 
   - type: dropdown
     id: reference_mode
     attributes:
       label: Type de références fournies
+      description: Indiquer la structure réelle du jeu d'images fourni.
       options:
-        - Une vue principale / trois-quarts
         - Quatre vues orthographiques cohérentes
         - Plusieurs vues libres du même asset
+        - Une vue principale / trois-quarts
         - Storyboard / concept art d'ambiance
         - Aucune image, génération depuis le profil
+      default: 0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: reference_quality
+    attributes:
+      label: Qualité et cohérence des références
+      description: Une série cohérente est plus importante qu'un rendu artistique spectaculaire.
+      options:
+        - 4 à 6 vues cohérentes, corps/objet entier et fond uni — recommandé
+        - 2 à 3 vues cohérentes
+        - Une seule vue exploitable
+        - Storyboard ou scène avec perspective
+        - Pas d'image
+      default: 0
+    validations:
+      required: true
+
+  - type: textarea
+    id: intended_use
+    attributes:
+      label: Rôle du modèle dans le jeu
+      description: Décrire son usage, son échelle, ses interactions, ce qui bouge et ce qui doit rester fixe.
+      placeholder: |
+        Utilisé en vue FPS dans la main droite du joueur.
+        La lentille et la batterie sont séparées.
+        La lampe peut frapper un objet mais ne doit pas avoir de collision avec la caméra.
     validations:
       required: true
 
@@ -71,6 +120,7 @@ body:
         - Interface CRT / Sentinel OS
         - Prop industriel générique
         - Personnage technicien années 1980
+      default: 0
     validations:
       required: true
 
@@ -78,6 +128,7 @@ body:
     id: geometry_template
     attributes:
       label: Structure géométrique
+      description: Choisir la structure la plus proche. Le mode automatique applique le profil associé à la catégorie.
       options:
         - Automatique selon la catégorie
         - Monobloc simple
@@ -90,6 +141,7 @@ body:
         - Bipède articulé
         - Quadrupède articulé
         - Machine articulée
+      default: 0
     validations:
       required: true
 
@@ -97,8 +149,8 @@ body:
     id: segmentation_parts
     attributes:
       label: Parties à séparer / segmenter
-      description: Liste séparée par des virgules. Exemple : tête, poignée, batterie, lentille. Pour un robot : jambe gauche, jambe droite, bras, capteur, torse.
-      placeholder: tête, poignée, batterie, lentille
+      description: Lister les pièces qui doivent avoir leur propre pivot, matériau, collision, animation ou zone de dégâts.
+      placeholder: tête, torse, jambe gauche, jambe droite, bras gauche, bras droit, capteur
     validations:
       required: false
 
@@ -106,6 +158,7 @@ body:
     id: width
     attributes:
       label: Largeur cible en mètres
+      description: Largeur maximale réelle, sans marge de décor.
       value: "1.0"
     validations:
       required: true
@@ -114,6 +167,7 @@ body:
     id: height
     attributes:
       label: Hauteur cible en mètres
+      description: Hauteur réelle du bas au point le plus haut.
       value: "1.0"
     validations:
       required: true
@@ -122,6 +176,7 @@ body:
     id: depth
     attributes:
       label: Profondeur cible en mètres
+      description: Profondeur réelle de l'avant vers l'arrière.
       value: "1.0"
     validations:
       required: true
@@ -130,6 +185,7 @@ body:
     id: material
     attributes:
       label: Matériau principal
+      description: Le matériau pilote la résistance, les multiplicateurs de dégâts et le type de rupture.
       options:
         - Métal léger
         - Métal blindé
@@ -140,6 +196,7 @@ body:
         - Brique
         - Béton
         - Bois
+      default: 0
     validations:
       required: true
 
@@ -147,11 +204,13 @@ body:
     id: texture_mode
     attributes:
       label: Texture
+      description: L'atlas PS1 extrait la palette des images. Pour un écran, fournir une image frontale séparée.
       options:
         - Atlas PS1 généré depuis les images
         - Palette PS1 sans texture détaillée
         - Première image utilisée comme écran / GUI
         - Matériau plat seulement
+      default: 0
     validations:
       required: true
 
@@ -159,6 +218,7 @@ body:
     id: rig
     attributes:
       label: Rig / articulation
+      description: Choisir le squelette ou la structure d'articulation réellement nécessaire.
       options:
         - Aucun
         - Mécanique bipède
@@ -168,6 +228,7 @@ body:
         - Machine articulée
         - Charnière simple
         - Pièces rigides segmentées
+      default: 0
     validations:
       required: true
 
@@ -175,8 +236,9 @@ body:
     id: animations
     attributes:
       label: Animations souhaitées
-      description: Liste séparée par des virgules. Exemples : idle, walk, run, attack, crawl, shutdown, open, close, use, bash, inspect.
+      description: Liste séparée par des virgules. Ne demander que les animations utiles au gameplay.
       value: idle
+      placeholder: idle, walk, run, attack, crawl, shutdown, open, close, use, bash, inspect
     validations:
       required: true
 
@@ -184,6 +246,7 @@ body:
     id: collision
     attributes:
       label: Collision Godot
+      description: Les collisions simples sont préférables pour Jolt/Web. Les vues FPS et écrans peuvent ne pas en avoir.
       options:
         - Automatique selon la catégorie
         - Boîte simple
@@ -191,6 +254,7 @@ body:
         - Boîtes locales par partie
         - Mur segmenté par cellule
         - Aucune collision
+      default: 0
     validations:
       required: true
 
@@ -198,12 +262,14 @@ body:
     id: destruction
     attributes:
       label: Destructibilité
+      description: Choisir comment les impacts doivent affecter l'asset dans le jeu.
       options:
         - Aucune
         - Dégâts localisés
         - Membres / pièces détachables
         - Mur segmenté avec trous locaux
         - Avancée selon le matériau
+      default: 1
     validations:
       required: true
 
@@ -211,8 +277,13 @@ body:
     id: damage_zones
     attributes:
       label: Zones critiques et conséquences
-      description: Exemple : jambe gauche = vitesse -35%; deux jambes = ramper; capteur = vision réduite; lentille = lumière désactivée.
-      placeholder: left_leg: detach, speed 0.65; right_leg: detach; sensor: disable_detection
+      description: Associer chaque zone à un effet fonctionnel ou visuel.
+      placeholder: |
+        jambe gauche = détachement, vitesse ×0.65
+        deux jambes détruites = ramper
+        capteur = détection désactivée
+        lentille = lumière désactivée
+        batterie = outil hors tension
     validations:
       required: false
 
@@ -220,8 +291,8 @@ body:
     id: interactions
     attributes:
       label: Outils et interactions
-      description: Exemple : lampe faible, planche moyenne, pied-de-biche fort sur placo, SPECTER très fort sur brique.
-      placeholder: flashlight_bash=0.4; plank=0.8; crowbar=2.0; specter_charge=4.0
+      description: Décrire les outils, impacts, forces ou interactions attendus selon les matériaux.
+      placeholder: flashlight_bash=0.4; plank=0.8; crowbar=2.0; thrown_prop=1.0; specter_charge=4.0
     validations:
       required: false
 
@@ -229,10 +300,12 @@ body:
     id: quality
     attributes:
       label: Qualité
+      description: Le profil Web/mobile est recommandé pour la version jouable et le navigateur.
       options:
         - Web / mobile PS1 — recommandé
         - Standard
         - Hero asset
+      default: 0
     validations:
       required: true
 
@@ -240,13 +313,32 @@ body:
     id: integration
     attributes:
       label: Intégration dans le jeu
+      description: Choisir comment le modèle validé doit être exposé dans Godot.
       options:
         - Ajouter au catalogue seulement
         - Remplacer automatiquement le modèle procédural correspondant
         - Générer un module instanciable depuis l'AssetBridge
         - Générer une vue FPS instanciable depuis l'AssetBridge
+      default: 2
     validations:
       required: true
+
+  - type: checkboxes
+    id: viability_checks
+    attributes:
+      label: Vérifications avant génération
+      description: Ces points réduisent fortement les modèles incohérents ou impossibles à rigger.
+      options:
+        - label: Toutes les images représentent exactement la même variante du modèle.
+          required: true
+        - label: L'objet ou le personnage est visible entièrement, sans partie importante coupée.
+          required: true
+        - label: Les dimensions indiquées correspondent à l'échelle réelle souhaitée dans Godot.
+          required: true
+        - label: Les parties mobiles, détachables ou destructibles sont nommées explicitement.
+          required: true
+        - label: J'ai évité les vues grand-angle, floues, surchargées ou avec plusieurs objets concurrents.
+          required: true
 
   - type: checkboxes
     id: confirmation
