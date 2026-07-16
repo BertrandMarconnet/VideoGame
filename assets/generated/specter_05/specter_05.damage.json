@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "asset_id": "specter_05",
+  "mode": "localized",
+  "default_material": "metal_light",
+  "zones": [
+    {
+      "id": "left_leg",
+      "material_id": "metal_light",
+      "max_health": 35,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_l_leg_*"
+      ],
+      "speed_multiplier": 0.65,
+      "on_break": "limp"
+    },
+    {
+      "id": "right_leg",
+      "material_id": "metal_light",
+      "max_health": 35,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_r_leg_*"
+      ],
+      "speed_multiplier": 0.65,
+      "on_break": "limp"
+    },
+    {
+      "id": "sensor",
+      "material_id": "glass",
+      "max_health": 18,
+      "detachable": false,
+      "node_patterns": [
+        "DZ_sensor_*"
+      ],
+      "on_break": "disable_detection"
+    },
+    {
+      "id": "torso",
+      "material_id": "metal_armored",
+      "max_health": 100,
+      "detachable": false,
+      "node_patterns": [
+        "DZ_torso_*"
+      ],
+      "on_break": "shutdown"
+    }
+  ],
+  "tool_rules": {
+    "flashlight_bash": 0.45,
+    "plank": 0.8,
+    "crowbar": 2.2,
+    "thrown_prop": 1.0,
+    "specter_charge": 4.0
+  },
+  "descriptions": {
+    "zones": "partie mobile = détachement ou perte de fonction",
+    "interactions": "flashlight_bash=0.4; plank=0.8; crowbar=2.0; thrown_prop=1.0; specter_charge=4.0"
+  }
+}

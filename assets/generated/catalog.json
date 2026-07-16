@@ -47,6 +47,32 @@
     },
     {
       "schema_version": 1,
+      "id": "specter_05",
+      "name": "SPECTER-05",
+      "category": "robot_biped",
+      "glb": "res://assets/generated/specter_05/specter_05.glb",
+      "preview": "res://assets/generated/specter_05/specter_05.png",
+      "damage_profile": "res://assets/generated/specter_05/specter_05.damage.json",
+      "integration": "bridge_module",
+      "dimensions_m": {
+        "width": 1.0,
+        "height": 2.0,
+        "depth": 1.0
+      },
+      "rig": "rigid_biped",
+      "animations": [
+        "Idle-loop",
+        "Walk-loop",
+        "Run-loop",
+        "Attack",
+        "Crawl-loop",
+        "Shutdown"
+      ],
+      "generator_profile": "specter_biped",
+      "fallback": "procedural"
+    },
+    {
+      "schema_version": 1,
       "id": "specter_5",
       "name": "SPECTER-5",
       "category": "robot_biped",
