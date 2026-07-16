@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Build .asset.json and .damage.json for specialized generators such as CRAWLER-7."""
+"""Build sidecars for specialised generators such as CRAWLER-7."""
 from __future__ import annotations
 
 import argparse
 import json
 from pathlib import Path
 from typing import Any
+
+from build_asset_audio import build as build_audio
+from sanitize_generated_glb import sanitize as sanitize_glb
 
 
 def crawler_zones(material_id: str) -> list[dict[str, Any]]:
@@ -93,6 +96,9 @@ def main() -> None:
     args.output_dir.mkdir(parents=True, exist_ok=True)
     (args.output_dir / f"{slug}.asset.json").write_text(json.dumps(asset, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     (args.output_dir / f"{slug}.damage.json").write_text(json.dumps(damage, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    glb_path = args.output_dir / f"{slug}.glb"
+    sanitize_glb(glb_path, args.output_dir / f"{slug}.sanitize.json")
+    build_audio(args.request, args.output_dir)
 
 
 if __name__ == "__main__":
