@@ -2,7 +2,7 @@ name: Generate game asset — unified
 
 on:
   issues:
-    types: [opened]
+    types: [opened, reopened]
   workflow_dispatch:
     inputs:
       request_file:
@@ -28,11 +28,13 @@ on:
   pull_request:
     paths:
       - ".github/ISSUE_TEMPLATE/generate-game-asset.yml"
+      - ".github/ISSUE_TEMPLATE/config.yml"
       - ".github/workflows/generate-game-asset-unified.yml"
       - "web/asset-generator.html"
       - "tools/generate_game_asset*.py"
       - "tools/generate_specter5_production*.py"
-      - "tools/parse_game_asset_issue.py"
+      - "tools/parse_game_asset_issue*.py"
+      - "tools/test_asset_issue_download.py"
       - "tools/build_asset_sidecars.py"
       - "tools/validate_game_asset_bundle.py"
       - "tools/update_generated_asset_catalog.py"
@@ -64,7 +66,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "⚠️ Cette issue contient des images mais pas les paramètres techniques nécessaires ; aucune génération n'a été lancée. Utilise le menu graphique : https://bertrandmarconnet.github.io/VideoGame/asset-generator.html ou le formulaire direct : https://github.com/${GITHUB_REPOSITORY}/issues/new?template=generate-game-asset.yml. Le titre doit commencer par **[ASSET]** et l'issue doit contenir les menus catégorie, dimensions, matériau, profil et livraison."
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "⚠️ Cette issue contient des images mais pas les paramètres techniques nécessaires ; aucune génération n'a été lancée. Utilise l'unique formulaire : https://github.com/${GITHUB_REPOSITORY}/issues/new?template=generate-game-asset.yml. Le titre doit commencer par **[ASSET]** et l'issue doit contenir la catégorie, les dimensions, le matériau, le profil et la livraison."
 
   generate:
     name: Generate requested asset bundle
@@ -86,7 +88,7 @@ jobs:
       BUNDLE_ROOT: assets/generated
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -98,10 +100,13 @@ jobs:
             blender jq unzip curl python3-numpy ca-certificates \
             libegl1 libgl1 libglib2.0-0 libx11-6 libxext6 libxi6 libxrender1
 
-      - name: Compile asset tools
+      - name: Compile and test asset tools
         run: |
+          set -euo pipefail
           python3 -m py_compile \
             tools/parse_game_asset_issue.py \
+            tools/parse_game_asset_issue_v2.py \
+            tools/test_asset_issue_download.py \
             tools/generate_game_asset.py \
             tools/generate_game_asset_v2.py \
             tools/generate_game_asset_v3.py \
@@ -110,6 +115,7 @@ jobs:
             tools/build_asset_sidecars.py \
             tools/validate_game_asset_bundle.py \
             tools/update_generated_asset_catalog.py
+          python3 tools/test_asset_issue_download.py
 
       - name: Prepare normalized request
         env:
@@ -117,10 +123,23 @@ jobs:
           MANUAL_REQUEST: ${{ inputs.request_file }}
         run: |
           set -euo pipefail
-          mkdir -p "$(dirname "$REQUEST_JSON")" "$IMAGE_DIR"
+          mkdir -p "$(dirname "$REQUEST_JSON")" "$IMAGE_DIR" build/game-asset/logs
           if [[ "$GITHUB_EVENT_NAME" == "issues" ]]; then
-            python3 tools/parse_game_asset_issue.py \
-              --event "$EVENT_PATH" --output "$REQUEST_JSON" --image-dir "$IMAGE_DIR"
+            set +e
+            python3 tools/parse_game_asset_issue_v2.py \
+              --event "$EVENT_PATH" --output "$REQUEST_JSON" --image-dir "$IMAGE_DIR" \
+              2>&1 | tee build/game-asset/logs/request.log
+            parse_status=${PIPESTATUS[0]}
+            set -e
+            if [[ $parse_status -ne 0 ]]; then
+              {
+                echo "### Asset request parsing failed"
+                echo '```text'
+                tail -n 30 build/game-asset/logs/request.log
+                echo '```'
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit "$parse_status"
+            fi
           else
             test -f "$MANUAL_REQUEST"
             cp "$MANUAL_REQUEST" "$REQUEST_JSON"
@@ -216,11 +235,25 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "❌ Aucun asset n'a été ajouté. Diagnostic : ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          set -euo pipefail
+          comment_file="build/game-asset/failure-comment.md"
+          mkdir -p "$(dirname "$comment_file")"
+          {
+            echo "❌ Aucun asset n'a été ajouté."
+            echo
+            if [[ -f build/game-asset/logs/request.log ]]; then
+              echo "**Erreur de préparation détectée :**"
+              echo '```text'
+              tail -n 18 build/game-asset/logs/request.log
+              echo '```'
+            fi
+            echo "Diagnostic complet : ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          } > "$comment_file"
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file "$comment_file"
 
       - name: Upload bundle and diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: game-asset-${{ env.SLUG || github.run_id }}
           path: |
@@ -249,17 +282,19 @@ jobs:
           - game_asset_environment.json
           - game_asset_gui.json
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Blender
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends blender python3-numpy libegl1 libgl1 libglib2.0-0
-      - name: Compile tools
+      - name: Compile tools and test issue attachments
         run: |
           python3 -m py_compile \
+            tools/parse_game_asset_issue.py tools/parse_game_asset_issue_v2.py tools/test_asset_issue_download.py \
             tools/generate_game_asset.py tools/generate_game_asset_v2.py tools/generate_game_asset_v3.py \
             tools/generate_specter5_production.py tools/generate_specter5_production_v2.py \
             tools/validate_game_asset_bundle.py
+          python3 tools/test_asset_issue_download.py
       - name: Generate and validate fixture
         run: |
           set -o pipefail
@@ -286,7 +321,7 @@ jobs:
             2>&1 | tee "$OUT/validation.log"
       - name: Upload preview and diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: smoke-${{ matrix.fixture }}-${{ github.run_id }}
           path: build/smoke
