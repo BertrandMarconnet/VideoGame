@@ -31,12 +31,15 @@ on:
       - ".github/ISSUE_TEMPLATE/config.yml"
       - ".github/workflows/generate-game-asset-unified.yml"
       - "web/asset-generator.html"
+      - "scripts/generated_assets/**"
       - "tools/generate_game_asset*.py"
       - "tools/generate_specter5_production*.py"
       - "tools/parse_game_asset_issue*.py"
       - "tools/test_asset_issue_download.py"
       - "tools/publish_generated_asset.sh"
+      - "tools/build_asset_audio*.py"
       - "tools/build_asset_sidecars.py"
+      - "tools/sanitize_generated_glb.py"
       - "tools/validate_game_asset_bundle.py"
       - "tools/update_generated_asset_catalog.py"
       - "tests/fixtures/game_asset_*.json"
@@ -113,7 +116,10 @@ jobs:
             tools/generate_game_asset_v3.py \
             tools/generate_specter5_production.py \
             tools/generate_specter5_production_v2.py \
+            tools/build_asset_audio.py \
+            tools/build_asset_audio_v2.py \
             tools/build_asset_sidecars.py \
+            tools/sanitize_generated_glb.py \
             tools/validate_game_asset_bundle.py \
             tools/update_generated_asset_catalog.py
           bash -n tools/publish_generated_asset.sh
@@ -180,7 +186,7 @@ jobs:
               2>&1 | tee build/game-asset/logs/generation.log
           fi
 
-      - name: Validate GLB, texture metadata, rig, animations and damage zones
+      - name: Validate clean GLB, rig, animations, audio and damage zones
         run: |
           set -euo pipefail
           BUNDLE_DIR="$BUNDLE_ROOT/$SLUG"
@@ -192,7 +198,7 @@ jobs:
             --catalog "$BUNDLE_ROOT/catalog.json" \
             --asset "$BUNDLE_DIR/$SLUG.asset.json"
 
-      - name: Validate Godot 4.7 import and bridge
+      - name: Validate Godot 4.7 import, bridge and synchronized audio runtime
         run: |
           set -euo pipefail
           mkdir -p scripts .godot-bin build/game-asset/logs
@@ -205,7 +211,7 @@ jobs:
           chmod +x "$GODOT_BIN"
           timeout 180 "$GODOT_BIN" --headless --editor --path . --quit-after 12 \
             > build/game-asset/logs/godot-import.log 2>&1
-          if grep -Eqi 'SCRIPT ERROR|Invalid call|Invalid get index|Attempt to call|ERROR:' build/game-asset/logs/godot-import.log; then
+          if grep -Eqi 'SCRIPT ERROR|Invalid call|Invalid get index|Attempt to call|Parse Error|ERROR:' build/game-asset/logs/godot-import.log; then
             cat build/game-asset/logs/godot-import.log
             exit 1
           fi
@@ -222,7 +228,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "✅ Asset **$SLUG** généré et validé : [GLB](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.glb) · [aperçu](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.png) · [manifeste](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.asset.json) · [profil de dégâts](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.damage.json)"
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "✅ Asset **$SLUG** généré, nettoyé et validé : [GLB](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.glb) · [aperçu](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.png) · [manifeste](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.asset.json) · [dégâts](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.damage.json) · [sons synchronisés](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.audio.json) · [preuve de nettoyage](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.sanitize.json) · [validation](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.validation.json)"
           gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
 
       - name: Report failed issue generation
@@ -311,7 +317,8 @@ jobs:
             tools/parse_game_asset_issue.py tools/parse_game_asset_issue_v2.py tools/test_asset_issue_download.py \
             tools/generate_game_asset.py tools/generate_game_asset_v2.py tools/generate_game_asset_v3.py \
             tools/generate_specter5_production.py tools/generate_specter5_production_v2.py \
-            tools/validate_game_asset_bundle.py
+            tools/build_asset_audio.py tools/build_asset_audio_v2.py tools/build_asset_sidecars.py \
+            tools/sanitize_generated_glb.py tools/validate_game_asset_bundle.py
           bash -n tools/publish_generated_asset.sh
           python3 tools/test_asset_issue_download.py
       - name: Generate and validate fixture
