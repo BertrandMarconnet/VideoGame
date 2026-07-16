@@ -11,6 +11,10 @@ import json
 import sys
 from pathlib import Path
 
+TOOLS_DIR = Path(__file__).resolve().parent
+if str(TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(TOOLS_DIR))
+
 from build_asset_audio_v2 import build as build_audio
 from sanitize_generated_glb import sanitize as sanitize_glb
 
