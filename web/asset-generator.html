@@ -5,684 +5,99 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Blackout Protocol — Générateur d'assets 3D</title>
   <style>
-    :root {
-      color-scheme: dark;
-      --bg: #050b12;
-      --panel: #0a1723;
-      --panel2: #0d2030;
-      --line: #1f5a78;
-      --cyan: #64d6ff;
-      --blue: #1f8fc4;
-      --amber: #ffad27;
-      --red: #e65345;
-      --text: #d8edf6;
-      --muted: #86a7b8;
-      --ok: #6fdb96;
-      --radius: 12px;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-      color: var(--text);
-      background:
-        radial-gradient(circle at 10% 0%, rgba(19, 110, 150, .22), transparent 30%),
-        linear-gradient(rgba(5, 11, 18, .96), rgba(2, 6, 10, .99)),
-        repeating-linear-gradient(0deg, transparent 0 3px, rgba(80, 194, 240, .025) 3px 4px);
-    }
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      border-bottom: 1px solid var(--line);
-      background: rgba(4, 12, 19, .94);
-      backdrop-filter: blur(12px);
-    }
-    .topbar {
-      width: min(1380px, 96vw);
-      margin: auto;
-      padding: 18px 0;
-      display: flex;
-      gap: 18px;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .brand { display: flex; gap: 14px; align-items: center; }
-    .brand-mark {
-      width: 46px; height: 46px;
-      border: 1px solid var(--blue);
-      display: grid; place-items: center;
-      color: var(--cyan);
-      font-weight: 900;
-      clip-path: polygon(12% 0, 88% 0, 100% 12%, 100% 88%, 88% 100%, 12% 100%, 0 88%, 0 12%);
-      background: #07131e;
-    }
-    h1 { margin: 0; font-size: clamp(19px, 2.4vw, 31px); letter-spacing: .04em; }
-    .subtitle { color: var(--muted); font-size: 13px; margin-top: 3px; }
-    .status {
-      display: flex; gap: 8px; align-items: center;
-      font-size: 12px; color: var(--ok);
-      border: 1px solid #246747;
-      padding: 8px 11px; border-radius: 999px;
-    }
-    .status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 12px var(--ok); }
-    main { width: min(1380px, 96vw); margin: 24px auto 70px; }
-    .intro {
-      display: grid;
-      grid-template-columns: 1.4fr .8fr;
-      gap: 18px;
-      margin-bottom: 18px;
-    }
-    .card {
-      border: 1px solid var(--line);
-      background: linear-gradient(145deg, rgba(12, 30, 44, .96), rgba(6, 17, 27, .98));
-      border-radius: var(--radius);
-      box-shadow: 0 14px 40px rgba(0, 0, 0, .25), inset 0 0 26px rgba(24, 117, 157, .05);
-      padding: 18px;
-    }
-    .card h2 { margin: 0 0 8px; color: var(--amber); font-size: 17px; letter-spacing: .035em; }
-    .card p { color: var(--muted); line-height: 1.5; margin: 6px 0; }
-    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
-    .step { padding: 12px; border: 1px solid #17455e; border-radius: 9px; background: #081621; }
-    .step b { color: var(--cyan); }
-    .warning { border-color: #76521d; background: rgba(72, 43, 7, .22); }
-    .warning strong { color: var(--amber); }
-    form { display: grid; gap: 18px; }
-    .section-title {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 15px;
-    }
-    .section-number {
-      width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
-      background: #0d3650; border: 1px solid var(--blue); color: var(--cyan); font-weight: 800;
-    }
-    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 13px; }
-    .field { grid-column: span 4; min-width: 0; }
-    .field.half { grid-column: span 6; }
-    .field.full { grid-column: 1 / -1; }
-    .field.third { grid-column: span 4; }
-    label { display: block; font-size: 13px; color: #bcd7e4; margin-bottom: 7px; font-weight: 700; }
-    small { display: block; color: var(--muted); line-height: 1.35; margin-top: 6px; }
-    input, select, textarea {
-      width: 100%;
-      border: 1px solid #24516a;
-      background: #06131d;
-      color: var(--text);
-      border-radius: 8px;
-      padding: 11px 12px;
-      font: inherit;
-      outline: none;
-    }
-    input:focus, select:focus, textarea:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(100, 214, 255, .10); }
-    textarea { min-height: 104px; resize: vertical; }
-    .drop-zone {
-      min-height: 190px;
-      display: grid;
-      place-items: center;
-      text-align: center;
-      border: 1px dashed #3488af;
-      border-radius: 12px;
-      background: rgba(4, 18, 29, .78);
-      cursor: pointer;
-      padding: 22px;
-      transition: .2s ease;
-    }
-    .drop-zone.drag, .drop-zone:hover { border-color: var(--cyan); background: rgba(11, 52, 73, .55); }
-    .drop-zone input { display: none; }
-    .drop-icon { font-size: 42px; color: var(--cyan); }
-    .previews { display: grid; grid-template-columns: repeat(auto-fill, minmax(142px, 1fr)); gap: 10px; margin-top: 12px; }
-    .preview { border: 1px solid #25516a; border-radius: 8px; overflow: hidden; background: #050d13; }
-    .preview img { display: block; width: 100%; aspect-ratio: 1; object-fit: contain; background: #182027; }
-    .preview div { font-size: 11px; padding: 7px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .hint-box { border-left: 3px solid var(--amber); background: #0a1822; padding: 13px 15px; border-radius: 7px; color: #bcd3de; line-height: 1.5; }
-    .checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 8px; }
-    .check {
-      display: flex; align-items: center; gap: 8px;
-      border: 1px solid #244a60; border-radius: 8px; padding: 10px;
-      background: #07151f; cursor: pointer;
-    }
-    .check input { width: auto; accent-color: var(--cyan); }
-    .check span { font-size: 13px; }
-    .actions {
-      position: sticky; bottom: 12px; z-index: 10;
-      display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end;
-      border: 1px solid #2b6683; background: rgba(4, 15, 23, .96); padding: 13px; border-radius: 12px;
-      box-shadow: 0 12px 35px rgba(0,0,0,.45);
-    }
-    button, .button {
-      border: 1px solid #347899; border-radius: 8px; padding: 11px 15px;
-      font: inherit; font-weight: 800; cursor: pointer; text-decoration: none;
-      color: var(--text); background: #0a2637;
-    }
-    button:hover, .button:hover { border-color: var(--cyan); filter: brightness(1.1); }
-    .primary { background: linear-gradient(135deg, #146e9a, #0a4666); border-color: var(--cyan); }
-    .amber { background: linear-gradient(135deg, #905a0c, #513305); border-color: var(--amber); color: #fff4cf; }
-    .muted-btn { background: #0a151e; }
-    .summary {
-      display: none; margin-top: 15px; border: 1px solid #2d7750; background: rgba(15, 70, 43, .16); padding: 14px; border-radius: 9px;
-    }
-    .summary.visible { display: block; }
-    .summary h3 { margin: 0 0 8px; color: var(--ok); }
-    .summary ul { margin: 7px 0; padding-left: 20px; color: #c3dce7; }
-    .chip { display: inline-block; border: 1px solid #28627f; background: #092334; padding: 4px 8px; border-radius: 999px; margin: 3px; font-size: 11px; }
-    .footer-note { color: var(--muted); font-size: 12px; margin-right: auto; max-width: 560px; line-height: 1.4; }
-    @media (max-width: 900px) {
-      .intro { grid-template-columns: 1fr; }
-      .steps { grid-template-columns: 1fr; }
-      .field, .field.half, .field.third { grid-column: 1 / -1; }
-      .topbar { align-items: flex-start; }
-      .status { display: none; }
-    }
+    :root{color-scheme:dark;--bg:#040a10;--panel:#091722;--line:#225b78;--cyan:#65d8ff;--amber:#ffad27;--text:#d9edf6;--muted:#86a8b8;--ok:#72de9b;--red:#ef6658}
+    *{box-sizing:border-box} body{margin:0;min-height:100vh;font-family:Inter,system-ui,sans-serif;color:var(--text);background:radial-gradient(circle at 15% 0,rgba(23,117,157,.2),transparent 30%),linear-gradient(#050c13,#020609)}
+    header{position:sticky;top:0;z-index:20;background:rgba(3,12,19,.95);border-bottom:1px solid var(--line);backdrop-filter:blur(10px)}
+    .top{width:min(1240px,95vw);margin:auto;padding:16px 0;display:flex;align-items:center;justify-content:space-between;gap:15px}.brand{display:flex;align-items:center;gap:13px}.mark{width:44px;height:44px;border:1px solid var(--cyan);display:grid;place-items:center;font-weight:900;color:var(--cyan);background:#06131d}h1{font-size:clamp(20px,2.4vw,30px);margin:0;letter-spacing:.04em}.sub{color:var(--muted);font-size:13px}.status{color:var(--ok);font:700 12px monospace;border:1px solid #286947;padding:8px 11px;border-radius:999px}
+    main{width:min(1240px,95vw);margin:22px auto 70px}.card{border:1px solid var(--line);background:linear-gradient(145deg,rgba(12,31,45,.97),rgba(5,16,25,.98));border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 14px 35px rgba(0,0,0,.25)}h2{margin:0 0 12px;color:var(--amber);font-size:17px}.intro{display:grid;grid-template-columns:1.5fr 1fr;gap:16px}.intro p,.hint,small{color:var(--muted);line-height:1.5}.warning{border-color:#76521d}.warning strong{color:var(--amber)}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:13px}.field{grid-column:span 4}.half{grid-column:span 6}.full{grid-column:1/-1}label{display:block;margin-bottom:7px;font-size:13px;font-weight:750;color:#c3dce7}input,select,textarea{width:100%;border:1px solid #28536a;border-radius:8px;background:#06131d;color:var(--text);padding:11px 12px;font:inherit;outline:none}input:focus,select:focus,textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(101,216,255,.1)}textarea{min-height:110px;resize:vertical}
+    .drop{display:grid;place-items:center;min-height:190px;border:1px dashed #398bad;border-radius:11px;text-align:center;background:#06131d;cursor:pointer;padding:20px}.drop:hover,.drop.drag{border-color:var(--cyan);background:#0a2a3b}.drop input{display:none}.drop b{color:var(--cyan);font-size:17px}.previews{display:grid;grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:9px;margin-top:11px}.preview{border:1px solid #28536a;border-radius:8px;overflow:hidden;background:#050c12}.preview img{width:100%;aspect-ratio:1;object-fit:contain;background:#1b2328;display:block}.preview div{font-size:11px;color:var(--muted);padding:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hint{border-left:3px solid var(--amber);padding:12px 14px;background:#07151f;border-radius:7px;margin-bottom:12px}
+    .checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}.check{display:flex;gap:8px;align-items:flex-start;border:1px solid #285064;border-radius:8px;padding:10px;background:#06131d}.check input{width:auto;margin-top:2px;accent-color:var(--cyan)}
+    .actions{position:sticky;bottom:10px;display:flex;gap:10px;align-items:center;justify-content:flex-end;padding:12px;border:1px solid #2c6a87;border-radius:11px;background:rgba(3,14,22,.96);box-shadow:0 12px 30px rgba(0,0,0,.45)}button,a.button{border:1px solid #367d9e;border-radius:8px;background:#0b2a3b;color:var(--text);padding:11px 14px;font:800 13px inherit;text-decoration:none;cursor:pointer}.primary{background:linear-gradient(135deg,#1678a6,#0a4562);border-color:var(--cyan)}.secondary{background:#0a151d}.note{margin-right:auto;color:var(--muted);font-size:12px;max-width:570px;line-height:1.45}.summary{display:none;border:1px solid #2d7750;background:rgba(15,70,43,.15);padding:13px;border-radius:8px;margin-top:12px}.summary.show{display:block}.summary strong{color:var(--ok)}
+    @media(max-width:850px){.intro{grid-template-columns:1fr}.field,.half{grid-column:1/-1}.status{display:none}.actions{position:static;align-items:stretch;flex-direction:column}.note{margin:0}.actions button{width:100%}}
   </style>
 </head>
 <body>
-<header>
-  <div class="topbar">
-    <div class="brand">
-      <div class="brand-mark">A3D</div>
-      <div>
-        <h1>BLACKOUT PROTOCOL — ASSET GENERATOR</h1>
-        <div class="subtitle">Assistant guidé pour modèles GLB, rig, animations, textures et dégâts localisés</div>
-      </div>
-    </div>
-    <div class="status">PIPELINE DISPONIBLE</div>
-  </div>
-</header>
+<header><div class="top"><div class="brand"><div class="mark">A3D</div><div><h1>BLACKOUT PROTOCOL — ASSET GENERATOR</h1><div class="sub">Menu visuel relié au workflow GitHub/Godot</div></div></div><div class="status">PIPELINE EN LIGNE</div></div></header>
 <main>
   <section class="intro">
-    <article class="card">
-      <h2>MODE D'EMPLOI</h2>
-      <p>Ce menu prépare une demande complète, vérifie les informations essentielles et ouvre ensuite le formulaire GitHub officiel déjà relié au pipeline de génération.</p>
-      <div class="steps">
-        <div class="step"><b>01</b><br>Choisir le type d'asset et ses contraintes.</div>
-        <div class="step"><b>02</b><br>Charger et contrôler de 1 à 6 images.</div>
-        <div class="step"><b>03</b><br>Ouvrir GitHub, joindre les mêmes images et valider.</div>
-      </div>
-    </article>
-    <article class="card warning">
-      <h2>POURQUOI UNE VALIDATION GITHUB ?</h2>
-      <p><strong>Les fichiers locaux ne peuvent pas être transférés automatiquement vers GitHub par une autre page Web sans clé d'accès.</strong></p>
-      <p>Le menu préremplit toutes les options. Dans le formulaire GitHub qui s'ouvre, il reste uniquement à sélectionner les mêmes images dans le bouton de téléversement, puis cliquer sur <b>Submit new issue</b>.</p>
-    </article>
+    <article class="card"><h2>FONCTIONNEMENT</h2><p>Choisissez les options, chargez vos références et cliquez sur le bouton final. Le formulaire GitHub structuré s'ouvre avec les champs préremplis. Après soumission, GitHub Actions génère le GLB, les textures, le rig, les animations, les zones de dégâts et le catalogue Godot.</p></article>
+    <article class="card warning"><h2>IMAGES</h2><p><strong>Le navigateur ne peut pas transférer automatiquement tes fichiers locaux vers GitHub sans autorisation privée.</strong> Ils servent ici à vérifier le dossier. Dans GitHub, il faudra les sélectionner une seconde fois dans le champ « Images de référence ».</p></article>
   </section>
 
-  <form id="assetForm" novalidate>
-    <section class="card">
-      <div class="section-title"><div class="section-number">1</div><h2>IDENTITÉ ET CATÉGORIE</h2></div>
-      <div class="grid">
-        <div class="field half">
-          <label for="assetName">Nom de l'asset *</label>
-          <input id="assetName" required placeholder="Ex. Lampe FPS + main droite">
-        </div>
-        <div class="field half">
-          <label for="category">Catégorie *</label>
-          <select id="category" required></select>
-        </div>
-        <div class="field full">
-          <label for="intendedUse">Rôle dans le jeu *</label>
-          <textarea id="intendedUse" required placeholder="Décrire où l'asset apparaît, ce qui bouge, ce qui peut se détacher et son interaction avec le joueur."></textarea>
-        </div>
-      </div>
-    </section>
+  <form id="assetForm">
+    <section class="card"><h2>1 — IDENTITÉ ET CATÉGORIE</h2><div class="grid">
+      <div class="field half"><label for="assetName">Nom de l'asset *</label><input id="assetName" required placeholder="Ex. SPECTER-5, lampe FPS, porte S-01"></div>
+      <div class="field half"><label for="category">Catégorie *</label><select id="category"></select></div>
+      <div class="field full"><label for="role">Rôle dans le jeu *</label><textarea id="role" required placeholder="Où apparaît-il ? Que doit-il faire ? Quelles parties bougent ou se détachent ?"></textarea></div>
+    </div></section>
 
-    <section class="card">
-      <div class="section-title"><div class="section-number">2</div><h2>IMAGES DE RÉFÉRENCE</h2></div>
-      <div id="recommendation" class="hint-box"></div>
-      <label class="drop-zone" id="dropZone">
-        <input id="images" type="file" accept=".png,.jpg,.jpeg,.webp" multiple>
-        <div>
-          <div class="drop-icon">⬆</div>
-          <b>Glisser-déposer les images ici</b>
-          <p>PNG, JPG, JPEG ou WebP — 1 à 6 vues cohérentes — 10 Mo maximum par image</p>
-          <span class="button">CHOISIR LES IMAGES</span>
-        </div>
-      </label>
+    <section class="card"><h2>2 — IMAGES DE RÉFÉRENCE</h2><div id="recommendation" class="hint"></div>
+      <label class="drop" id="dropZone"><input id="images" type="file" accept=".png,.jpg,.jpeg,.webp" multiple><div><b>GLISSER OU CHOISIR 1 À 6 IMAGES</b><p>PNG/JPG/WebP, même modèle, fond simple, rien de coupé</p></div></label>
       <div id="previews" class="previews"></div>
-      <div class="grid" style="margin-top:14px">
-        <div class="field half">
-          <label for="referenceMode">Organisation des images</label>
-          <select id="referenceMode">
-            <option>Quatre vues orthographiques cohérentes</option>
-            <option>Plusieurs vues libres du même asset</option>
-            <option>Une vue principale / trois-quarts</option>
-            <option>Storyboard / concept art d'ambiance</option>
-            <option>Aucune image, génération depuis le profil</option>
-          </select>
-        </div>
-        <div class="field half">
-          <label for="referenceQuality">Qualité des références</label>
-          <select id="referenceQuality">
-            <option>4 à 6 vues cohérentes, corps/objet entier et fond uni — recommandé</option>
-            <option>2 à 3 vues cohérentes</option>
-            <option>Une seule vue exploitable</option>
-            <option>Storyboard ou scène avec perspective</option>
-            <option>Pas d'image</option>
-          </select>
-        </div>
-      </div>
+      <div class="grid" style="margin-top:13px"><div class="field half"><label for="referenceMode">Organisation</label><select id="referenceMode"><option>Quatre vues orthographiques cohérentes</option><option>Plusieurs vues libres du même asset</option><option>Une vue principale / trois-quarts</option><option>Storyboard / concept art d'ambiance</option></select></div><div class="field half"><label for="dimensions">Dimensions L × H × P (m)</label><input id="dimensions" value="1.00 x 1.00 x 1.00" required></div></div>
     </section>
 
-    <section class="card">
-      <div class="section-title"><div class="section-number">3</div><h2>GÉOMÉTRIE, ÉCHELLE ET TEXTURE</h2></div>
-      <div class="grid">
-        <div class="field third">
-          <label for="visualProfile">Profil visuel</label>
-          <select id="visualProfile">
-            <option>PS1 industriel ToyGuard</option>
-            <option>Métal militaire rétro-futuriste</option>
-            <option>Bunker S-01 béton et acier</option>
-            <option>Interface CRT / Sentinel OS</option>
-            <option>Prop industriel générique</option>
-            <option>Personnage technicien années 1980</option>
-          </select>
-        </div>
-        <div class="field third">
-          <label for="geometry">Structure géométrique</label>
-          <select id="geometry">
-            <option>Automatique selon la catégorie</option>
-            <option>Monobloc simple</option>
-            <option>Pièces modulaires détachables</option>
-            <option>Outil tenu en main</option>
-            <option>Console / panneau technique</option>
-            <option>Mur cellulaire</option>
-            <option>Porte articulée</option>
-            <option>Module environnemental</option>
-            <option>Bipède articulé</option>
-            <option>Quadrupède articulé</option>
-            <option>Machine articulée</option>
-          </select>
-        </div>
-        <div class="field third">
-          <label for="textureMode">Texture</label>
-          <select id="textureMode">
-            <option>Atlas PS1 généré depuis les images</option>
-            <option>Palette PS1 sans texture détaillée</option>
-            <option>Première image utilisée comme écran / GUI</option>
-            <option>Matériau plat seulement</option>
-          </select>
-        </div>
-        <div class="field third">
-          <label for="width">Largeur (m) *</label>
-          <input id="width" type="number" min="0.05" max="30" step="0.01" value="1.0" required>
-        </div>
-        <div class="field third">
-          <label for="height">Hauteur (m) *</label>
-          <input id="height" type="number" min="0.05" max="30" step="0.01" value="1.0" required>
-        </div>
-        <div class="field third">
-          <label for="depth">Profondeur (m) *</label>
-          <input id="depth" type="number" min="0.05" max="30" step="0.01" value="1.0" required>
-        </div>
-        <div class="field full">
-          <label for="parts">Parties à séparer / segmenter</label>
-          <textarea id="parts" placeholder="Ex. tête, torse, jambe gauche, jambe droite, capteur, batterie, lentille"></textarea>
-          <small>Chaque partie nommée peut recevoir son pivot, sa collision, son matériau ou sa zone de dégâts.</small>
-        </div>
-      </div>
-    </section>
+    <section class="card"><h2>3 — GÉNÉRATION, MATÉRIAU ET LIVRAISON</h2><div class="grid">
+      <div class="field"><label for="material">Matériau</label><select id="material"><option>Métal léger</option><option>Métal blindé</option><option>Plastique technique</option><option>Caoutchouc / tissu technique</option><option>Verre</option><option>Placo</option><option>Brique</option><option>Béton</option><option>Bois</option></select></div>
+      <div class="field"><label for="profile">Profil de génération</label><select id="profile"><option>Automatique selon la catégorie — recommandé</option><option>Robot ou personnage articulé</option><option>Vue FPS main et objet articulés</option><option>Machine articulée</option><option>Prop modulaire segmenté</option><option>Mur destructible cellulaire</option><option>Porte ou sas articulé</option><option>Environnement modulaire</option><option>Console ou GUI 3D</option></select></div>
+      <div class="field"><label for="delivery">Qualité et intégration</label><select id="delivery"><option>Web / mobile PS1 + intégrer au jeu — recommandé</option><option>Web / mobile PS1 + catalogue seulement</option><option>Standard + intégrer au jeu</option><option>Hero asset + catalogue seulement</option><option>Vue FPS Web + intégrer sous la caméra</option></select></div>
+      <div class="field full"><label for="parts">Parties à séparer</label><input id="parts" placeholder="corps, jambe gauche, jambe droite, capteur"></div>
+      <div class="field half"><label for="animations">Animations</label><input id="animations" value="idle" placeholder="idle, walk, run, attack, crawl, shutdown"></div>
+      <div class="field half"><label for="damage">Zones et conséquences</label><input id="damage" placeholder="jambe = détachement et vitesse ×0.65; deux jambes = ramper"></div>
+      <div class="field full"><label for="interactions">Outils et interactions</label><input id="interactions" value="flashlight_bash=0.4; plank=0.8; crowbar=2.0; thrown_prop=1.0; specter_charge=4.0"></div>
+    </div></section>
 
-    <section class="card">
-      <div class="section-title"><div class="section-number">4</div><h2>RIG, ANIMATIONS ET COLLISIONS</h2></div>
-      <div class="grid">
-        <div class="field third">
-          <label for="rig">Rig / articulation</label>
-          <select id="rig">
-            <option>Aucun</option>
-            <option>Mécanique bipède</option>
-            <option>Mécanique quadrupède</option>
-            <option>Humanoïde</option>
-            <option>Main FPS articulée</option>
-            <option>Machine articulée</option>
-            <option>Charnière simple</option>
-            <option>Pièces rigides segmentées</option>
-          </select>
-        </div>
-        <div class="field third">
-          <label for="collision">Collision Godot</label>
-          <select id="collision">
-            <option>Automatique selon la catégorie</option>
-            <option>Boîte simple</option>
-            <option>Capsule personnage / robot</option>
-            <option>Boîtes locales par partie</option>
-            <option>Mur segmenté par cellule</option>
-            <option>Aucune collision</option>
-          </select>
-        </div>
-        <div class="field third">
-          <label for="quality">Qualité</label>
-          <select id="quality">
-            <option>Web / mobile PS1 — recommandé</option>
-            <option>Standard</option>
-            <option>Hero asset</option>
-          </select>
-        </div>
-        <div class="field full">
-          <label>Animations utiles</label>
-          <div id="animationChecks" class="checks"></div>
-          <small>Les clips inutiles alourdissent le GLB et les tests. Sélectionner uniquement les états employés par le gameplay.</small>
-        </div>
-        <div class="field full">
-          <label for="customAnimations">Animations complémentaires</label>
-          <input id="customAnimations" placeholder="Ex. scan, recharge, stagger, climb">
-        </div>
-      </div>
-    </section>
+    <section class="card"><h2>4 — CONTRÔLE</h2><div class="checks">
+      <label class="check"><input class="confirm" type="checkbox"><span>Même variante sur toutes les vues</span></label>
+      <label class="check"><input class="confirm" type="checkbox"><span>Objet entier, aucune partie importante coupée</span></label>
+      <label class="check"><input class="confirm" type="checkbox"><span>Dimensions réelles renseignées</span></label>
+      <label class="check"><input class="confirm" type="checkbox"><span>Parties mobiles/destructibles nommées</span></label>
+    </div><div id="summary" class="summary"></div></section>
 
-    <section class="card">
-      <div class="section-title"><div class="section-number">5</div><h2>MATÉRIAU ET DÉGÂTS LOCALISÉS</h2></div>
-      <div class="grid">
-        <div class="field third">
-          <label for="material">Matériau principal</label>
-          <select id="material">
-            <option>Métal léger</option>
-            <option>Métal blindé</option>
-            <option>Plastique technique</option>
-            <option>Caoutchouc / tissu technique</option>
-            <option>Verre</option>
-            <option>Placo</option>
-            <option>Brique</option>
-            <option>Béton</option>
-            <option>Bois</option>
-          </select>
-        </div>
-        <div class="field third">
-          <label for="destruction">Destructibilité</label>
-          <select id="destruction">
-            <option>Aucune</option>
-            <option selected>Dégâts localisés</option>
-            <option>Membres / pièces détachables</option>
-            <option>Mur segmenté avec trous locaux</option>
-            <option>Avancée selon le matériau</option>
-          </select>
-        </div>
-        <div class="field third">
-          <label for="integration">Intégration dans le jeu</label>
-          <select id="integration">
-            <option>Ajouter au catalogue seulement</option>
-            <option>Remplacer automatiquement le modèle procédural correspondant</option>
-            <option selected>Générer un module instanciable depuis l'AssetBridge</option>
-            <option>Générer une vue FPS instanciable depuis l'AssetBridge</option>
-          </select>
-        </div>
-        <div class="field half">
-          <label for="damageZones">Zones critiques et conséquences</label>
-          <textarea id="damageZones" placeholder="jambe gauche = détachement, vitesse ×0.65&#10;deux jambes détruites = ramper&#10;capteur = détection désactivée"></textarea>
-        </div>
-        <div class="field half">
-          <label for="interactions">Outils et multiplicateurs</label>
-          <textarea id="interactions" placeholder="flashlight_bash=0.4; plank=0.8; crowbar=2.0; thrown_prop=1.0; specter_charge=4.0"></textarea>
-        </div>
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="section-title"><div class="section-number">6</div><h2>VÉRIFICATION AVANT ENVOI</h2></div>
-      <div class="checks">
-        <label class="check"><input type="checkbox" class="viability" required><span>Même variante du modèle sur toutes les vues</span></label>
-        <label class="check"><input type="checkbox" class="viability" required><span>Objet entier, rien d'important n'est coupé</span></label>
-        <label class="check"><input type="checkbox" class="viability" required><span>Dimensions réelles renseignées</span></label>
-        <label class="check"><input type="checkbox" class="viability" required><span>Parties mobiles/destructibles nommées</span></label>
-        <label class="check"><input type="checkbox" class="viability" required><span>Fond simple et absence de grand-angle</span></label>
-      </div>
-      <div id="summary" class="summary"></div>
-    </section>
-
-    <div class="actions">
-      <div class="footer-note">Les réglages sont préparés localement. Le bouton principal ouvre le formulaire GitHub sécurisé et préremplit les menus. Les images devront être sélectionnées une seconde fois dans le champ GitHub de téléversement.</div>
-      <button type="button" class="muted-btn" id="resetBtn">RÉINITIALISER</button>
-      <button type="button" class="amber" id="downloadBtn">TÉLÉCHARGER LA FICHE JSON</button>
-      <button type="submit" class="primary">OUVRIR LE FORMULAIRE GITHUB</button>
-    </div>
+    <div class="actions"><div class="note">Le bouton ouvre le véritable formulaire GitHub à menus. Tu devras seulement recharger les mêmes images, cocher les confirmations puis soumettre.</div><button type="button" class="secondary" id="reset">RÉINITIALISER</button><button type="submit" class="primary">OUVRIR LE FORMULAIRE GITHUB</button></div>
   </form>
 </main>
 <script>
 (() => {
-  "use strict";
-  const ISSUE_URL = "https://github.com/BertrandMarconnet/VideoGame/issues/new";
-  const categories = {
-    "Robot bipède": {
-      recommendation: "Face, profil droit, dos et trois-quarts avant. Corps entier, pose A neutre, mains et pieds visibles. Ajouter un gros plan des capteurs et articulations si nécessaire.",
-      geometry: "Bipède articulé", rig: "Mécanique bipède", collision: "Capsule personnage / robot", destruction: "Membres / pièces détachables",
-      parts: "tête, torse, bras gauche, bras droit, jambe gauche, jambe droite, capteur",
-      animations: ["idle", "walk", "run", "attack", "crawl", "shutdown"]
-    },
-    "Robot quadrupède": {
-      recommendation: "Face, profil droit, arrière et trois-quarts légèrement surélevé. Les quatre pattes doivent rester visibles et leur structure doit être identique sur toutes les vues.",
-      geometry: "Quadrupède articulé", rig: "Mécanique quadrupède", collision: "Boîtes locales par partie", destruction: "Membres / pièces détachables",
-      parts: "corps, capteur, patte avant gauche, patte avant droite, patte arrière gauche, patte arrière droite",
-      animations: ["idle", "walk", "run", "attack", "shutdown"]
-    },
-    "Personnage humanoïde": {
-      recommendation: "Face, profil droit, dos et trois-quarts, pose A neutre. Même vêtements et accessoires, silhouette entière, mains ouvertes et chaussures visibles.",
-      geometry: "Bipède articulé", rig: "Humanoïde", collision: "Capsule personnage / robot", destruction: "Dégâts localisés",
-      parts: "tête, torse, bras gauche, bras droit, jambe gauche, jambe droite",
-      animations: ["idle", "walk", "run", "interact", "fall"]
-    },
-    "Vue FPS : main + objet": {
-      recommendation: "Vue joueur principale, profil de l'objet, dessus, dessous/arrière de la poignée et objet seul si sa forme est complexe. Montrer entièrement le gant et l'objet.",
-      geometry: "Outil tenu en main", rig: "Main FPS articulée", collision: "Aucune collision", destruction: "Dégâts localisés",
-      parts: "avant-bras, main, corps de l'objet, commande, batterie, lentille",
-      animations: ["idle", "use", "bash", "inspect"]
-    },
-    "Machine / bras industriel articulé": {
-      recommendation: "Face, profil, arrière, trois-quarts, dessus et gros plans des axes. Montrer les limites de rotation, l'outil terminal et le socle complet.",
-      geometry: "Machine articulée", rig: "Machine articulée", collision: "Boîtes locales par partie", destruction: "Membres / pièces détachables",
-      parts: "base, colonne, bras supérieur, bras inférieur, poignet, outil, capteur",
-      animations: ["idle", "work", "alarm", "shutdown"]
-    },
-    "Prop / objet interactif": {
-      recommendation: "Trois-quarts, profil et arrière. Ajouter dessus et dessous pour les objets asymétriques ou comportant une poignée, une batterie, un couvercle ou des connecteurs.",
-      geometry: "Monobloc simple", rig: "Aucun", collision: "Boîte simple", destruction: "Dégâts localisés",
-      parts: "corps, poignée, panneau, batterie",
-      animations: ["idle", "use", "break"]
-    },
-    "Mur / cloison modulaire": {
-      recommendation: "Face orthographique, arrière, profil montrant l'épaisseur, trois-quarts, texture seule et dimensions exactes. Identifier les zones porteuses et les cellules destructibles.",
-      geometry: "Mur cellulaire", rig: "Aucun", collision: "Mur segmenté par cellule", destruction: "Mur segmenté avec trous locaux",
-      parts: "cadre, cellule 01, cellule 02, cellule 03, cellule 04",
-      animations: ["break"]
-    },
-    "Porte / sas": {
-      recommendation: "Face fermée, arrière, profil, vue ouverte, gros plan des charnières, du verrou et du lecteur. Fournir l'épaisseur et le sens d'ouverture.",
-      geometry: "Porte articulée", rig: "Charnière simple", collision: "Boîtes locales par partie", destruction: "Dégâts localisés",
-      parts: "cadre, panneau, charnière, verrou, lecteur, voyant",
-      animations: ["open", "close", "lock", "unlock"]
-    },
-    "Module d'environnement": {
-      recommendation: "Plan de face, profil avec profondeur, trois-quarts et vues des connexions modulaires. Ajouter une texture de référence et les dimensions de raccordement.",
-      geometry: "Module environnemental", rig: "Aucun", collision: "Boîtes locales par partie", destruction: "Avancée selon le matériau",
-      parts: "sol, plafond, paroi gauche, paroi droite, panneau technique",
-      animations: ["idle"]
-    },
-    "Console / écran / GUI 3D": {
-      recommendation: "Face orthographique, profil, trois-quarts et image séparée du contenu de l'écran. Éviter les reflets ; fournir l'écran à plat et lisible.",
-      geometry: "Console / panneau technique", rig: "Pièces rigides segmentées", collision: "Boîte simple", destruction: "Dégâts localisés",
-      parts: "boîtier, écran, clavier, boutons, voyant",
-      animations: ["idle", "boot", "alarm", "shutdown"]
-    }
+  'use strict';
+  const ISSUE_URL='https://github.com/BertrandMarconnet/VideoGame/issues/new';
+  const C={
+    'Robot bipède':{views:'Face, profil droit, arrière et trois-quarts. Corps entier en A-pose, mains/pieds visibles.',parts:'tête, torse, bras gauche, bras droit, jambe gauche, jambe droite, capteur',anim:'idle, walk, run, attack, crawl, shutdown',profile:'Robot ou personnage articulé'},
+    'Robot quadrupède':{views:'Face, profil, arrière et trois-quarts surélevé. Les quatre pattes doivent être entièrement visibles.',parts:'corps, capteur, patte avant gauche, patte avant droite, patte arrière gauche, patte arrière droite',anim:'idle, walk, run, attack, shutdown',profile:'Robot ou personnage articulé'},
+    'Personnage humanoïde':{views:'Face, profil, arrière et trois-quarts, pose A neutre, même tenue et accessoires.',parts:'tête, torse, bras gauche, bras droit, jambe gauche, jambe droite',anim:'idle, walk, run, interact, fall',profile:'Robot ou personnage articulé'},
+    'Vue FPS : main + objet':{views:'Vue joueur, profil, dessus, dessous/poignée et objet seul. Main et objet entièrement visibles.',parts:'avant-bras, main, corps de l’objet, commande, batterie, lentille',anim:'idle, use, bash, inspect',profile:'Vue FPS main et objet articulés'},
+    'Machine / bras industriel articulé':{views:'Face, profil, arrière, trois-quarts, dessus et détails des axes.',parts:'base, colonne, bras supérieur, bras inférieur, poignet, outil, capteur',anim:'idle, work, alarm, shutdown',profile:'Machine articulée'},
+    'Prop / objet interactif':{views:'Trois-quarts, profil, arrière et dessus/dessous si asymétrique.',parts:'corps, poignée, panneau, batterie',anim:'idle, use, break',profile:'Prop modulaire segmenté'},
+    'Mur / cloison modulaire':{views:'Face orthographique, arrière, profil/épaisseur, trois-quarts, texture et dimensions.',parts:'cadre, cellule 01, cellule 02, cellule 03, cellule 04',anim:'break',profile:'Mur destructible cellulaire'},
+    'Porte / sas':{views:'Face fermée, arrière, profil, ouverte, détails des charnières et du verrou.',parts:'cadre, panneau, charnière, verrou, lecteur, voyant',anim:'open, close, lock, unlock',profile:'Porte ou sas articulé'},
+    "Module d'environnement":{views:'Face, profil/profondeur, trois-quarts, raccords modulaires, texture et dimensions.',parts:'sol, plafond, paroi gauche, paroi droite, panneau technique',anim:'idle',profile:'Environnement modulaire'},
+    'Console / écran / GUI 3D':{views:'Face orthographique, profil, trois-quarts et image séparée du contenu écran.',parts:'boîtier, écran, clavier, boutons, voyant',anim:'idle, boot, alarm, shutdown',profile:'Console ou GUI 3D'}
   };
-  const animationNames = ["idle", "walk", "run", "attack", "crawl", "shutdown", "interact", "fall", "use", "bash", "inspect", "work", "alarm", "break", "open", "close", "lock", "unlock", "boot"];
-  const byId = id => document.getElementById(id);
-  const category = byId("category");
-  Object.keys(categories).forEach(name => category.add(new Option(name, name)));
-  const animationChecks = byId("animationChecks");
-  animationNames.forEach(name => {
-    const label = document.createElement("label");
-    label.className = "check";
-    label.innerHTML = `<input type="checkbox" name="animation" value="${name}"><span>${name}</span>`;
-    animationChecks.appendChild(label);
-  });
-
-  function setSelect(id, value) {
-    const el = byId(id);
-    [...el.options].some((option, index) => {
-      if (option.value === value || option.text === value) { el.selectedIndex = index; return true; }
-      return false;
-    });
-  }
-
-  function applyCategoryDefaults() {
-    const config = categories[category.value];
-    byId("recommendation").innerHTML = `<b>Vues recommandées pour ${category.value}</b><br>${config.recommendation}`;
-    setSelect("geometry", config.geometry);
-    setSelect("rig", config.rig);
-    setSelect("collision", config.collision);
-    setSelect("destruction", config.destruction);
-    byId("parts").value = config.parts;
-    document.querySelectorAll('input[name="animation"]').forEach(input => input.checked = config.animations.includes(input.value));
-    if (category.value === "Vue FPS : main + objet") setSelect("integration", "Générer une vue FPS instanciable depuis l'AssetBridge");
-    else setSelect("integration", "Générer un module instanciable depuis l'AssetBridge");
-  }
-  category.addEventListener("change", applyCategoryDefaults);
-  applyCategoryDefaults();
-
-  const imageInput = byId("images");
-  const dropZone = byId("dropZone");
-  const previews = byId("previews");
-  let selectedFiles = [];
-
-  function renderPreviews(files) {
-    selectedFiles = [...files].slice(0, 6);
-    previews.innerHTML = "";
-    selectedFiles.forEach(file => {
-      const card = document.createElement("div");
-      card.className = "preview";
-      const img = document.createElement("img");
-      const url = URL.createObjectURL(file);
-      img.src = url;
-      img.onload = () => URL.revokeObjectURL(url);
-      const caption = document.createElement("div");
-      caption.textContent = file.name;
-      card.append(img, caption);
-      previews.appendChild(card);
-    });
-  }
-  imageInput.addEventListener("change", () => renderPreviews(imageInput.files));
-  ["dragenter", "dragover"].forEach(type => dropZone.addEventListener(type, event => { event.preventDefault(); dropZone.classList.add("drag"); }));
-  ["dragleave", "drop"].forEach(type => dropZone.addEventListener(type, event => { event.preventDefault(); dropZone.classList.remove("drag"); }));
-  dropZone.addEventListener("drop", event => {
-    const files = [...event.dataTransfer.files].filter(file => /image\/(png|jpeg|webp)/.test(file.type)).slice(0, 6);
-    const transfer = new DataTransfer();
-    files.forEach(file => transfer.items.add(file));
-    imageInput.files = transfer.files;
-    renderPreviews(files);
-  });
-
-  function selectedAnimations() {
-    const values = [...document.querySelectorAll('input[name="animation"]:checked')].map(input => input.value);
-    const custom = byId("customAnimations").value.split(/[,;]+/).map(value => value.trim()).filter(Boolean);
-    return [...new Set([...values, ...custom])];
-  }
-
-  function requestData() {
-    return {
-      asset_name: byId("assetName").value.trim(),
-      category: category.value,
-      reference_mode: byId("referenceMode").value,
-      reference_quality: byId("referenceQuality").value,
-      reference_files: selectedFiles.map(file => file.name),
-      intended_use: byId("intendedUse").value.trim(),
-      visual_profile: byId("visualProfile").value,
-      geometry_template: byId("geometry").value,
-      segmentation_parts: byId("parts").value.trim(),
-      dimensions_m: { width: byId("width").value, height: byId("height").value, depth: byId("depth").value },
-      material: byId("material").value,
-      texture_mode: byId("textureMode").value,
-      rig: byId("rig").value,
-      animations: selectedAnimations(),
-      collision: byId("collision").value,
-      destruction: byId("destruction").value,
-      damage_zones: byId("damageZones").value.trim(),
-      interactions: byId("interactions").value.trim(),
-      quality: byId("quality").value,
-      integration: byId("integration").value
-    };
-  }
-
-  function validate() {
-    if (!byId("assetName").value.trim()) { alert("Donnez un nom à l'asset."); byId("assetName").focus(); return false; }
-    if (!byId("intendedUse").value.trim()) { alert("Décrivez le rôle de l'asset dans le jeu."); byId("intendedUse").focus(); return false; }
-    const unchecked = [...document.querySelectorAll(".viability")].find(input => !input.checked);
-    if (unchecked) { alert("Validez les cinq contrôles de viabilité avant de continuer."); unchecked.focus(); return false; }
-    if (selectedFiles.length === 0 && byId("referenceMode").value !== "Aucune image, génération depuis le profil") {
-      if (!confirm("Aucune image n'est sélectionnée. Continuer avec une génération depuis le profil ?")) return false;
-    }
-    return true;
-  }
-
-  function buildIssueUrl(data) {
-    const params = new URLSearchParams();
-    params.set("template", "generate-game-asset.yml");
-    params.set("title", `[ASSET] ${data.asset_name}`);
-    params.set("asset_name", data.asset_name);
-    params.set("category", data.category);
-    params.set("reference_mode", data.reference_mode);
-    params.set("reference_quality", data.reference_quality);
-    params.set("intended_use", data.intended_use.slice(0, 1200));
-    params.set("visual_profile", data.visual_profile);
-    params.set("geometry_template", data.geometry_template);
-    params.set("segmentation_parts", data.segmentation_parts.slice(0, 800));
-    params.set("width", data.dimensions_m.width);
-    params.set("height", data.dimensions_m.height);
-    params.set("depth", data.dimensions_m.depth);
-    params.set("material", data.material);
-    params.set("texture_mode", data.texture_mode);
-    params.set("rig", data.rig);
-    params.set("animations", data.animations.join(", "));
-    params.set("collision", data.collision);
-    params.set("destruction", data.destruction);
-    params.set("damage_zones", data.damage_zones.slice(0, 1000));
-    params.set("interactions", data.interactions.slice(0, 1000));
-    params.set("quality", data.quality);
-    params.set("integration", data.integration);
-    return `${ISSUE_URL}?${params.toString()}`;
-  }
-
-  function showSummary(data) {
-    const summary = byId("summary");
-    summary.classList.add("visible");
-    summary.innerHTML = `
-      <h3>DEMANDE PRÊTE</h3>
-      <div><span class="chip">${data.category}</span><span class="chip">${data.rig}</span><span class="chip">${data.destruction}</span><span class="chip">${data.quality}</span></div>
-      <ul>
-        <li><b>${data.asset_name}</b> — ${data.dimensions_m.width} × ${data.dimensions_m.height} × ${data.dimensions_m.depth} m</li>
-        <li>${data.reference_files.length} image(s) préparée(s) : ${data.reference_files.join(", ") || "aucune"}</li>
-        <li>Animations : ${data.animations.join(", ") || "aucune"}</li>
-      </ul>
-      <p><b>Étape suivante :</b> dans GitHub, utilisez le bouton de téléversement et sélectionnez les mêmes fichiers : ${data.reference_files.join(", ") || "aucun fichier"}.</p>`;
-    summary.scrollIntoView({ behavior: "smooth", block: "center" });
-  }
-
-  byId("assetForm").addEventListener("submit", event => {
-    event.preventDefault();
-    if (!validate()) return;
-    const data = requestData();
-    showSummary(data);
-    try { navigator.clipboard.writeText(JSON.stringify(data, null, 2)); } catch (_) {}
-    setTimeout(() => window.open(buildIssueUrl(data), "_blank", "noopener"), 350);
-  });
-
-  byId("downloadBtn").addEventListener("click", () => {
-    if (!byId("assetName").value.trim()) { alert("Donnez d'abord un nom à l'asset."); return; }
-    const data = requestData();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${data.asset_name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "asset"}_request.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-  });
-
-  byId("resetBtn").addEventListener("click", () => {
-    if (!confirm("Réinitialiser tous les champs ?")) return;
-    byId("assetForm").reset();
-    selectedFiles = [];
-    previews.innerHTML = "";
-    byId("summary").classList.remove("visible");
-    applyCategoryDefaults();
-  });
+  const $=id=>document.getElementById(id),cat=$('category');
+  Object.keys(C).forEach(x=>cat.add(new Option(x,x)));
+  function select(id,text){const e=$(id);[...e.options].some((o,i)=>{if(o.text===text){e.selectedIndex=i;return true}return false})}
+  function defaults(){const c=C[cat.value];$('recommendation').innerHTML='<strong>Vues recommandées — '+cat.value+'</strong><br>'+c.views;$('parts').value=c.parts;$('animations').value=c.anim;select('profile',c.profile);if(cat.value==='Vue FPS : main + objet')select('delivery','Vue FPS Web + intégrer sous la caméra');else select('delivery','Web / mobile PS1 + intégrer au jeu — recommandé')}
+  cat.addEventListener('change',defaults);defaults();
+  let files=[];const input=$('images'),previews=$('previews'),drop=$('dropZone');
+  function render(list){files=[...list].filter(f=>/^image\/(png|jpeg|webp)$/.test(f.type)).slice(0,6);previews.innerHTML='';files.forEach(f=>{const d=document.createElement('div');d.className='preview';const i=document.createElement('img'),u=URL.createObjectURL(f);i.src=u;i.onload=()=>URL.revokeObjectURL(u);const n=document.createElement('div');n.textContent=f.name;d.append(i,n);previews.append(d)})}
+  input.addEventListener('change',()=>render(input.files));['dragenter','dragover'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add('drag')}));['dragleave','drop'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove('drag')}));drop.addEventListener('drop',e=>render(e.dataTransfer.files));
+  function spec(){return [
+    'ROLE: '+$('role').value.trim(),
+    'VISUAL_PROFILE: PS1 industriel ToyGuard',
+    'GEOMETRY_TEMPLATE: Automatique selon la catégorie',
+    'TEXTURE_MODE: Atlas PS1 généré depuis les images',
+    'RIG: Automatique selon la catégorie',
+    'ANIMATIONS: '+$('animations').value.trim(),
+    'COLLISION: Automatique selon la catégorie',
+    'DESTRUCTION: Dégâts localisés',
+    'SEGMENTATION: '+$('parts').value.trim(),
+    'DAMAGE_ZONES: '+$('damage').value.trim(),
+    'INTERACTIONS: '+$('interactions').value.trim()
+  ].join('\n')}
+  function url(){const p=new URLSearchParams({template:'generate-game-asset.yml',title:'[ASSET] '+$('assetName').value.trim(),asset_name:$('assetName').value.trim(),category:cat.value,reference_mode:$('referenceMode').value,dimensions:$('dimensions').value,material:$('material').value,build_profile:$('profile').value,asset_spec:spec(),delivery:$('delivery').value});return ISSUE_URL+'?'+p.toString()}
+  $('assetForm').addEventListener('submit',e=>{e.preventDefault();if(!$('assetName').value.trim()||!$('role').value.trim()){alert('Renseigne le nom et le rôle du modèle.');return}if(!files.length){alert('Charge au moins une image de référence.');return}if([...document.querySelectorAll('.confirm')].some(x=>!x.checked)){alert('Coche les quatre contrôles.');return}$('summary').className='summary show';$('summary').innerHTML='<strong>Demande prête.</strong> '+files.length+' image(s) contrôlée(s). GitHub va s’ouvrir : recharge les mêmes fichiers dans « Images de référence », puis valide.';setTimeout(()=>window.open(url(),'_blank','noopener'),250)});
+  $('reset').addEventListener('click',()=>{if(!confirm('Réinitialiser le menu ?'))return;$('assetForm').reset();files=[];previews.innerHTML='';$('summary').className='summary';defaults()});
 })();
 </script>
 </body>
