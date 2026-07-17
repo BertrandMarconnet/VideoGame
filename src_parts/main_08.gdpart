@@ -139,6 +139,8 @@ func _update_crawler(robot: CharacterBody3D, _delta: float) -> void:
 func _set_robot_animation(robot: Node, clip_name: String) -> void:
 	var visual := robot.get_node_or_null("GeneratedVisual")
 	if visual == null:
+		visual = robot.find_child("GeneratedVisual", true, false)
+	if visual == null:
 		return
 	var player_node := visual.find_child("AnimationPlayer", true, false) as AnimationPlayer
 	if player_node == null:
@@ -150,11 +152,23 @@ func _set_robot_animation(robot: Node, clip_name: String) -> void:
 	var resolved := clip_name
 	if not player_node.has_animation(resolved):
 		for animation_name in player_node.get_animation_list():
-			if String(animation_name).contains(clip_name):
+			if String(animation_name).to_lower().contains(clip_name.to_lower()):
 				resolved = String(animation_name)
 				break
-	if player_node.has_animation(resolved) and player_node.current_animation != resolved:
+	if not player_node.has_animation(resolved):
+		return
+	var velocity_length := 0.0
+	if robot is CharacterBody3D:
+		velocity_length = (robot as CharacterBody3D).velocity.length()
+	var playback_speed := 1.0
+	if clip_name.contains("Run"):
+		playback_speed = clampf(velocity_length / 3.4, 0.75, 1.45)
+	elif clip_name.contains("Walk") or clip_name.contains("Crawl"):
+		playback_speed = clampf(velocity_length / 2.0, 0.65, 1.30)
+	player_node.speed_scale = playback_speed
+	if player_node.current_animation != resolved:
 		player_node.play(resolved, 0.18)
+	robot.set_meta("generated_animation", resolved)
 
 func _is_observed(robot: Node3D) -> bool:
 	var to_robot := robot.global_position - camera.global_position
