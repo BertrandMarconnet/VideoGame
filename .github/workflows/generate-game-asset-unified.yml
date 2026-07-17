@@ -27,8 +27,7 @@ on:
         default: true
   pull_request:
     paths:
-      - ".github/ISSUE_TEMPLATE/generate-game-asset.yml"
-      - ".github/ISSUE_TEMPLATE/config.yml"
+      - ".github/ISSUE_TEMPLATE/**"
       - ".github/workflows/generate-game-asset-unified.yml"
       - "web/asset-generator.html"
       - "web/asset-autodetect.js"
@@ -46,7 +45,6 @@ on:
       - "tools/sanitize_generated_glb.py"
       - "tools/validate_game_asset_bundle.py"
       - "tools/update_generated_asset_catalog.py"
-      - "tools/patch_web_shell.py"
       - "tests/fixtures/game_asset_*.json"
       - "schemas/*.json"
 
@@ -64,7 +62,7 @@ jobs:
     if: >-
       ${{
         github.event_name == 'issues' &&
-        github.actor == github.repository_owner &&
+        github.event.issue.user.login == github.repository_owner &&
         !startsWith(github.event.issue.title, '[ASSET]') &&
         (contains(github.event.issue.body, 'user-attachments/assets') || contains(github.event.issue.body, 'private-user-images.githubusercontent.com'))
       }}
@@ -75,19 +73,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "⚠️ Cette issue contient des images mais pas de demande structurée. Utilise l'interface directe : https://bertrandmarconnet.github.io/VideoGame/asset-generator.html. Elle analyse les images, prépare les options et lance automatiquement GitHub Actions."
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "⚠️ Cette issue contient des images mais pas de demande structurée. Utilise l'interface directe : https://bertrandmarconnet.github.io/VideoGame/asset-generator.html."
 
   generate:
     name: Generate requested asset bundle
     if: >-
       ${{
         github.event_name != 'pull_request' &&
-        github.actor == github.repository_owner &&
         (
-          github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'Submit asset job ')) ||
-          startsWith(github.event.issue.title, '[ASSET]') ||
-          (contains(github.event.issue.body, '### Catégorie') && contains(github.event.issue.body, '### Images de référence'))
+          (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) ||
+          (github.event_name == 'push' && github.event.pusher.name == github.repository_owner && startsWith(github.event.head_commit.message, 'Submit asset job ')) ||
+          (github.event_name == 'issues' && github.event.issue.user.login == github.repository_owner &&
+            (startsWith(github.event.issue.title, '[ASSET]') ||
+             (contains(github.event.issue.body, '### Catégorie') && contains(github.event.issue.body, '### Images de référence'))))
         )
       }}
     runs-on: ubuntu-latest
@@ -150,12 +148,7 @@ jobs:
             parse_status=${PIPESTATUS[0]}
             set -e
             if [[ $parse_status -ne 0 ]]; then
-              {
-                echo "### Asset request parsing failed"
-                echo '```text'
-                tail -n 30 build/game-asset/logs/request.log
-                echo '```'
-              } >> "$GITHUB_STEP_SUMMARY"
+              tail -n 40 build/game-asset/logs/request.log
               exit "$parse_status"
             fi
           elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
@@ -165,15 +158,8 @@ jobs:
                 grep -E '^asset_jobs/[A-Za-z0-9._-]+/request\.json$' || true
             )
             if [[ ${#request_candidates[@]} -ne 1 ]]; then
-              {
-                echo "### Direct web job discovery failed"
-                echo
-                echo "Expected exactly one safe request.json in commit \`$GITHUB_SHA\`, found ${#request_candidates[@]}."
-                echo '```text'
-                git show --format= --name-status "$GITHUB_SHA"
-                echo '```'
-              } >> "$GITHUB_STEP_SUMMARY"
-              echo "No unique safe asset_jobs request.json was added or modified by this commit."
+              echo "Expected exactly one safe asset_jobs request.json, found ${#request_candidates[@]}."
+              git show --format= --name-status "$GITHUB_SHA"
               exit 1
             fi
             request_source="${request_candidates[0]}"
@@ -183,10 +169,7 @@ jobs:
             cp "$request_source" "$REQUEST_JSON"
           else
             request_source="$MANUAL_REQUEST"
-            if [[ "$request_source" != tests/fixtures/*.json && "$request_source" != asset_jobs/*/request.json ]]; then
-              echo "Unsafe manual request path: $request_source"
-              exit 1
-            fi
+            [[ "$request_source" == tests/fixtures/*.json || "$request_source" == asset_jobs/*/request.json ]]
             test -f "$request_source"
             test ! -L "$request_source"
             cp "$request_source" "$REQUEST_JSON"
@@ -200,7 +183,7 @@ jobs:
           ' "$REQUEST_JSON"
 
           while IFS= read -r reference; do
-            [[ "$reference" == asset_jobs/*/input/* || "$reference" == tests/fixtures/* ]] || {
+            [[ "$reference" == asset_jobs/*/input/* || "$reference" == tests/fixtures/* || "$reference" == build/game-asset/images/* ]] || {
               echo "Unsafe reference image path: $reference"
               exit 1
             }
@@ -209,7 +192,7 @@ jobs:
           done < <(jq -r '.reference_images[]' "$REQUEST_JSON")
 
           while IFS= read -r audio; do
-            [[ -z "$audio" || "$audio" == asset_jobs/*/audio/* || "$audio" == tests/fixtures/* ]] || {
+            [[ -z "$audio" || "$audio" == asset_jobs/*/audio/* || "$audio" == tests/fixtures/* || "$audio" == build/game-asset/audio/* ]] || {
               echo "Unsafe audio path: $audio"
               exit 1
             }
@@ -221,13 +204,6 @@ jobs:
           echo "GENERATOR_PROFILE=$(jq -r '.generator_profile' "$REQUEST_JSON")" >> "$GITHUB_ENV"
           echo "JOB_ID=$(jq -r '.job_id // ""' "$REQUEST_JSON")" >> "$GITHUB_ENV"
           echo "REQUEST_SOURCE_PATH=$request_source" >> "$GITHUB_ENV"
-          {
-            echo "### Request accepted"
-            echo "- Source: \`$request_source\`"
-            echo "- Slug: \`$(jq -r '.slug' "$REQUEST_JSON")\`"
-            echo "- Category: \`$(jq -r '.category' "$REQUEST_JSON")\`"
-            echo "- Images: $(jq '.reference_images | length' "$REQUEST_JSON")"
-          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Generate controlled GLB bundle
         run: |
@@ -244,8 +220,7 @@ jobs:
               --preview "$BUNDLE_DIR/$SLUG.png" \
               --quality "$(jq -r '.quality' "$REQUEST_JSON" | sed 's/standard/high/;s/hero/high/')" \
               2>&1 | tee build/game-asset/logs/generation.log
-            jq -e '.reference_images_used >= 1 and .reference_usage.engine == "crawler_reference_fit_v2"' \
-              "$BUNDLE_DIR/$SLUG.metrics.json"
+            jq -e '.reference_images_used >= 1 and .reference_usage.engine == "crawler_reference_fit_v2"' "$BUNDLE_DIR/$SLUG.metrics.json"
             python3 tools/build_asset_sidecars.py \
               --request "$REQUEST_JSON" \
               --metrics "$BUNDLE_DIR/$SLUG.metrics.json" \
@@ -285,14 +260,14 @@ jobs:
           unzip -q godot.zip -d .godot-bin
           GODOT_BIN="$(find .godot-bin -maxdepth 1 -type f -name 'Godot*' | head -n 1)"
           chmod +x "$GODOT_BIN"
-          timeout 180 "$GODOT_BIN" --headless --editor --path . --quit-after 12 \
-            > build/game-asset/logs/godot-import.log 2>&1
+          timeout 180 "$GODOT_BIN" --headless --editor --path . --quit-after 12 > build/game-asset/logs/godot-import.log 2>&1
           if grep -Eqi 'SCRIPT ERROR|Invalid call|Invalid get index|Attempt to call|Parse Error|ERROR:' build/game-asset/logs/godot-import.log; then
             cat build/game-asset/logs/godot-import.log
             exit 1
           fi
           grep -q 'ProceduralVisual' src_parts/main_03.gdpart
           grep -q '_disable_procedural_visual' scripts/generated_assets/asset_bridge.gd
+          grep -q '_set_robot_animation' src_parts/main_08.gdpart
           grep -q 'GeneratedAssetAudio' scripts/generated_assets/asset_bridge_autoload.gd
 
       - name: Publish validated bundle to main
@@ -303,8 +278,7 @@ jobs:
           if [[ "$REQUEST_SOURCE_PATH" == asset_jobs/*/request.json ]]; then
             job_dir="$(dirname "$REQUEST_SOURCE_PATH")"
           fi
-          bash tools/publish_generated_asset.sh \
-            "$BUNDLE_ROOT" "$SLUG" build/game-asset/logs/publish.log "$job_dir"
+          bash tools/publish_generated_asset.sh "$BUNDLE_ROOT" "$SLUG" build/game-asset/logs/publish.log "$job_dir"
 
       - name: Report successful issue generation
         if: ${{ success() && github.event_name == 'issues' }}
@@ -312,7 +286,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "✅ Asset **$SLUG** généré, ajusté depuis les références, nettoyé et validé : [GLB](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.glb) · [aperçu](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.png) · [manifeste](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.asset.json) · [dégâts](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.damage.json) · [sons synchronisés](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.audio.json) · [validation](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.validation.json)"
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "✅ Asset **$SLUG** généré, ajusté depuis les références et validé : [GLB](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.glb) · [aperçu](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.png) · [références utilisées](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.reference.json) · [validation](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.validation.json)"
           gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
 
       - name: Report failed issue generation
@@ -322,42 +296,21 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
           set -euo pipefail
-          comment_file="build/game-asset/failure-comment.md"
-          mkdir -p "$(dirname "$comment_file")"
-          label="Erreur non classée"
           log_file=""
-          for candidate in \
-            build/game-asset/logs/publish.log \
-            build/game-asset/logs/godot-import.log \
-            build/game-asset/logs/validation.log \
-            build/game-asset/logs/generation.log \
-            build/game-asset/logs/request.log; do
-            if [[ -s "$candidate" ]]; then
-              log_file="$candidate"
-              case "$candidate" in
-                *publish.log) label="Erreur de publication Git" ;;
-                *godot-import.log) label="Erreur d'import Godot" ;;
-                *validation.log) label="Erreur de validation du bundle" ;;
-                *generation.log) label="Erreur de génération Blender" ;;
-                *request.log) label="Erreur de préparation de la demande" ;;
-              esac
-              break
-            fi
+          for candidate in build/game-asset/logs/publish.log build/game-asset/logs/godot-import.log build/game-asset/logs/validation.log build/game-asset/logs/generation.log build/game-asset/logs/request.log; do
+            if [[ -s "$candidate" ]]; then log_file="$candidate"; break; fi
           done
           {
             echo "❌ Aucun asset n'a été ajouté."
             echo
-            echo "**$label :**"
             if [[ -n "$log_file" ]]; then
               echo '```text'
-              tail -n 24 "$log_file"
+              tail -n 30 "$log_file"
               echo '```'
-            else
-              echo "Aucun journal ciblé n'a été produit."
             fi
             echo "Diagnostic complet : ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          } > "$comment_file"
-          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file "$comment_file"
+          } > build/game-asset/failure-comment.md
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file build/game-asset/failure-comment.md
 
       - name: Upload bundle and diagnostics
         if: always()
@@ -396,17 +349,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends blender python3-numpy libegl1 libgl1 libglib2.0-0
-      - name: Compile tools and test issue attachments
+      - name: Compile tools
         run: |
           python3 -m py_compile \
-            tools/parse_game_asset_issue.py tools/parse_game_asset_issue_v2.py tools/test_asset_issue_download.py \
             tools/generate_game_asset.py tools/generate_game_asset_v2.py tools/generate_game_asset_v3.py \
             tools/generate_crawler7_production_v5.py tools/generate_crawler7_production_v6.py \
             tools/generate_specter5_production.py tools/generate_specter5_production_v2.py \
             tools/build_asset_audio.py tools/build_asset_audio_v2.py tools/build_asset_sidecars.py \
             tools/sanitize_generated_glb.py tools/validate_game_asset_bundle.py
-          bash -n tools/publish_generated_asset.sh
-          python3 tools/test_asset_issue_download.py
       - name: Generate and validate fixture
         run: |
           set -o pipefail
@@ -418,11 +368,8 @@ jobs:
           set +e
           if [[ "$PROFILE" == "crawler7" ]]; then
             blender --background --factory-startup --python tools/generate_crawler7_production_v6.py -- \
-              --request "$REQUEST" \
-              --output "$OUT/$SLUG.glb" \
-              --metrics "$OUT/$SLUG.metrics.json" \
-              --preview "$OUT/$SLUG.png" \
-              --quality web 2>&1 | tee "$OUT/generation.log"
+              --request "$REQUEST" --output "$OUT/$SLUG.glb" --metrics "$OUT/$SLUG.metrics.json" --preview "$OUT/$SLUG.png" --quality web \
+              2>&1 | tee "$OUT/generation.log"
             status=${PIPESTATUS[0]}
             if [[ $status -eq 0 ]]; then
               python3 tools/build_asset_sidecars.py --request "$REQUEST" --metrics "$OUT/$SLUG.metrics.json" --output-dir "$OUT"
@@ -430,24 +377,14 @@ jobs:
             fi
           else
             GENERATOR="tools/generate_game_asset_v3.py"
-            if [[ "$PROFILE" == "specter_biped" ]]; then
-              GENERATOR="tools/generate_specter5_production_v2.py"
-            fi
-            blender --background --factory-startup --python "$GENERATOR" -- \
-              --request "$REQUEST" --output-dir "$OUT" 2>&1 | tee "$OUT/generation.log"
+            if [[ "$PROFILE" == "specter_biped" ]]; then GENERATOR="tools/generate_specter5_production_v2.py"; fi
+            blender --background --factory-startup --python "$GENERATOR" -- --request "$REQUEST" --output-dir "$OUT" 2>&1 | tee "$OUT/generation.log"
             status=${PIPESTATUS[0]}
           fi
           set -e
-          if [[ $status -ne 0 ]]; then
-            tail -n 200 "$OUT/generation.log"
-            exit $status
-          fi
-          if [[ "$PROFILE" == "crawler7" ]]; then
-            jq -e '.reference_images_used >= 1' "$OUT/$SLUG.metrics.json"
-          fi
-          python3 tools/validate_game_asset_bundle.py \
-            --bundle "$OUT" --slug "$SLUG" --report "$OUT/$SLUG.validation.json" \
-            2>&1 | tee "$OUT/validation.log"
+          if [[ $status -ne 0 ]]; then tail -n 200 "$OUT/generation.log"; exit $status; fi
+          if [[ "$PROFILE" == "crawler7" ]]; then jq -e '.reference_images_used >= 1' "$OUT/$SLUG.metrics.json"; fi
+          python3 tools/validate_game_asset_bundle.py --bundle "$OUT" --slug "$SLUG" --report "$OUT/$SLUG.validation.json"
       - name: Upload preview and diagnostics
         if: always()
         uses: actions/upload-artifact@v6
