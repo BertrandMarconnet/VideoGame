@@ -1,36 +1,38 @@
 name: Generate game asset — unified
+run-name: Asset ${{ inputs.job_id || github.event.issue.number || github.sha }}
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "asset_jobs/**"
   issues:
     types: [opened, reopened]
   workflow_dispatch:
     inputs:
       request_file:
-        description: Validated request fixture
+        description: Request JSON already present in the repository
         required: true
-        type: choice
-        options:
-          - tests/fixtures/game_asset_specter.json
-          - tests/fixtures/game_asset_character.json
-          - tests/fixtures/game_asset_fps_viewmodel.json
-          - tests/fixtures/game_asset_machine.json
-          - tests/fixtures/game_asset_wall.json
-          - tests/fixtures/game_asset_prop.json
-          - tests/fixtures/game_asset_door.json
-          - tests/fixtures/game_asset_environment.json
-          - tests/fixtures/game_asset_gui.json
+        type: string
         default: tests/fixtures/game_asset_fps_viewmodel.json
+      job_id:
+        description: Optional web job identifier
+        required: false
+        type: string
+        default: ""
       commit_output:
         description: Commit the validated bundle to main
         required: true
         type: boolean
-        default: false
+        default: true
   pull_request:
     paths:
       - ".github/ISSUE_TEMPLATE/generate-game-asset.yml"
       - ".github/ISSUE_TEMPLATE/config.yml"
       - ".github/workflows/generate-game-asset-unified.yml"
       - "web/asset-generator.html"
+      - "web/asset-autodetect.js"
+      - "web/github-direct-submit.js"
       - "scripts/generated_assets/**"
       - "tools/generate_game_asset*.py"
       - "tools/generate_specter5_production*.py"
@@ -42,6 +44,7 @@ on:
       - "tools/sanitize_generated_glb.py"
       - "tools/validate_game_asset_bundle.py"
       - "tools/update_generated_asset_catalog.py"
+      - "tools/patch_web_shell.py"
       - "tests/fixtures/game_asset_*.json"
       - "schemas/*.json"
 
@@ -65,12 +68,12 @@ jobs:
       }}
     runs-on: ubuntu-latest
     steps:
-      - name: Post the working form link
+      - name: Post the working interface link
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "⚠️ Cette issue contient des images mais pas les paramètres techniques nécessaires ; aucune génération n'a été lancée. Utilise l'unique formulaire : https://github.com/${GITHUB_REPOSITORY}/issues/new?template=generate-game-asset.yml."
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "⚠️ Cette issue contient des images mais pas de demande structurée. Utilise l'interface directe : https://bertrandmarconnet.github.io/VideoGame/asset-generator.html. Elle analyse les images, prépare les options et lance automatiquement GitHub Actions."
 
   generate:
     name: Generate requested asset bundle
@@ -80,6 +83,7 @@ jobs:
         github.actor == github.repository_owner &&
         (
           github.event_name == 'workflow_dispatch' ||
+          (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'Submit asset job ')) ||
           startsWith(github.event.issue.title, '[ASSET]') ||
           (contains(github.event.issue.body, '### Catégorie') && contains(github.event.issue.body, '### Images de référence'))
         )
@@ -132,6 +136,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$(dirname "$REQUEST_JSON")" "$IMAGE_DIR" build/game-asset/logs
+          request_source=""
           if [[ "$GITHUB_EVENT_NAME" == "issues" ]]; then
             set +e
             python3 tools/parse_game_asset_issue_v2.py \
@@ -148,13 +153,42 @@ jobs:
               } >> "$GITHUB_STEP_SUMMARY"
               exit "$parse_status"
             fi
+          elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            request_source="$(jq -r '[.head_commit.added[]?, .head_commit.modified[]?] | map(select(endswith("/request.json"))) | .[0] // empty' "$EVENT_PATH")"
+            if [[ -z "$request_source" || "$request_source" != asset_jobs/*/request.json ]]; then
+              echo "No safe asset_jobs request.json was added by this push."
+              exit 1
+            fi
+            test -f "$request_source"
+            cp "$request_source" "$REQUEST_JSON"
           else
-            test -f "$MANUAL_REQUEST"
-            cp "$MANUAL_REQUEST" "$REQUEST_JSON"
+            request_source="$MANUAL_REQUEST"
+            if [[ "$request_source" != tests/fixtures/*.json && "$request_source" != asset_jobs/*/request.json ]]; then
+              echo "Unsafe manual request path: $request_source"
+              exit 1
+            fi
+            test -f "$request_source"
+            cp "$request_source" "$REQUEST_JSON"
           fi
-          jq -e '.schema_version == 1 and (.slug | test("^[a-z0-9_]{1,64}$"))' "$REQUEST_JSON"
+
+          jq -e '
+            .schema_version == 1 and
+            (.slug | test("^[a-z0-9_]{1,64}$")) and
+            (.category | type == "string") and
+            (.reference_images | type == "array" and length >= 1 and length <= 6)
+          ' "$REQUEST_JSON"
+          while IFS= read -r reference; do
+            [[ "$reference" == asset_jobs/*/input/* || "$reference" == tests/fixtures/* ]] || {
+              echo "Unsafe reference image path: $reference"
+              exit 1
+            }
+            test -f "$reference"
+          done < <(jq -r '.reference_images[]' "$REQUEST_JSON")
+
           echo "SLUG=$(jq -r '.slug' "$REQUEST_JSON")" >> "$GITHUB_ENV"
           echo "GENERATOR_PROFILE=$(jq -r '.generator_profile' "$REQUEST_JSON")" >> "$GITHUB_ENV"
+          echo "JOB_ID=$(jq -r '.job_id // ""' "$REQUEST_JSON")" >> "$GITHUB_ENV"
+          echo "REQUEST_SOURCE_PATH=$request_source" >> "$GITHUB_ENV"
 
       - name: Generate controlled GLB bundle
         run: |
@@ -217,10 +251,15 @@ jobs:
           fi
 
       - name: Publish validated bundle to main
-        if: ${{ success() && (github.event_name == 'issues' || inputs.commit_output == true) }}
+        if: ${{ success() && (github.event_name == 'issues' || github.event_name == 'push' || inputs.commit_output == true) }}
         run: |
+          set -euo pipefail
+          job_dir=""
+          if [[ "$REQUEST_SOURCE_PATH" == asset_jobs/*/request.json ]]; then
+            job_dir="$(dirname "$REQUEST_SOURCE_PATH")"
+          fi
           bash tools/publish_generated_asset.sh \
-            "$BUNDLE_ROOT" "$SLUG" build/game-asset/logs/publish.log
+            "$BUNDLE_ROOT" "$SLUG" build/game-asset/logs/publish.log "$job_dir"
 
       - name: Report successful issue generation
         if: ${{ success() && github.event_name == 'issues' }}
@@ -228,7 +267,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "✅ Asset **$SLUG** généré, nettoyé et validé : [GLB](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.glb) · [aperçu](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.png) · [manifeste](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.asset.json) · [dégâts](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.damage.json) · [sons synchronisés](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.audio.json) · [preuve de nettoyage](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.sanitize.json) · [validation](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.validation.json)"
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "✅ Asset **$SLUG** généré, nettoyé et validé : [GLB](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.glb) · [aperçu](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.png) · [manifeste](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.asset.json) · [dégâts](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.damage.json) · [sons synchronisés](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.audio.json) · [validation](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.validation.json)"
           gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
 
       - name: Report failed issue generation
@@ -279,7 +318,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: game-asset-${{ env.SLUG || github.run_id }}
+          name: game-asset-${{ env.SLUG || env.JOB_ID || github.run_id }}
           path: |
             assets/generated/${{ env.SLUG }}
             assets/generated/catalog.json
