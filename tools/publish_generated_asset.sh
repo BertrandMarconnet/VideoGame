@@ -4,12 +4,17 @@ set -euo pipefail
 BUNDLE_ROOT="${1:?bundle root required}"
 SLUG="${2:?asset slug required}"
 LOG_FILE="${3:-build/game-asset/logs/publish.log}"
+JOB_DIR="${4:-}"
 mkdir -p "$(dirname "$LOG_FILE")"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 SOURCE_BUNDLE="$BUNDLE_ROOT/$SLUG"
 if [[ ! -d "$SOURCE_BUNDLE" ]]; then
   echo "Generated bundle not found: $SOURCE_BUNDLE"
+  exit 1
+fi
+if [[ -n "$JOB_DIR" && "$JOB_DIR" != asset_jobs/* ]]; then
+  echo "Refusing unsafe job directory: $JOB_DIR"
   exit 1
 fi
 
@@ -35,8 +40,14 @@ for attempt in 1 2 3; do
     --asset "$BUNDLE_ROOT/$SLUG/$SLUG.asset.json"
 
   git add "$BUNDLE_ROOT/$SLUG" "$BUNDLE_ROOT/catalog.json"
+  if [[ -n "$JOB_DIR" && -e "$JOB_DIR" ]]; then
+    echo "Removing completed web job: $JOB_DIR"
+    rm -rf "$JOB_DIR"
+    git add -A "$JOB_DIR"
+  fi
+
   if git diff --cached --quiet; then
-    echo "Asset already matches main; nothing to publish."
+    echo "Asset already matches main and no web job remains; nothing to publish."
     exit 0
   fi
 
