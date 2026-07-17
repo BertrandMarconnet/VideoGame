@@ -8,11 +8,21 @@ Vertical slice jouable d’un survival-horror industriel en vue subjective, dév
 
 ## Générer un asset 3D
 
-**Menu guidé avec chargement d’images, listes, cases à cocher et préremplissage GitHub :**
+**Interface directe avec analyse automatique des images et lancement GitHub Actions :**
 
 **https://bertrandmarconnet.github.io/VideoGame/asset-generator.html**
 
-Le formulaire GitHub direct reste accessible ici :
+Le fonctionnement normal ne passe plus par un formulaire GitHub :
+
+1. connecter GitHub une seule fois avec un jeton à granularité fine limité au dépôt `VideoGame` et à la permission `Contents: Read and write` ;
+2. charger de une à six images ;
+3. laisser le moteur de vision local reconnaître la famille d’asset ;
+4. vérifier ou décocher les mouvements, sons, matériaux et parties destructibles proposés ;
+5. cliquer sur **Générer le modèle 3D**.
+
+L’interface envoie toutes les images et toute la configuration dans un unique job, puis le commit `Submit asset job …` déclenche automatiquement le workflow. L’utilisateur ne doit rien ressaisir dans Issues ou Actions.
+
+Le formulaire GitHub est conservé uniquement comme solution de secours :
 
 **https://github.com/BertrandMarconnet/VideoGame/issues/new?template=generate-game-asset.yml**
 
@@ -77,9 +87,9 @@ La campagne commence à l’extérieur de ToyGuard Industries, sous la pluie. Le
 - `C` : déployer ou rappeler KITE-01 ;
 - `Échap` : retour joueur, fermeture d’interface ou pause.
 
-## Générateur unifié d'assets — sans clé API
+## Générateur unifié d'assets
 
-L'interface recommandée est le **menu guidé Web** ci-dessus. Elle accepte de une à six images, affiche les vues recommandées et prépare automatiquement le formulaire GitHub pour :
+Le moteur de détection utilise une classification visuelle zéro-shot exécutée localement dans le navigateur, complétée par les noms de fichiers et le nombre de vues. Il propose automatiquement :
 
 - robots bipèdes et quadrupèdes ;
 - personnages humanoïdes low-poly ;
@@ -91,9 +101,11 @@ L'interface recommandée est le **menu guidé Web** ci-dessus. Elle accepte de u
 - modules d'environnement ;
 - consoles, écrans et GUI 3D.
 
-Le menu permet de définir les dimensions, les parties séparées, le matériau, le mode de texture, le rig, les animations, les collisions, la destructibilité, les conséquences fonctionnelles et l'intégration dans Godot.
+Pour chaque famille, l’interface préremplit les dimensions, le matériau, le rig, les animations, les sons, les collisions, la destructibilité, les zones fonctionnelles et l’intégration Godot. L’utilisateur reste décisionnaire et peut tout corriger avant la génération.
 
-Les images fournies sont exploitées pour extraire la palette, produire un atlas pixelisé PS1, texturer les écrans et guider la famille visuelle. La géométrie reste produite par un générateur contrôlé adapté à la catégorie : cette approche conserve des pivots, des noms de pièces, un rig et des zones de dégâts utilisables, contrairement à une reconstruction monoculaire imprévisible.
+Les images servent à la reconnaissance, à l’extraction de palette, à la production d’un atlas PS1 et, pour les interfaces, à la texture de l’écran. La géométrie reste produite par un générateur contrôlé adapté à la catégorie afin de conserver des pivots, des pièces nommées, un rig et des zones de dégâts exploitables.
+
+Les demandes temporaires sont déposées dans `asset_jobs/<job_id>/`, exclues de l’import Godot par `.gdignore`, puis supprimées automatiquement après publication du bundle.
 
 Chaque asset validé est placé dans :
 
@@ -101,7 +113,7 @@ Chaque asset validé est placé dans :
 assets/generated/<asset>/
 ```
 
-Le bundle contient le GLB, l'aperçu, les métriques, le manifeste `.asset.json`, le profil `.damage.json` et un rapport de validation. Le catalogue `assets/generated/catalog.json` est chargé automatiquement par l'autoload `GeneratedAssetBridge`.
+Le bundle contient le GLB, l'aperçu, les métriques, le manifeste `.asset.json`, les profils `.damage.json` et `.audio.json`, ainsi qu’un rapport de validation. Le catalogue `assets/generated/catalog.json` est chargé automatiquement par l’autoload `GeneratedAssetBridge`.
 
 La passerelle permet notamment :
 
@@ -125,11 +137,11 @@ Les modèles procéduraux restent disponibles comme solution de repli lorsque le
 
 ## Limite assumée
 
-Le pipeline ne promet pas une copie parfaite de chaque détail caché à partir d'une photographie. Il produit une interprétation structurée et reproductible adaptée au style PS1/Web. Une forme très particulière peut demander l'ajout d'un profil paramétrique dédié, qui doit passer les mêmes tests avant intégration.
+La détection choisit une famille et des réglages, mais ne peut pas garantir une interprétation parfaite d’une image ambiguë. Le pipeline produit une géométrie structurée et reproductible adaptée au style PS1/Web ; une forme très spécifique peut demander un profil paramétrique dédié.
 
 ## Validation
 
-Le déploiement reconstruit `scripts/main.gd`, exécute `gdlint`, importe le projet avec Godot 4.7, charge `scenes/main.tscn`, exporte la version Web/PWA et vérifie le rendu dans Firefox avant publication. Le pipeline d'assets vérifie également le GLB, le budget de triangles, les os, les animations, les métadonnées de texture, les collisions et les zones de dégâts.
+Le déploiement reconstruit `scripts/main.gd`, exécute `gdlint`, importe le projet avec Godot 4.7, exporte la version Web/PWA et vérifie le rendu dans Firefox avant publication. Il vérifie également la publication du configurateur, de son moteur de détection et du module d’envoi direct. Le pipeline d'assets contrôle le GLB, le budget de triangles, les os, les animations, les sons, les textures, les collisions et les zones de dégâts.
 
 ## Documentation
 
@@ -139,7 +151,7 @@ Le déploiement reconstruit `scripts/main.gd`, exécute `gdlint`, importe le pro
 - `docs/SOUNDTRACK_SUNO.md` : placement narratif des musiques ;
 - `docs/ASSET_PIPELINE.md` : licences et budgets 3D Web ;
 - `docs/ASSET_REFERENCE_IMAGE_GUIDE.md` : vues, cadrages et poses à fournir ;
-- `docs/GENERATED_ASSET_AND_DAMAGE_PIPELINE.md` : formulaire, génération, catalogue, passerelle et dégâts localisés ;
+- `docs/GENERATED_ASSET_AND_DAMAGE_PIPELINE.md` : génération, catalogue, passerelle et dégâts localisés ;
 - `docs/CRAWLER7_PRODUCTION_PIPELINE.md` : génération, rig, animations et contrôles ;
 - `docs/OPEN_SOURCE_3D_DECISION.md` : comparaison des solutions open source ;
 - `docs/REPOSITORY_AUDIT_2026-07-15.md` : audit ciblé du pipeline 3D.
