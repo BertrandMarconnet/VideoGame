@@ -42,12 +42,12 @@ func register_robot(robot: CharacterBody3D, personality: String) -> void:
 		return
 	var asset_id := "specter_5" if personality == "specter" else "crawler_7"
 	var entry := get_asset(asset_id)
+	robot.set_meta("generated_asset_id", asset_id)
 	if not entry.is_empty() and String(entry.get("integration", "catalog_only")) == "replace_procedural":
 		_attach_generated_visual(robot, entry)
 	var profile := _load_damage_profile(entry, _fallback_robot_profile(asset_id))
 	profile["category"] = "robot_biped" if personality == "specter" else "robot_quadruped"
 	_attach_component(robot, profile)
-	robot.set_meta("generated_asset_id", asset_id)
 	registered[robot.get_instance_id()] = asset_id
 
 func register_static_destructible(body: Node3D, material_id: String, max_health := 0.0, zone_id := "core") -> void:
@@ -182,6 +182,14 @@ func is_disabled(target: Node) -> bool:
 	var component := _find_component(target)
 	return bool(component.get("disabled")) if component != null else false
 
+func get_generated_visual(robot: Node) -> Node3D:
+	if robot == null:
+		return null
+	var direct := robot.get_node_or_null("GeneratedVisual") as Node3D
+	if direct != null:
+		return direct
+	return robot.find_child("GeneratedVisual", true, false) as Node3D
+
 func _find_component(target: Node) -> Node:
 	var current := target
 	for _step in range(5):
@@ -211,32 +219,52 @@ func _attach_generated_visual(robot: CharacterBody3D, entry: Dictionary) -> void
 	var resource := load(path)
 	if not resource is PackedScene:
 		return
+	var previous := get_generated_visual(robot)
+	if previous != null:
+		previous.queue_free()
 	var instance := (resource as PackedScene).instantiate() as Node3D
 	if instance == null:
 		return
 	instance.name = "GeneratedVisual"
+	instance.set_meta("generated_asset_id", String(entry.get("id", "")))
 	robot.add_child(instance)
+	var rotation_values := entry.get("visual_rotation_degrees", [0.0, 0.0, 0.0]) as Array
+	if rotation_values.size() >= 3:
+		instance.rotation_degrees = Vector3(float(rotation_values[0]), float(rotation_values[1]), float(rotation_values[2]))
 	var dimensions := entry.get("dimensions_m", {}) as Dictionary
 	var target_height := maxf(float(dimensions.get("height", 1.0)), 0.1)
 	var bounds := _combined_aabb(instance)
 	if bounds.size.y > 0.001:
 		var scale_factor := target_height / bounds.size.y
 		instance.scale = Vector3.ONE * scale_factor
-		instance.position.y = -bounds.position.y * scale_factor
-	for child in robot.get_children():
-		if child == instance or child is CollisionShape3D or child.name == "DestructibleComponent":
+		var center := bounds.position + bounds.size * 0.5
+		instance.position = Vector3(-center.x * scale_factor, -bounds.position.y * scale_factor, -center.z * scale_factor)
+	_disable_procedural_visual(robot, instance)
+	robot.set_meta("generated_visual_active", true)
+	robot.set_meta("generated_visual_path", path)
+
+func _disable_procedural_visual(robot: Node3D, generated: Node3D) -> void:
+	var procedural_root := robot.get_node_or_null("ProceduralVisual") as Node3D
+	if procedural_root != null:
+		procedural_root.visible = false
+		procedural_root.process_mode = Node.PROCESS_MODE_DISABLED
+	for node in robot.find_children("*", "GeometryInstance3D", true, false):
+		var geometry := node as GeometryInstance3D
+		if geometry == null or geometry == generated or generated.is_ancestor_of(geometry):
 			continue
-		if child is MeshInstance3D:
-			(child as MeshInstance3D).visible = false
+		geometry.visible = false
+		geometry.set_meta("hidden_by_generated_asset", true)
 
 func _combined_aabb(root: Node3D) -> AABB:
 	var result := AABB()
 	var initialized := false
+	var root_inverse := root.global_transform.affine_inverse()
 	for node in root.find_children("*", "MeshInstance3D", true, false):
 		var mesh_instance := node as MeshInstance3D
 		if mesh_instance == null or mesh_instance.mesh == null:
 			continue
-		var local_box := mesh_instance.transform * mesh_instance.get_aabb()
+		var relative_transform := root_inverse * mesh_instance.global_transform
+		var local_box := relative_transform * mesh_instance.get_aabb()
 		if not initialized:
 			result = local_box
 			initialized = true
