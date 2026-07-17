@@ -22,16 +22,16 @@
 	call_deferred("_finalize_generated_robot_visual", robot, personality)
 
 func _finalize_generated_robot_visual(robot: CharacterBody3D, personality: String) -> void:
-	# The autoload can discover a robot before _create_robot has finished appending every
-	# procedural mesh. Re-run registration after one frame and enforce a strict visual
-	# replacement so late-created placeholder limbs cannot remain superimposed on the GLB.
-	await get_tree().process_frame
+	# The autoload can discover a robot before _create_robot finishes appending all meshes.
+	# Register it again after construction, then enforce replacement on a second deferred pass.
 	if not is_instance_valid(robot):
 		return
 	var bridge := get_node_or_null("/root/GeneratedAssetBridge")
 	if bridge != null and bridge.has_method("register_robot"):
 		bridge.call("register_robot", robot, personality)
-	await get_tree().process_frame
+	call_deferred("_enforce_generated_robot_visual", robot)
+
+func _enforce_generated_robot_visual(robot: CharacterBody3D) -> void:
 	if not is_instance_valid(robot):
 		return
 	var generated := robot.get_node_or_null("GeneratedVisual") as Node3D
