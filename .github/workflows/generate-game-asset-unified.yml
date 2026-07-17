@@ -34,7 +34,9 @@ on:
       - "web/asset-autodetect.js"
       - "web/github-direct-submit.js"
       - "scripts/generated_assets/**"
+      - "src_parts/main_*.gdpart"
       - "tools/generate_game_asset*.py"
+      - "tools/generate_crawler7_production*.py"
       - "tools/generate_specter5_production*.py"
       - "tools/parse_game_asset_issue*.py"
       - "tools/test_asset_issue_download.py"
@@ -118,6 +120,8 @@ jobs:
             tools/generate_game_asset.py \
             tools/generate_game_asset_v2.py \
             tools/generate_game_asset_v3.py \
+            tools/generate_crawler7_production_v5.py \
+            tools/generate_crawler7_production_v6.py \
             tools/generate_specter5_production.py \
             tools/generate_specter5_production_v2.py \
             tools/build_asset_audio.py \
@@ -155,9 +159,6 @@ jobs:
               exit "$parse_status"
             fi
           elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
-            # Commits created through GitHub's low-level Git Database API may have empty
-            # head_commit.added/modified arrays in the push event. Inspect the checked-out
-            # commit itself instead; it is the source of truth for the submitted web job.
             mapfile -t request_candidates < <(
               git show --format= --name-only --diff-filter=AM "$GITHUB_SHA" |
                 sed '/^$/d' |
@@ -236,12 +237,15 @@ jobs:
           mkdir -p "$BUNDLE_DIR" build/game-asset/logs
           if [[ "$GENERATOR_PROFILE" == "crawler7" ]]; then
             blender --background --factory-startup \
-              --python tools/generate_crawler7_production_v5.py -- \
+              --python tools/generate_crawler7_production_v6.py -- \
+              --request "$REQUEST_JSON" \
               --output "$BUNDLE_DIR/$SLUG.glb" \
               --metrics "$BUNDLE_DIR/$SLUG.metrics.json" \
               --preview "$BUNDLE_DIR/$SLUG.png" \
               --quality "$(jq -r '.quality' "$REQUEST_JSON" | sed 's/standard/high/;s/hero/high/')" \
               2>&1 | tee build/game-asset/logs/generation.log
+            jq -e '.reference_images_used >= 1 and .reference_usage.engine == "crawler_reference_fit_v2"' \
+              "$BUNDLE_DIR/$SLUG.metrics.json"
             python3 tools/build_asset_sidecars.py \
               --request "$REQUEST_JSON" \
               --metrics "$BUNDLE_DIR/$SLUG.metrics.json" \
@@ -270,7 +274,7 @@ jobs:
             --catalog "$BUNDLE_ROOT/catalog.json" \
             --asset "$BUNDLE_DIR/$SLUG.asset.json"
 
-      - name: Validate Godot 4.7 import, bridge and synchronized audio runtime
+      - name: Validate Godot 4.7 import, visual replacement and synchronized audio runtime
         run: |
           set -euo pipefail
           mkdir -p scripts .godot-bin build/game-asset/logs
@@ -287,6 +291,9 @@ jobs:
             cat build/game-asset/logs/godot-import.log
             exit 1
           fi
+          grep -q 'ProceduralVisual' src_parts/main_03.gdpart
+          grep -q '_disable_procedural_visual' scripts/generated_assets/asset_bridge.gd
+          grep -q 'GeneratedAssetAudio' scripts/generated_assets/asset_bridge_autoload.gd
 
       - name: Publish validated bundle to main
         if: ${{ success() && (github.event_name == 'issues' || github.event_name == 'push' || inputs.commit_output == true) }}
@@ -305,7 +312,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "✅ Asset **$SLUG** généré, nettoyé et validé : [GLB](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.glb) · [aperçu](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.png) · [manifeste](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.asset.json) · [dégâts](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.damage.json) · [sons synchronisés](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.audio.json) · [validation](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.validation.json)"
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "✅ Asset **$SLUG** généré, ajusté depuis les références, nettoyé et validé : [GLB](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.glb) · [aperçu](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.png) · [manifeste](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.asset.json) · [dégâts](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.damage.json) · [sons synchronisés](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.audio.json) · [validation](https://github.com/${GITHUB_REPOSITORY}/blob/main/assets/generated/${SLUG}/${SLUG}.validation.json)"
           gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
 
       - name: Report failed issue generation
@@ -373,6 +380,7 @@ jobs:
       fail-fast: false
       matrix:
         fixture:
+          - game_asset_crawler.json
           - game_asset_specter.json
           - game_asset_character.json
           - game_asset_fps_viewmodel.json
@@ -393,6 +401,7 @@ jobs:
           python3 -m py_compile \
             tools/parse_game_asset_issue.py tools/parse_game_asset_issue_v2.py tools/test_asset_issue_download.py \
             tools/generate_game_asset.py tools/generate_game_asset_v2.py tools/generate_game_asset_v3.py \
+            tools/generate_crawler7_production_v5.py tools/generate_crawler7_production_v6.py \
             tools/generate_specter5_production.py tools/generate_specter5_production_v2.py \
             tools/build_asset_audio.py tools/build_asset_audio_v2.py tools/build_asset_sidecars.py \
             tools/sanitize_generated_glb.py tools/validate_game_asset_bundle.py
@@ -406,18 +415,35 @@ jobs:
           PROFILE="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["generator_profile"])' "$REQUEST")"
           OUT="build/smoke/$SLUG"
           mkdir -p "$OUT"
-          GENERATOR="tools/generate_game_asset_v3.py"
-          if [[ "$PROFILE" == "specter_biped" ]]; then
-            GENERATOR="tools/generate_specter5_production_v2.py"
-          fi
           set +e
-          blender --background --factory-startup --python "$GENERATOR" -- \
-            --request "$REQUEST" --output-dir "$OUT" 2>&1 | tee "$OUT/generation.log"
-          status=${PIPESTATUS[0]}
+          if [[ "$PROFILE" == "crawler7" ]]; then
+            blender --background --factory-startup --python tools/generate_crawler7_production_v6.py -- \
+              --request "$REQUEST" \
+              --output "$OUT/$SLUG.glb" \
+              --metrics "$OUT/$SLUG.metrics.json" \
+              --preview "$OUT/$SLUG.png" \
+              --quality web 2>&1 | tee "$OUT/generation.log"
+            status=${PIPESTATUS[0]}
+            if [[ $status -eq 0 ]]; then
+              python3 tools/build_asset_sidecars.py --request "$REQUEST" --metrics "$OUT/$SLUG.metrics.json" --output-dir "$OUT"
+              status=$?
+            fi
+          else
+            GENERATOR="tools/generate_game_asset_v3.py"
+            if [[ "$PROFILE" == "specter_biped" ]]; then
+              GENERATOR="tools/generate_specter5_production_v2.py"
+            fi
+            blender --background --factory-startup --python "$GENERATOR" -- \
+              --request "$REQUEST" --output-dir "$OUT" 2>&1 | tee "$OUT/generation.log"
+            status=${PIPESTATUS[0]}
+          fi
           set -e
           if [[ $status -ne 0 ]]; then
             tail -n 200 "$OUT/generation.log"
             exit $status
+          fi
+          if [[ "$PROFILE" == "crawler7" ]]; then
+            jq -e '.reference_images_used >= 1' "$OUT/$SLUG.metrics.json"
           fi
           python3 tools/validate_game_asset_bundle.py \
             --bundle "$OUT" --slug "$SLUG" --report "$OUT/$SLUG.validation.json" \
