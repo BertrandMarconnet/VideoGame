@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "asset_name": "CRAWLER-07",
+  "slug": "crawler_07",
+  "category": "robot_quadruped",
+  "generator_profile": "crawler7",
+  "visual_profile": "PS1 industriel ToyGuard",
+  "reference_mode": "multi_view",
+  "geometry_template": "articulated_quadruped",
+  "segmentation_parts": [
+    "body",
+    "sensor",
+    "left_front_leg",
+    "right_front_leg",
+    "left_rear_leg",
+    "right_rear_leg"
+  ],
+  "dimensions_m": {
+    "width": 1.45,
+    "height": 0.72,
+    "depth": 1.75
+  },
+  "material_id": "metal_armored",
+  "texture_mode": "reference_atlas",
+  "rig": "rigid_quadruped",
+  "animations": [
+    "idle",
+    "walk",
+    "run",
+    "attack",
+    "shutdown"
+  ],
+  "collision_mode": "capsule",
+  "destruction_mode": "detachable",
+  "damage_zones_description": "Chaque patte détruite ralentit le robot ; plusieurs pattes détruites dégradent fortement la locomotion ; le capteur réduit la détection.",
+  "interactions_description": "flashlight_bash=0.4; plank=0.8; crowbar=2.0; thrown_prop=1.0; specter_charge=4.0",
+  "quality": "web",
+  "integration": "replace_procedural",
+  "sound_mode": "procedural",
+  "sound_presets": [
+    "servo",
+    "step",
+    "impact",
+    "electric"
+  ],
+  "sound_sync_description": "walk = step @ 0.18\nwalk = step @ 0.68\nrun = step @ 0.12\nrun = step @ 0.55\nattack = impact @ 0.46\nidle = servo @ 0.00 @ loop\nshutdown = electric @ 0.35",
+  "auto_detection": {
+    "engine": "Xenova/clip-vit-base-patch32",
+    "confidence": 0.8962224198928541,
+    "ranking": [
+      {
+        "category": "robot_quadruped",
+        "label": "Robot quadrupède",
+        "score": 0.8962224198928541
+      },
+      {
+        "category": "prop",
+        "label": "Objet ou accessoire",
+        "score": 0.04229796153518594
+      },
+      {
+        "category": "robot_biped",
+        "label": "Robot bipède",
+        "score": 0.027234410623467972
+      },
+      {
+        "category": "articulated_machine",
+        "label": "Machine articulée",
+        "score": 0.022004667150440433
+      },
+      {
+        "category": "character_humanoid",
+        "label": "Personnage humanoïde",
+        "score": 0.006118611991812247
+      }
+    ],
+    "user_reviewed": true
+  },
+  "job_id": "crawler_07-20260717170929-3a6b7853",
+  "reference_images": [
+    "asset_jobs/crawler_07-20260717170929-3a6b7853/input/01_chatgpt_image_jul_13_2026_04_06_20_pm_3.png",
+    "asset_jobs/crawler_07-20260717170929-3a6b7853/input/02_chatgpt_image_jul_13_2026_04_06_21_pm_4.png",
+    "asset_jobs/crawler_07-20260717170929-3a6b7853/input/03_chatgpt_image_jul_13_2026_04_06_19_pm_1.png",
+    "asset_jobs/crawler_07-20260717170929-3a6b7853/input/04_chatgpt_image_jul_13_2026_04_06_20_pm_2.png"
+  ],
+  "reference_image_errors": [],
+  "audio_files": [],
+  "audio_file_errors": [],
+  "issue_number": 0,
+  "issue_url": "",
+  "submitted_from": "github_pages_asset_generator",
+  "submitted_at": "2026-07-17T17:09:29.414Z"
+}
