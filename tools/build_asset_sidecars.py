@@ -40,19 +40,42 @@ def main() -> None:
     metrics = json.loads(args.metrics.read_text(encoding="utf-8"))
     slug = request["slug"]
     zones = crawler_zones(request["material_id"]) if request["generator_profile"] == "crawler7" else []
+    reference_usage = metrics.get("reference_usage", {
+        "engine": "none",
+        "images_used": int(metrics.get("reference_images_used", 0)),
+    })
     asset = {
-        "schema_version":1,"id":slug,"name":request["asset_name"],"category":request["category"],
-        "glb":f"res://assets/generated/{slug}/{slug}.glb","preview":f"res://assets/generated/{slug}/{slug}.png",
-        "damage_profile":f"res://assets/generated/{slug}/{slug}.damage.json","integration":request["integration"],
-        "dimensions_m":request["dimensions_m"],"rig":request["rig"],"animations":metrics.get("animations",[]),
-        "generator_profile":request["generator_profile"],"reference_mode":request.get("reference_mode","none"),
-        "texture_mode":request.get("texture_mode","palette_only"),"collision_mode":request.get("collision_mode","capsule"),
+        "schema_version":1,
+        "id":slug,
+        "name":request["asset_name"],
+        "category":request["category"],
+        "glb":f"res://assets/generated/{slug}/{slug}.glb",
+        "preview":f"res://assets/generated/{slug}/{slug}.png",
+        "damage_profile":f"res://assets/generated/{slug}/{slug}.damage.json",
+        "integration":request["integration"],
+        "dimensions_m":request["dimensions_m"],
+        "rig":request["rig"],
+        "animations":metrics.get("animations",[]),
+        "generator_profile":request["generator_profile"],
+        "reference_mode":request.get("reference_mode","none"),
+        "reference_usage":reference_usage,
+        "texture_mode":request.get("texture_mode","palette_only"),
+        "collision_mode":request.get("collision_mode","capsule"),
         "geometry_template":request.get("geometry_template","articulated_quadruped"),
-        "segmentation_parts":request.get("segmentation_parts",["lf_leg","rf_leg","lr_leg","rr_leg","sensor","body"]),"fallback":"procedural"}
+        "segmentation_parts":request.get("segmentation_parts",["lf_leg","rf_leg","lr_leg","rr_leg","sensor","body"]),
+        "visual_rotation_degrees":request.get("visual_rotation_degrees",[0.0,0.0,0.0]),
+        "visual_fit":"height_and_center",
+        "fallback":"procedural",
+    }
     damage = {
-        "schema_version":1,"asset_id":slug,"mode":request["destruction_mode"],"default_material":request["material_id"],"zones":zones,
+        "schema_version":1,
+        "asset_id":slug,
+        "mode":request["destruction_mode"],
+        "default_material":request["material_id"],
+        "zones":zones,
         "tool_rules":{"flashlight_bash":0.45,"plank":0.8,"crowbar":2.2,"thrown_prop":1.0,"specter_charge":4.0},
-        "descriptions":{"zones":request.get("damage_zones_description",""),"interactions":request.get("interactions_description","")}}
+        "descriptions":{"zones":request.get("damage_zones_description",""),"interactions":request.get("interactions_description","")},
+    }
     args.output_dir.mkdir(parents=True, exist_ok=True)
     (args.output_dir/f"{slug}.asset.json").write_text(json.dumps(asset,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
     (args.output_dir/f"{slug}.damage.json").write_text(json.dumps(damage,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
