@@ -19,6 +19,42 @@
 	add_child(robot)
 	robots.append(robot)
 	robot_data[robot] = {"home": at, "target": at, "seen": false, "reposition": 0.0}
+	call_deferred("_finalize_generated_robot_visual", robot, personality)
+
+func _finalize_generated_robot_visual(robot: CharacterBody3D, personality: String) -> void:
+	# The autoload can discover a robot before _create_robot has finished appending every
+	# procedural mesh. Re-run registration after one frame and enforce a strict visual
+	# replacement so late-created placeholder limbs cannot remain superimposed on the GLB.
+	await get_tree().process_frame
+	if not is_instance_valid(robot):
+		return
+	var bridge := get_node_or_null("/root/GeneratedAssetBridge")
+	if bridge != null and bridge.has_method("register_robot"):
+		bridge.call("register_robot", robot, personality)
+	await get_tree().process_frame
+	if not is_instance_valid(robot):
+		return
+	var generated := robot.get_node_or_null("GeneratedVisual") as Node3D
+	if generated == null:
+		generated = robot.find_child("GeneratedVisual", true, false) as Node3D
+	if generated == null:
+		return
+	var procedural := robot.get_node_or_null("ProceduralVisual") as Node3D
+	if procedural != null:
+		procedural.visible = false
+		procedural.process_mode = Node.PROCESS_MODE_DISABLED
+		for child in procedural.find_children("*", "GeometryInstance3D", true, false):
+			var geometry := child as GeometryInstance3D
+			if geometry != null:
+				geometry.visible = false
+				geometry.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for child in robot.find_children("*", "GeometryInstance3D", true, false):
+		var geometry := child as GeometryInstance3D
+		if geometry == null or generated.is_ancestor_of(geometry):
+			continue
+		geometry.visible = false
+		geometry.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	robot.set_meta("generated_visual_replacement_finalized", true)
 
 func _build_audio() -> void:
 	# Godot's AudioStreamGenerator cannot be sampled by the single-threaded Web
