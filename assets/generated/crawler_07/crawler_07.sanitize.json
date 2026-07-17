@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "glb": "assets/generated/crawler_07/crawler_07.glb",
+  "cleared_helper_nodes": [
+    "LFFoot-colonly",
+    "RFFoot-colonly",
+    "LRFoot-colonly",
+    "RRFoot-colonly",
+    "CrawlerBody-colonly"
+  ],
+  "helper_mesh_indices": [],
+  "helper_material_indices": []
+}

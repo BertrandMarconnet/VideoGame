@@ -1,0 +1,27 @@
+{
+  "valid": true,
+  "slug": "crawler_07",
+  "category": "robot_quadruped",
+  "triangles": 8844,
+  "mesh_objects": 133,
+  "bones": 13,
+  "animations": [
+    "Idle-loop",
+    "Walk-loop",
+    "Run-loop",
+    "Attack",
+    "Shutdown"
+  ],
+  "damage_zones": 6,
+  "audio_streams": 4,
+  "audio_events": 7,
+  "texture_mode": "reference_atlas",
+  "collision_mode": "capsule",
+  "reference_images_used": 0,
+  "glb": {
+    "bytes": 810252,
+    "version": 2,
+    "nodes": 152,
+    "visible_helpers": 0
+  }
+}

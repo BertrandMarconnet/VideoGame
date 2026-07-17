@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "asset_id": "crawler_07",
+  "mode": "detachable",
+  "default_material": "metal_armored",
+  "zones": [
+    {
+      "id": "lf_leg",
+      "material_id": "metal_armored",
+      "max_health": 28,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_LF_*",
+        "LF_*"
+      ],
+      "speed_multiplier": 0.78,
+      "on_break": "reduce_speed"
+    },
+    {
+      "id": "rf_leg",
+      "material_id": "metal_armored",
+      "max_health": 28,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_RF_*",
+        "RF_*"
+      ],
+      "speed_multiplier": 0.78,
+      "on_break": "reduce_speed"
+    },
+    {
+      "id": "lr_leg",
+      "material_id": "metal_armored",
+      "max_health": 28,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_LR_*",
+        "LR_*"
+      ],
+      "speed_multiplier": 0.78,
+      "on_break": "reduce_speed"
+    },
+    {
+      "id": "rr_leg",
+      "material_id": "metal_armored",
+      "max_health": 28,
+      "detachable": true,
+      "node_patterns": [
+        "DZ_RR_*",
+        "RR_*"
+      ],
+      "speed_multiplier": 0.78,
+      "on_break": "reduce_speed"
+    },
+    {
+      "id": "sensor",
+      "material_id": "glass",
+      "max_health": 18,
+      "detachable": false,
+      "node_patterns": [
+        "*Sensor*",
+        "*Lens*"
+      ],
+      "on_break": "disable_detection"
+    },
+    {
+      "id": "body",
+      "material_id": "metal_armored",
+      "max_health": 110,
+      "detachable": false,
+      "node_patterns": [
+        "*Body*",
+        "*Spine*",
+        "*Torso*"
+      ],
+      "on_break": "shutdown"
+    }
+  ],
+  "tool_rules": {
+    "flashlight_bash": 0.45,
+    "plank": 0.8,
+    "crowbar": 2.2,
+    "thrown_prop": 1.0,
+    "specter_charge": 4.0
+  },
+  "descriptions": {
+    "zones": "Chaque patte détruite ralentit le robot ; plusieurs pattes détruites dégradent fortement la locomotion ; le capteur réduit la détection.",
+    "interactions": "flashlight_bash=0.4; plank=0.8; crowbar=2.0; thrown_prop=1.0; specter_charge=4.0"
+  }
+}

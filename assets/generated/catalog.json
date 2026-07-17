@@ -22,6 +22,45 @@
     },
     {
       "schema_version": 1,
+      "id": "crawler_07",
+      "name": "CRAWLER-07",
+      "category": "robot_quadruped",
+      "glb": "res://assets/generated/crawler_07/crawler_07.glb",
+      "preview": "res://assets/generated/crawler_07/crawler_07.png",
+      "damage_profile": "res://assets/generated/crawler_07/crawler_07.damage.json",
+      "integration": "replace_procedural",
+      "dimensions_m": {
+        "width": 1.45,
+        "height": 0.72,
+        "depth": 1.75
+      },
+      "rig": "rigid_quadruped",
+      "animations": [
+        "Idle-loop",
+        "Walk-loop",
+        "Run-loop",
+        "Attack",
+        "Shutdown"
+      ],
+      "generator_profile": "crawler7",
+      "reference_mode": "multi_view",
+      "texture_mode": "reference_atlas",
+      "collision_mode": "capsule",
+      "geometry_template": "articulated_quadruped",
+      "segmentation_parts": [
+        "body",
+        "sensor",
+        "left_front_leg",
+        "right_front_leg",
+        "left_rear_leg",
+        "right_rear_leg"
+      ],
+      "fallback": "procedural",
+      "audio_profile": "res://assets/generated/crawler_07/crawler_07.audio.json",
+      "sound_mode": "procedural"
+    },
+    {
+      "schema_version": 1,
       "id": "crawler_7",
       "name": "CRAWLER-7",
       "category": "robot_quadruped",

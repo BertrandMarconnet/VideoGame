@@ -1,0 +1,27 @@
+{
+  "asset": "CRAWLER-7",
+  "generator": "Blender deterministic hard-surface v5",
+  "output": "assets/generated/crawler_07/crawler_07.glb",
+  "mesh_objects": 133,
+  "vertices": 4688,
+  "triangles": 8844,
+  "bones": 13,
+  "animations": [
+    "Idle-loop",
+    "Walk-loop",
+    "Run-loop",
+    "Attack",
+    "Shutdown"
+  ],
+  "materials": [
+    "CRAWLER7_Black",
+    "CRAWLER7_BrownArmor",
+    "CRAWLER7_DarkMetal",
+    "CRAWLER7_Joints",
+    "CRAWLER7_RedSensors"
+  ],
+  "collision_helpers": 5,
+  "rig_type": "rigid segmented quadruped",
+  "design_target": "CRAWLER-7 PS1 industrial low-poly storyboard",
+  "sensor_cluster": "four red lenses plus central indicator"
+}

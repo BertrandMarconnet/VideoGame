@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "asset_id": "crawler_07",
+  "mode": "procedural",
+  "spatial": true,
+  "streams": {
+    "servo": "res://assets/generated/crawler_07/audio/servo.wav",
+    "step": "res://assets/generated/crawler_07/audio/step.wav",
+    "impact": "res://assets/generated/crawler_07/audio/impact.wav",
+    "electric": "res://assets/generated/crawler_07/audio/electric.wav"
+  },
+  "events": [
+    {
+      "animation": "walk",
+      "time_normalized": 0.18,
+      "stream": "res://assets/generated/crawler_07/audio/step.wav",
+      "loop": false,
+      "volume_db": -4.0
+    },
+    {
+      "animation": "walk",
+      "time_normalized": 0.68,
+      "stream": "res://assets/generated/crawler_07/audio/step.wav",
+      "loop": false,
+      "volume_db": -4.0
+    },
+    {
+      "animation": "run",
+      "time_normalized": 0.12,
+      "stream": "res://assets/generated/crawler_07/audio/step.wav",
+      "loop": false,
+      "volume_db": -4.0
+    },
+    {
+      "animation": "run",
+      "time_normalized": 0.55,
+      "stream": "res://assets/generated/crawler_07/audio/step.wav",
+      "loop": false,
+      "volume_db": -4.0
+    },
+    {
+      "animation": "Attack",
+      "time_normalized": 0.46,
+      "stream": "res://assets/generated/crawler_07/audio/impact.wav",
+      "loop": false,
+      "volume_db": -4.0
+    },
+    {
+      "animation": "idle",
+      "time_normalized": 0.0,
+      "stream": "res://assets/generated/crawler_07/audio/servo.wav",
+      "loop": true,
+      "volume_db": -4.0
+    },
+    {
+      "animation": "Shutdown",
+      "time_normalized": 0.35,
+      "stream": "res://assets/generated/crawler_07/audio/electric.wav",
+      "loop": false,
+      "volume_db": -4.0
+    }
+  ],
+  "notes": "walk = step @ 0.18\nwalk = step @ 0.68\nrun = step @ 0.12\nrun = step @ 0.55\nattack = impact @ 0.46\nidle = servo @ 0.00 @ loop\nshutdown = electric @ 0.35"
+}
