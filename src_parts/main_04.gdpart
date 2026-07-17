@@ -86,8 +86,7 @@ func _build_start_panel() -> void:
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	start_panel.add_child(box)
 	var title := Label.new()
-	title.text = "BLACKOUT PROTOCOL
-STEEL ECHO"
+	title.text = "BLACKOUT PROTOCOL\nSTEEL ECHO"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 44)
 	title.modulate = Color(0.86, 0.95, 1.0)
@@ -98,14 +97,12 @@ STEEL ECHO"
 	subtitle.modulate = Color(1.0, 0.43, 0.22)
 	box.add_child(subtitle)
 	var brief := Label.new()
-	brief.text = "Arrivez sous la pluie devant ToyGuard Industries, rejoignez le bunker S-01,
-ouvrez Sentinel OS puis rétablissez le relais nord. ATHENA observe vos choix."
+	brief.text = "Arrivez sous la pluie devant ToyGuard Industries, rejoignez le bunker S-01,\nouvrez Sentinel OS puis rétablissez le relais nord. ATHENA observe vos choix."
 	brief.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	brief.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	brief.custom_minimum_size = Vector2(620, 90)
 	box.add_child(brief)
 	var controls := Label.new()
-	controls.text = "PC : ZQSD/WASD · souris · clic gauche interagir · clic droit roue d'actions · TAB tablette · C drone
-Mobile : commandes tactiles · paysage conseillé"
+	controls.text = "PC : ZQSD/WASD · souris · clic gauche interagir · clic droit roue d'actions · TAB tablette · C drone\nMobile : commandes tactiles · paysage conseillé"
 	controls.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	controls.modulate = Color(0.68, 0.77, 0.81)
