@@ -88,11 +88,19 @@ func _create_robot(label: String, at: Vector3, color: Color, height: float, pers
 	robot.set_meta("attack_cd", 0.0)
 	robot.set_meta("material_id", "metal_armored")
 	var collision := CollisionShape3D.new()
+	collision.name = "GameplayCollision"
 	var capsule := CapsuleShape3D.new()
 	capsule.radius = 0.34 if personality == "specter" else 0.48
 	capsule.height = height
 	collision.shape = capsule
 	robot.add_child(collision)
+	var generated_anchor := Node3D.new()
+	generated_anchor.name = "GeneratedVisualAnchor"
+	robot.add_child(generated_anchor)
+	var procedural_visual := Node3D.new()
+	procedural_visual.name = "ProceduralVisual"
+	procedural_visual.set_meta("procedural_robot_visual", true)
+	robot.add_child(procedural_visual)
 	var torso := MeshInstance3D.new()
 	torso.name = "Torso"
 	var torso_mesh := BoxMesh.new()
@@ -100,7 +108,7 @@ func _create_robot(label: String, at: Vector3, color: Color, height: float, pers
 	torso.mesh = torso_mesh
 	torso.position.y = 0.22
 	torso.material_override = _material(color, 0.9, 0.25)
-	robot.add_child(torso)
+	procedural_visual.add_child(torso)
 	var head := MeshInstance3D.new()
 	head.name = "Head"
 	var head_mesh := SphereMesh.new()
@@ -111,7 +119,7 @@ func _create_robot(label: String, at: Vector3, color: Color, height: float, pers
 	head.mesh = head_mesh
 	head.position = Vector3(0, height * 0.44, -0.08 if personality == "specter" else -0.55)
 	head.material_override = _material(Color(0.34, 0.36, 0.37), 0.95, 0.2)
-	robot.add_child(head)
+	procedural_visual.add_child(head)
 	var eye := MeshInstance3D.new()
 	eye.name = "SensorEye"
 	var eye_mesh := BoxMesh.new()
