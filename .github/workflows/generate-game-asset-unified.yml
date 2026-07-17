@@ -137,6 +137,7 @@ jobs:
           set -euo pipefail
           mkdir -p "$(dirname "$REQUEST_JSON")" "$IMAGE_DIR" build/game-asset/logs
           request_source=""
+
           if [[ "$GITHUB_EVENT_NAME" == "issues" ]]; then
             set +e
             python3 tools/parse_game_asset_issue_v2.py \
@@ -154,12 +155,30 @@ jobs:
               exit "$parse_status"
             fi
           elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
-            request_source="$(jq -r '[.head_commit.added[]?, .head_commit.modified[]?] | map(select(endswith("/request.json"))) | .[0] // empty' "$EVENT_PATH")"
-            if [[ -z "$request_source" || "$request_source" != asset_jobs/*/request.json ]]; then
-              echo "No safe asset_jobs request.json was added by this push."
+            # Commits created through GitHub's low-level Git Database API may have empty
+            # head_commit.added/modified arrays in the push event. Inspect the checked-out
+            # commit itself instead; it is the source of truth for the submitted web job.
+            mapfile -t request_candidates < <(
+              git show --format= --name-only --diff-filter=AM "$GITHUB_SHA" |
+                sed '/^$/d' |
+                grep -E '^asset_jobs/[A-Za-z0-9._-]+/request\.json$' || true
+            )
+            if [[ ${#request_candidates[@]} -ne 1 ]]; then
+              {
+                echo "### Direct web job discovery failed"
+                echo
+                echo "Expected exactly one safe request.json in commit \`$GITHUB_SHA\`, found ${#request_candidates[@]}."
+                echo '```text'
+                git show --format= --name-status "$GITHUB_SHA"
+                echo '```'
+              } >> "$GITHUB_STEP_SUMMARY"
+              echo "No unique safe asset_jobs request.json was added or modified by this commit."
               exit 1
             fi
+            request_source="${request_candidates[0]}"
+            [[ "$request_source" == asset_jobs/*/request.json ]]
             test -f "$request_source"
+            test ! -L "$request_source"
             cp "$request_source" "$REQUEST_JSON"
           else
             request_source="$MANUAL_REQUEST"
@@ -168,6 +187,7 @@ jobs:
               exit 1
             fi
             test -f "$request_source"
+            test ! -L "$request_source"
             cp "$request_source" "$REQUEST_JSON"
           fi
 
@@ -177,18 +197,36 @@ jobs:
             (.category | type == "string") and
             (.reference_images | type == "array" and length >= 1 and length <= 6)
           ' "$REQUEST_JSON"
+
           while IFS= read -r reference; do
             [[ "$reference" == asset_jobs/*/input/* || "$reference" == tests/fixtures/* ]] || {
               echo "Unsafe reference image path: $reference"
               exit 1
             }
             test -f "$reference"
+            test ! -L "$reference"
           done < <(jq -r '.reference_images[]' "$REQUEST_JSON")
+
+          while IFS= read -r audio; do
+            [[ -z "$audio" || "$audio" == asset_jobs/*/audio/* || "$audio" == tests/fixtures/* ]] || {
+              echo "Unsafe audio path: $audio"
+              exit 1
+            }
+            [[ -z "$audio" ]] || test -f "$audio"
+            [[ -z "$audio" ]] || test ! -L "$audio"
+          done < <(jq -r '.audio_files[]? // empty' "$REQUEST_JSON")
 
           echo "SLUG=$(jq -r '.slug' "$REQUEST_JSON")" >> "$GITHUB_ENV"
           echo "GENERATOR_PROFILE=$(jq -r '.generator_profile' "$REQUEST_JSON")" >> "$GITHUB_ENV"
           echo "JOB_ID=$(jq -r '.job_id // ""' "$REQUEST_JSON")" >> "$GITHUB_ENV"
           echo "REQUEST_SOURCE_PATH=$request_source" >> "$GITHUB_ENV"
+          {
+            echo "### Request accepted"
+            echo "- Source: \`$request_source\`"
+            echo "- Slug: \`$(jq -r '.slug' "$REQUEST_JSON")\`"
+            echo "- Category: \`$(jq -r '.category' "$REQUEST_JSON")\`"
+            echo "- Images: $(jq '.reference_images | length' "$REQUEST_JSON")"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Generate controlled GLB bundle
         run: |
