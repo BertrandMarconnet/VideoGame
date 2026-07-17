@@ -89,5 +89,6 @@
   "issue_number": 0,
   "issue_url": "",
   "submitted_from": "github_pages_asset_generator",
-  "submitted_at": "2026-07-17T14:10:21.933Z"
+  "submitted_at": "2026-07-17T14:10:21.933Z",
+  "retry_after_workflow_fix": 1
 }
