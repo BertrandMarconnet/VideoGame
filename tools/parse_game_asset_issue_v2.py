@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 import urllib.parse
@@ -56,6 +57,49 @@ def detect_audio_extension(data: bytes, content_type: str) -> str:
     raise ValueError(f"Le fichier téléchargé n'est pas un son WAV/OGG/MP3 valide ({content_type})")
 
 
+def _checked_local_repository_file(url: str) -> Path | None:
+    """Resolve a raw URL from the current checked-out repository.
+
+    Private repositories return HTTP 404 to anonymous raw.githubusercontent.com requests even
+    though GitHub Actions already checked the referenced file out. Reuse that trusted local copy
+    instead of requiring public repository access.
+    """
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme != "https" or parsed.hostname != "raw.githubusercontent.com":
+        return None
+    parts = parsed.path.lstrip("/").split("/", 3)
+    if len(parts) != 4:
+        return None
+    owner, repository, _ref, relative = parts
+    expected_repository = os.environ.get("GITHUB_REPOSITORY", "")
+    if expected_repository and f"{owner}/{repository}" != expected_repository:
+        return None
+    if not (relative.startswith("asset_jobs/") or relative.startswith("tests/fixtures/")):
+        raise ValueError("Chemin de référence interne non autorisé")
+    root = Path.cwd().resolve()
+    source = (root / relative).resolve()
+    try:
+        source.relative_to(root)
+    except ValueError as exc:
+        raise ValueError("Chemin de référence interne hors dépôt") from exc
+    if not source.is_file() or source.is_symlink():
+        raise FileNotFoundError(f"Référence interne introuvable : {relative}")
+    return source
+
+
+def _copy_local_image(url: str, destination: Path) -> Path | None:
+    source = _checked_local_repository_file(url)
+    if source is None:
+        return None
+    data = source.read_bytes()
+    if len(data) > base.MAX_IMAGE_BYTES:
+        raise ValueError("Image trop volumineuse")
+    output = destination.with_suffix(detect_image_extension(data, ""))
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_bytes(data)
+    return output
+
+
 def _download(url: str, destination: Path, maximum: int, detector, accept: str) -> Path:
     parsed = urllib.parse.urlparse(url)
     if parsed.scheme != "https" or not is_allowed_attachment_host(parsed.hostname):
@@ -76,6 +120,9 @@ def _download(url: str, destination: Path, maximum: int, detector, accept: str) 
 
 
 def download_image(url: str, destination: Path) -> Path:
+    local = _copy_local_image(url, destination)
+    if local is not None:
+        return local
     return _download(url, destination, base.MAX_IMAGE_BYTES, detect_image_extension, "image/avif,image/webp,image/png,image/jpeg,*/*;q=0.8")
 
 
