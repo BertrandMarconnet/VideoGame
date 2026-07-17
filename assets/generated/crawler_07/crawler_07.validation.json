@@ -17,9 +17,9 @@
   "audio_events": 7,
   "texture_mode": "reference_atlas",
   "collision_mode": "capsule",
-  "reference_images_used": 0,
+  "reference_images_used": 4,
   "glb": {
-    "bytes": 810252,
+    "bytes": 795584,
     "version": 2,
     "nodes": 152,
     "visible_helpers": 0
