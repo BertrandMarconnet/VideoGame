@@ -55,7 +55,9 @@ func _register_candidate(node: Node) -> void:
 	if bridge == null or bridge.world_root == null:
 		return
 	if node is CharacterBody3D and node.get_meta("robot", false):
-		bridge.register_robot(node as CharacterBody3D, String(node.get_meta("personality", "crawler")))
+		var robot := node as CharacterBody3D
+		bridge.register_robot(robot, String(robot.get_meta("personality", "crawler")))
+		call_deferred("_enforce_robot_visual_replacement", robot)
 	elif node is Node3D and node.get_meta("destructible", false) and node.get_node_or_null("DestructibleComponent") == null:
 		var material_id := String(node.get_meta("material_id", "metal_light"))
 		var health := float(node.get_meta("health", 0.0))
@@ -68,6 +70,31 @@ func _register_candidate(node: Node) -> void:
 				_attach_audio(node as Node3D, get_asset(asset_id))
 	elif node is Node3D and node.has_meta("generated_asset_id"):
 		_attach_audio(node as Node3D, get_asset(String(node.get_meta("generated_asset_id", ""))))
+
+func _enforce_robot_visual_replacement(robot: CharacterBody3D) -> void:
+	if not is_instance_valid(robot):
+		return
+	var generated := robot.get_node_or_null("GeneratedVisual") as Node3D
+	if generated == null:
+		generated = robot.find_child("GeneratedVisual", true, false) as Node3D
+	if generated == null:
+		return
+	var procedural := robot.get_node_or_null("ProceduralVisual") as Node3D
+	if procedural != null:
+		procedural.visible = false
+		procedural.process_mode = Node.PROCESS_MODE_DISABLED
+		for child in procedural.find_children("*", "GeometryInstance3D", true, false):
+			var geometry := child as GeometryInstance3D
+			if geometry != null:
+				geometry.visible = false
+				geometry.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for child in robot.find_children("*", "GeometryInstance3D", true, false):
+		var geometry := child as GeometryInstance3D
+		if geometry == null or generated.is_ancestor_of(geometry):
+			continue
+		geometry.visible = false
+		geometry.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	robot.set_meta("generated_visual_replacement_finalized", true)
 
 func _attach_audio(target: Node3D, entry: Dictionary) -> void:
 	if target == null or entry.is_empty() or target.get_node_or_null("GeneratedAssetAudio") != null:
