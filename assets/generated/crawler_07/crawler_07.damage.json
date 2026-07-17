@@ -84,7 +84,7 @@
     "specter_charge": 4.0
   },
   "descriptions": {
-    "zones": "Chaque patte détruite ralentit le robot ; plusieurs pattes détruites dégradent fortement la locomotion ; le capteur réduit la détection.",
+    "zones": "Chaque patte détruite ralentit le robot ; plusieurs pattes détruites dégradent fortement la locomotion ; le capteur réduit la détection ; le corps central détruit provoque l'arrêt.",
     "interactions": "flashlight_bash=0.4; plank=0.8; crowbar=2.0; thrown_prop=1.0; specter_charge=4.0"
   }
 }

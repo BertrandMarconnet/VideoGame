@@ -16,7 +16,7 @@
   "audio_streams": 4,
   "audio_events": 7,
   "texture_mode": "reference_atlas",
-  "collision_mode": "capsule",
+  "collision_mode": "local_boxes",
   "reference_images_used": 4,
   "glb": {
     "bytes": 795584,

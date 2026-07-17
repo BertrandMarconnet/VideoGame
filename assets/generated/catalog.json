@@ -28,7 +28,7 @@
       "glb": "res://assets/generated/crawler_07/crawler_07.glb",
       "preview": "res://assets/generated/crawler_07/crawler_07.png",
       "damage_profile": "res://assets/generated/crawler_07/crawler_07.damage.json",
-      "integration": "replace_procedural",
+      "integration": "bridge_module",
       "dimensions_m": {
         "width": 1.45,
         "height": 0.72,
@@ -43,13 +43,13 @@
         "Shutdown"
       ],
       "generator_profile": "crawler7",
-      "reference_mode": "multi_view",
+      "reference_mode": "orthographic_four",
       "reference_usage": {
         "engine": "crawler_reference_fit_v2",
         "images_used": 4,
         "views": [
           {
-            "path": "asset_jobs/crawler_07-20260717170929-3a6b7853/input/01_chatgpt_image_jul_13_2026_04_06_20_pm_3.png",
+            "path": "build/game-asset/images/reference_1.png",
             "role": "front",
             "source_size": [
               1254,
@@ -64,7 +64,7 @@
             "silhouette_ratio": 2.19782
           },
           {
-            "path": "asset_jobs/crawler_07-20260717170929-3a6b7853/input/02_chatgpt_image_jul_13_2026_04_06_21_pm_4.png",
+            "path": "build/game-asset/images/reference_2.png",
             "role": "right",
             "source_size": [
               1254,
@@ -79,7 +79,7 @@
             "silhouette_ratio": 2.48451
           },
           {
-            "path": "asset_jobs/crawler_07-20260717170929-3a6b7853/input/03_chatgpt_image_jul_13_2026_04_06_19_pm_1.png",
+            "path": "build/game-asset/images/reference_3.png",
             "role": "back",
             "source_size": [
               1254,
@@ -94,7 +94,7 @@
             "silhouette_ratio": 1.96205
           },
           {
-            "path": "asset_jobs/crawler_07-20260717170929-3a6b7853/input/04_chatgpt_image_jul_13_2026_04_06_20_pm_2.png",
+            "path": "build/game-asset/images/reference_4.png",
             "role": "three_quarter",
             "source_size": [
               1254,
@@ -176,15 +176,15 @@
         ]
       },
       "texture_mode": "reference_atlas",
-      "collision_mode": "capsule",
+      "collision_mode": "local_boxes",
       "geometry_template": "articulated_quadruped",
       "segmentation_parts": [
-        "body",
-        "sensor",
-        "left_front_leg",
-        "right_front_leg",
-        "left_rear_leg",
-        "right_rear_leg"
+        "capteur",
+        "torse_ou_corps_central",
+        "patte_avant_gauche",
+        "patte_avant_droite",
+        "patte_arriere_gauche",
+        "patte_arriere_droite"
       ],
       "visual_rotation_degrees": [
         0.0,
