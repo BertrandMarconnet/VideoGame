@@ -2,7 +2,7 @@
 	eye.mesh = eye_mesh
 	eye.position = head.position + Vector3(0, 0.03, -0.22)
 	eye.material_override = _material(Color(0.3, 0.01, 0.01), 0.2, 0.1, Color(1.0, 0.0, 0.03))
-	robot.add_child(eye)
+	procedural_visual.add_child(eye)
 	for side in [-1.0, 1.0]:
 		var leg := MeshInstance3D.new()
 		leg.name = "LeftLeg" if side < 0.0 else "RightLeg"
@@ -15,7 +15,7 @@
 		leg.position = Vector3(side * (0.18 if personality == "specter" else 0.36), -height * 0.28 if personality == "specter" else -0.25, 0.15 if personality == "crawler" else 0)
 		leg.rotation_degrees.z = side * 7.0
 		leg.material_override = _material(Color(0.3, 0.32, 0.33), 0.95, 0.22)
-		robot.add_child(leg)
+		procedural_visual.add_child(leg)
 	add_child(robot)
 	robots.append(robot)
 	robot_data[robot] = {"home": at, "target": at, "seen": false, "reposition": 0.0}
