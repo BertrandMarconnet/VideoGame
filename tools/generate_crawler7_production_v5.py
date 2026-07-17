@@ -24,6 +24,9 @@ exec(compile(text, str(SOURCE), "exec"), namespace)
 
 core = namespace["core"]
 detailed_build = namespace["detailed_build"]
+# v6 executes this module dynamically and expects this helper at the v5 level.
+# Export the validated v4 implementation instead of duplicating material logic.
+tune_material = namespace["tune_material"]
 base_report = core.report
 
 
