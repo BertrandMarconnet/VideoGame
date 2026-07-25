@@ -10,6 +10,22 @@ from typing import Any
 from build_asset_audio_v2 import build as build_audio
 from sanitize_generated_glb import sanitize as sanitize_glb
 
+ROBOT_ID_ALIASES = {
+    "crawler_07": "crawler_7",
+    "crawler7": "crawler_7",
+    "specter_05": "specter_5",
+    "specter5": "specter_5",
+}
+
+
+def canonical_asset_id(slug: str, category: str) -> str:
+    normalized = ROBOT_ID_ALIASES.get(slug, slug)
+    if category == "robot_quadruped" and normalized.startswith("crawler"):
+        return "crawler_7"
+    if category == "robot_biped" and normalized.startswith("specter"):
+        return "specter_5"
+    return normalized
+
 
 def crawler_zones(material_id: str) -> list[dict[str, Any]]:
     zones: list[dict[str, Any]] = []
@@ -39,20 +55,26 @@ def main() -> None:
     request = json.loads(args.request.read_text(encoding="utf-8"))
     metrics = json.loads(args.metrics.read_text(encoding="utf-8"))
     slug = request["slug"]
+    category = request["category"]
+    asset_id = canonical_asset_id(slug, category)
     zones = crawler_zones(request["material_id"]) if request["generator_profile"] == "crawler7" else []
     reference_usage = metrics.get("reference_usage", {
         "engine": "none",
         "images_used": int(metrics.get("reference_images_used", 0)),
     })
+    requested_integration = request.get("integration", "catalog_only")
+    integration = "replace_procedural" if category in {"robot_biped", "robot_quadruped"} and requested_integration != "catalog_only" else requested_integration
     asset = {
         "schema_version":1,
-        "id":slug,
+        "id":asset_id,
+        "source_slug":slug,
+        "aliases":sorted({slug, asset_id}),
         "name":request["asset_name"],
-        "category":request["category"],
+        "category":category,
         "glb":f"res://assets/generated/{slug}/{slug}.glb",
         "preview":f"res://assets/generated/{slug}/{slug}.png",
         "damage_profile":f"res://assets/generated/{slug}/{slug}.damage.json",
-        "integration":request["integration"],
+        "integration":integration,
         "dimensions_m":request["dimensions_m"],
         "rig":request["rig"],
         "animations":metrics.get("animations",[]),
@@ -69,7 +91,8 @@ def main() -> None:
     }
     damage = {
         "schema_version":1,
-        "asset_id":slug,
+        "asset_id":asset_id,
+        "source_slug":slug,
         "mode":request["destruction_mode"],
         "default_material":request["material_id"],
         "zones":zones,
