@@ -56,15 +56,15 @@ func _register_candidate(node: Node) -> void:
 		return
 	if node is CharacterBody3D and node.get_meta("robot", false):
 		var robot := node as CharacterBody3D
-		bridge.register_robot(robot, String(robot.get_meta("personality", "crawler")))
+		var personality := String(robot.get_meta("personality", "crawler"))
+		bridge.register_robot(robot, personality)
+		_force_preferred_robot_visual(robot, personality)
 		call_deferred("_enforce_robot_visual_replacement", robot)
 	elif node is Node3D and node.get_meta("destructible", false) and node.get_node_or_null("DestructibleComponent") == null:
 		var material_id := String(node.get_meta("material_id", "metal_light"))
 		var health := float(node.get_meta("health", 0.0))
 		bridge.register_static_destructible(node as Node3D, material_id, health)
 
-	# Generated visuals carry their own asset id. Reading it first also works when a
-	# future scene places the visual below a dedicated anchor node.
 	if node is Node3D and node.has_meta("generated_asset_id"):
 		_attach_audio(node as Node3D, get_asset(String(node.get_meta("generated_asset_id", ""))))
 	elif node is Node3D and node.name == "GeneratedVisual":
@@ -73,6 +73,43 @@ func _register_candidate(node: Node) -> void:
 			current = current.get_parent()
 		if current != null:
 			_attach_audio(node as Node3D, get_asset(String(current.get_meta("generated_asset_id", ""))))
+
+func _force_preferred_robot_visual(robot: CharacterBody3D, personality: String) -> void:
+	var preferred := _preferred_robot_entry(personality)
+	if preferred.is_empty():
+		return
+	var preferred_id := String(preferred.get("id", ""))
+	var current := robot.get_node_or_null("GeneratedVisual") as Node3D
+	if current == null:
+		current = robot.find_child("GeneratedVisual", true, false) as Node3D
+	var current_id := String(current.get_meta("generated_asset_id", "")) if current != null else ""
+	if current_id == preferred_id:
+		robot.set_meta("generated_asset_id", preferred_id)
+		return
+	robot.set_meta("generated_asset_id", preferred_id)
+	bridge.call("_attach_generated_visual", robot, preferred)
+
+func _preferred_robot_entry(personality: String) -> Dictionary:
+	var category := "robot_biped" if personality == "specter" else "robot_quadruped"
+	var preferred_ids := ["specter_5", "specter_05"] if personality == "specter" else ["crawler_7", "crawler_07"]
+	var best: Dictionary = {}
+	var best_score := -1
+	for asset_id in preferred_ids:
+		var entry := get_asset(asset_id)
+		if entry.is_empty() or String(entry.get("category", "")) != category:
+			continue
+		var usage := entry.get("reference_usage", {}) as Dictionary
+		var images_used := int(usage.get("images_used", 0))
+		var score := images_used * 20
+		if String(entry.get("integration", "")) == "replace_procedural":
+			score += 8
+		if not String(entry.get("audio_profile", "")).is_empty():
+			score += 4
+		score += (entry.get("animations", []) as Array).size()
+		if score > best_score:
+			best = entry
+			best_score = score
+	return best
 
 func _enforce_robot_visual_replacement(robot: CharacterBody3D) -> void:
 	if not is_instance_valid(robot):
@@ -84,8 +121,6 @@ func _enforce_robot_visual_replacement(robot: CharacterBody3D) -> void:
 		return
 	generated.visible = true
 	_remove_procedural_visual(robot, generated)
-	# Some dynamically built nodes are attached during the same frame. Enforce the
-	# replacement once more after the tree has settled so no placeholder can reappear.
 	await get_tree().process_frame
 	if is_instance_valid(robot) and is_instance_valid(generated):
 		_remove_procedural_visual(robot, generated)
@@ -102,9 +137,6 @@ func _remove_procedural_visual(robot: CharacterBody3D, generated: Node3D) -> voi
 				geometry.visible = false
 				geometry.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		procedural.queue_free()
-
-	# Remove any stale generated visual left by an older catalog alias, and hide any
-	# remaining procedural geometry while preserving gameplay collisions and hitboxes.
 	for candidate in robot.find_children("GeneratedVisual*", "Node3D", true, false):
 		var visual := candidate as Node3D
 		if visual != null and visual != generated and not generated.is_ancestor_of(visual):
