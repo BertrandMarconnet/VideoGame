@@ -49,6 +49,7 @@ jobs:
           grep -q 'func _update_suno_audio_v14' scripts/main.gd
           grep -q 'func _build_boot_overlay_v15' scripts/main.gd
           grep -q 'BLACKOUT_RUNTIME_READY' scripts/main.gd
+          grep -q 'WORLDFORGE_EDITOR_OPENED_FROM_WEB' scripts/worldforge/worldforge_runtime.gd
 
       - name: Install validation tools
         run: python -m pip install --quiet --disable-pip-version-check gdtoolkit
@@ -57,7 +58,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          gdlint scripts/main.gd > gdlint.log 2>&1
+          gdlint scripts/main.gd scripts/worldforge/*.gd > gdlint.log 2>&1
           status=$?
           set -e
           cat gdlint.log
@@ -105,7 +106,7 @@ jobs:
           grep -q 'BLACKOUT_RUNTIME_READY' godot-runtime.log
           if grep -Eqi 'SCRIPT ERROR|Invalid call|Invalid get index|Attempt to call|ERROR:' godot-runtime.log; then exit 1; fi
 
-      - name: Export Web and publish the direct asset generator
+      - name: Export Web and publish developer tools
         shell: bash
         run: |
           set +e
@@ -116,9 +117,13 @@ jobs:
           python3 tools/patch_web_shell.py build/web/index.html
           grep -q 'BLACKOUT_WEBGL_PREFLIGHT_V16' build/web/index.html
           grep -q 'BLACKOUT_ASSET_GENERATOR_MENU_V2' build/web/index.html
+          grep -q 'BLACKOUT_DEVELOPER_MENU_V1' build/web/index.html
+          test -s build/web/developer.html
           test -s build/web/asset-generator.html
           test -s build/web/asset-autodetect.js
           test -s build/web/github-direct-submit.js
+          grep -q 'BLACKOUT_DEVELOPER_HUB_V1' build/web/developer.html
+          grep -q 'OUVRIR L’ÉDITEUR' build/web/developer.html
           grep -q 'GÉNÉRER LE MODÈLE 3D' build/web/asset-generator.html
           grep -q 'zero-shot-image-classification' build/web/asset-autodetect.js
           grep -q 'Submit asset job' build/web/github-direct-submit.js
@@ -134,7 +139,7 @@ jobs:
           npm install --no-save playwright@1.55.0 pngjs@7.0.0
           npx playwright install --with-deps firefox
 
-      - name: Run exported game in Firefox with software WebGL2
+      - name: Run game and portal in Firefox with software WebGL2
         shell: bash
         run: |
           set -euo pipefail
@@ -146,15 +151,23 @@ jobs:
             if [ "$attempt" -eq 30 ]; then exit 1; fi
             sleep 1
           done
+          curl -fsS http://127.0.0.1:8080/developer.html -o local-developer.html
           curl -fsS http://127.0.0.1:8080/asset-generator.html -o /dev/null
           curl -fsS http://127.0.0.1:8080/asset-autodetect.js -o /dev/null
           curl -fsS http://127.0.0.1:8080/github-direct-submit.js -o /dev/null
+          grep -q 'BLACKOUT_DEVELOPER_HUB_V1' local-developer.html
           xvfb-run -a env BLACKOUT_FIREFOX_HEADLESS=0 BLACKOUT_TEST_URL=http://127.0.0.1:8080/ LIBGL_ALWAYS_SOFTWARE=1 MESA_GL_VERSION_OVERRIDE=3.3 MOZ_WEBRENDER=1 MOZ_X11_EGL=1 node tools/firefox_smoke.mjs
+          xvfb-run -a env BLACKOUT_FIREFOX_HEADLESS=0 BLACKOUT_TEST_URL=http://127.0.0.1:8080/ LIBGL_ALWAYS_SOFTWARE=1 MESA_GL_VERSION_OVERRIDE=3.3 MOZ_WEBRENDER=1 MOZ_X11_EGL=1 node tools/worldforge_portal_smoke.mjs
           test -s build/firefox-smoke.png
           test -s build/firefox-console.log
+          test -s build/worldforge-portal.png
+          test -s build/worldforge-editor-open.png
+          test -s build/worldforge-portal-console.log
+          grep -q 'one-click developer launch validated' build/worldforge-portal-console.log
           cat build/firefox-console.log
+          cat build/worldforge-portal-console.log
 
-      - name: Upload Godot and Firefox diagnostics
+      - name: Upload Godot, portal and Firefox diagnostics
         if: always()
         uses: actions/upload-artifact@v6
         with:
@@ -166,6 +179,10 @@ jobs:
             godot-export.log
             build/firefox-console.log
             build/firefox-smoke.png
+            build/firefox-after-start.png
+            build/worldforge-portal-console.log
+            build/worldforge-portal.png
+            build/worldforge-editor-open.png
             build/http-server.log
           if-no-files-found: warn
 
@@ -177,7 +194,7 @@ jobs:
           JOB_STATUS: ${{ job.status }}
         run: |
           set -euo pipefail
-          if [ "$JOB_STATUS" = "success" ]; then state="success"; description="Godot 4.7, direct asset generator and Firefox validated"; else state="failure"; description="Godot, asset generator or Firefox validation failed"; fi
+          if [ "$JOB_STATUS" = "success" ]; then state="success"; description="Godot, WorldForge portal, asset generator and Firefox validated"; else state="failure"; description="Godot, WorldForge portal or Firefox validation failed"; fi
           curl --fail-with-body -sS -L -X POST -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -d "{\"state\":\"$state\",\"context\":\"blackout/firefox-web\",\"description\":\"$description\",\"target_url\":\"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}"
 
       - name: Configure GitHub Pages
@@ -211,7 +228,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: deploy
     steps:
-      - name: Verify the public game and generator files
+      - name: Verify public game, portal and generator files
         shell: bash
         env:
           PAGE_URL: ${{ needs.deploy.outputs.page_url }}
@@ -226,11 +243,15 @@ jobs:
           done
           grep -qi 'Blackout Protocol' deployed-index.html
           grep -q 'BLACKOUT_WEBGL_PREFLIGHT_V16' deployed-index.html
+          grep -q 'BLACKOUT_DEVELOPER_MENU_V1' deployed-index.html
           curl -fsSL --max-time 60 --range 0-63 "$base/index.wasm" -o /dev/null
           curl -fsSL --max-time 60 --range 0-63 "$base/index.pck" -o /dev/null
+          curl -fsSL --max-time 60 "$base/developer.html" -o deployed-developer.html
           curl -fsSL --max-time 60 "$base/asset-generator.html" -o deployed-generator.html
           curl -fsSL --max-time 60 "$base/asset-autodetect.js" -o deployed-autodetect.js
           curl -fsSL --max-time 60 "$base/github-direct-submit.js" -o deployed-submit.js
+          grep -q 'BLACKOUT_DEVELOPER_HUB_V1' deployed-developer.html
+          grep -q 'OUVRIR L’ÉDITEUR' deployed-developer.html
           grep -q 'GÉNÉRER LE MODÈLE 3D' deployed-generator.html
           grep -q 'zero-shot-image-classification' deployed-autodetect.js
           grep -q 'Submit asset job' deployed-submit.js
