@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "map": {
+    "width": 34.0,
+    "length": 176.0,
+    "floor_y": 0.0,
+    "ceiling_y": 8.1,
+    "safe_corridor_half_width": 4.2,
+    "sector_start_z": -25.0,
+    "sector_spacing": 16.5,
+    "sector_count": 8
+  },
+  "modules": [
+    {
+      "id": "open_storage",
+      "weight": 1.25,
+      "requires_wall": false,
+      "event_tags": ["loot", "noise", "cover"]
+    },
+    {
+      "id": "maintenance_cell",
+      "weight": 1.0,
+      "requires_wall": true,
+      "event_tags": ["repair", "terminal", "ambush"]
+    },
+    {
+      "id": "observation_lab",
+      "weight": 0.85,
+      "requires_wall": true,
+      "event_tags": ["archive", "camera", "athena"]
+    },
+    {
+      "id": "destroyed_office",
+      "weight": 0.9,
+      "requires_wall": true,
+      "event_tags": ["lore", "debris", "hallucination"]
+    },
+    {
+      "id": "cable_bay",
+      "weight": 0.8,
+      "requires_wall": false,
+      "event_tags": ["electric", "darkness", "drone"]
+    },
+    {
+      "id": "empty_tension",
+      "weight": 0.65,
+      "requires_wall": false,
+      "event_tags": ["silence", "stalker", "false_signal"]
+    }
+  ],
+  "constraints": {
+    "max_same_module_in_sequence": 1,
+    "max_heavy_modules_per_sector": 1,
+    "minimum_player_path_width": 4.0,
+    "minimum_object_spacing": 0.35,
+    "preserve_story_nodes": ["Player", "Terminal", "SPECTER-5", "CRAWLER-7", "Shelter", "Relay", "Uplink"]
+  }
+}
