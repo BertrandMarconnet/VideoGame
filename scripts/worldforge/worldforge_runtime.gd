@@ -21,11 +21,14 @@ var _scene_instance_id := 0
 var _bootstrap_pending := false
 var _ui_state := ""
 var _audit_elapsed := 0.0
+var _open_editor_on_boot := false
+var _requested_seed := 0
 
 func _ready() -> void:
 	name = "WorldForgeRuntime"
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	developer_mode = _detect_developer_mode()
+	_read_web_launch_options()
 	generator = GeneratorScript.new()
 	audit_agent = AuditAgentScript.new()
 	repair_agent = RepairAgentScript.new()
@@ -73,7 +76,7 @@ func _bootstrap_current_scene() -> void:
 	_scene_instance_id = resolved_root.get_instance_id()
 	scene_root = resolved_root
 	_cleanup_scene_services()
-	current_seed = _new_launch_seed()
+	current_seed = _requested_seed if _requested_seed != 0 else _new_launch_seed()
 	last_manifest = generator.generate(scene_root, current_seed)
 	await get_tree().process_frame
 	var result := run_audit(true)
@@ -84,6 +87,8 @@ func _bootstrap_current_scene() -> void:
 	_save_json("user://worldforge/last_repair.json", last_repair)
 	_setup_event_director()
 	_setup_developer_editor()
+	if _open_editor_on_boot and developer_editor != null and is_instance_valid(developer_editor):
+		developer_editor.call_deferred("open_editor")
 	print("WORLDFORGE_READY seed=%d modules=%d issues=%d repairs=%d" % [
 		current_seed,
 		(last_manifest.get("modules", []) as Array).size(),
@@ -154,6 +159,13 @@ func set_developer_mode(enabled: bool) -> void:
 		_setup_developer_editor()
 	elif developer_editor != null:
 		developer_editor.visible = false
+
+func open_developer_editor() -> void:
+	if not developer_mode:
+		return
+	_setup_developer_editor()
+	if developer_editor != null and is_instance_valid(developer_editor):
+		developer_editor.call_deferred("open_editor")
 
 func _setup_event_director() -> void:
 	if scene_root == null:
@@ -251,8 +263,19 @@ func _detect_developer_mode() -> bool:
 		return true
 	if OS.has_feature("web"):
 		var query_value = JavaScriptBridge.eval("new URLSearchParams(window.location.search).get('dev')", true)
-		return String(query_value) in ["1", "true", "worldforge"]
+		return String(query_value).to_lower() in ["1", "true", "worldforge"]
 	return false
+
+func _read_web_launch_options() -> void:
+	if not OS.has_feature("web"):
+		return
+	var editor_value = JavaScriptBridge.eval("new URLSearchParams(window.location.search).get('editor')", true)
+	_open_editor_on_boot = developer_mode and String(editor_value).to_lower() in ["1", "true", "open"]
+	var seed_value = JavaScriptBridge.eval("new URLSearchParams(window.location.search).get('seed')", true)
+	var seed_text := String(seed_value).strip_edges()
+	if seed_text.is_valid_int():
+		_requested_seed = int(seed_text)
+	print("WORLDFORGE_WEB_LAUNCH developer=%s editor=%s seed=%d" % [developer_mode, _open_editor_on_boot, _requested_seed])
 
 func _save_json(path: String, data: Variant) -> void:
 	_ensure_directory(path.get_base_dir())
