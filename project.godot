@@ -9,6 +9,12 @@ config/icon="res://assets/icon.svg"
 
 [autoload]
 GeneratedAssetRuntime="*res://scripts/generated_assets/asset_bridge_runtime.gd"
+WorldForgeRuntime="*res://scripts/worldforge/worldforge_runtime.gd"
+
+[blackout]
+worldforge/developer_tools=false
+worldforge/procedural_generation=true
+worldforge/auto_repair=true
 
 [display]
 window/size/viewport_width=1280
