@@ -61,5 +61,6 @@
   "audio_files": [],
   "audio_file_errors": [],
   "job_id": "crawler_7-v7-reference-regeneration",
-  "submitted_from": "maintenance_reference_regeneration"
+  "submitted_from": "maintenance_reference_regeneration",
+  "retry_revision": 2
 }
