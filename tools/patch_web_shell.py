@@ -28,7 +28,9 @@ STYLE_AND_SCRIPT = r'''
 </style>
 <script>
 (()=>{"use strict";
- const addLink=()=>{if(document.getElementById("blackout-asset-generator-link"))return;const link=document.createElement("a");link.id="blackout-asset-generator-link";link.href="./asset-generator.html";link.target="_blank";link.rel="noopener";link.textContent="⚙ GÉNÉRER UN ASSET 3D";link.title="Analyser les images et lancer directement la génération GitHub";document.body.appendChild(link)};
+ const params=new URLSearchParams(window.location.search);
+ const developerMode=["1","true","worldforge"].includes(String(params.get("dev")||"").toLowerCase());
+ const addLink=()=>{if(!developerMode||document.getElementById("blackout-asset-generator-link"))return;const link=document.createElement("a");link.id="blackout-asset-generator-link";link.href="./asset-generator.html?dev=worldforge";link.target="_blank";link.rel="noopener";link.textContent="⚙ GÉNÉRER UN ASSET 3D";link.title="Outil développeur WorldForge : analyser les images et lancer la génération GitHub";document.body.appendChild(link)};
  const showError=()=>{let panel=document.getElementById("blackout-webgl-error");if(!panel){panel=document.createElement("section");panel.id="blackout-webgl-error";panel.setAttribute("role","alert");panel.innerHTML='<div class="bp-card"><div style="color:#ffc343;font-weight:700">TOYGUARD S-01 // ERREUR GRAPHIQUE</div><h1>WEBGL2 INDISPONIBLE</h1><p>Le moteur Godot 4 ne peut pas créer le rendu 3D. Activez l’accélération graphique, redémarrez le navigateur puis rechargez avec Ctrl+F5.</p><button type="button" onclick="location.reload()">RELANCER LE PROTOCOLE</button></div>';document.body.appendChild(panel)}panel.style.display="flex"};
  const check=()=>{addLink();try{const canvas=document.createElement("canvas");const gl=canvas.getContext("webgl2",{alpha:false,antialias:false,depth:false,stencil:false});if(!gl)showError()}catch(error){console.error("BLACKOUT_WEBGL_PREFLIGHT",error);showError()}};
  document.readyState==="loading"?document.addEventListener("DOMContentLoaded",check,{once:true}):check();
