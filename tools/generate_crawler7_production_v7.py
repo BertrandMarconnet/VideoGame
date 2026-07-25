@@ -5,6 +5,9 @@ Version 7 keeps the validated v6 topology, rigid quadruped rig, animations and d
 part names. It adds a second, conservative silhouette pass that distinguishes the upper body from
 the lower leg/foot band. The pass changes body width/length, sensor spread, armour thickness and
 foot contact without moving the articulation pivots, so animation stability is preserved.
+
+Part-aware deformation is enabled only when v6 confirms a complete orthographic pack containing
+front, right, back and three-quarter views. Incomplete packs keep the validated deterministic mesh.
 """
 from __future__ import annotations
 
@@ -78,7 +81,6 @@ def silhouette_bands(path: Path, role: str) -> dict[str, Any]:
             difference = abs(red - background[0]) + abs(green - background[1]) + abs(blue - background[2])
             if alpha < 0.12 or difference < threshold:
                 continue
-            # Ignore isolated very bright background reflections but keep small metal highlights.
             if max(red, green, blue) > 0.97 and difference < threshold * 1.8:
                 continue
             row.append(x)
@@ -153,6 +155,7 @@ def analyze_part_profile() -> dict[str, Any]:
 
     return {
         "engine": "crawler_part_fit_v1",
+        "enabled": True,
         "views": profiles,
         "factors": {
             "body_width": round(body_width, 5),
@@ -161,6 +164,23 @@ def analyze_part_profile() -> dict[str, Any]:
             "foot_width": round(foot_width, 5),
             "foot_length": round(foot_length, 5),
             "armour_thickness": round(armour_thickness, 5),
+        },
+    }
+
+
+def fallback_part_profile(reason: str) -> dict[str, Any]:
+    return {
+        "engine": "crawler_part_fit_v1",
+        "enabled": False,
+        "fallback_reason": reason,
+        "views": [],
+        "factors": {
+            "body_width": 1.0,
+            "body_length": 1.0,
+            "sensor_spread": 1.0,
+            "foot_width": 1.0,
+            "foot_length": 1.0,
+            "armour_thickness": 1.0,
         },
     }
 
@@ -195,7 +215,6 @@ def apply_part_fit(profile: dict[str, Any]) -> None:
             world.translation.x *= sensor_spread
             obj.matrix_world = world
         if "toe" in lower_name or "footpad" in lower_name or "footbeam" in lower_name:
-            # Local scaling preserves the animated ankle pivot while improving ground contact.
             obj.scale.x *= foot_width
             obj.scale.y *= foot_length
         elif any(token in lower_name for token in ("uppercap", "lowercap", "hipcover", "kneecover")):
@@ -206,9 +225,17 @@ def apply_part_fit(profile: dict[str, Any]) -> None:
 def fitted_build(quality: str):
     global PART_PROFILE
     rig, clips, collisions = previous_build(quality)
-    PART_PROFILE = analyze_part_profile()
-    apply_part_fit(PART_PROFILE)
+    reference_profile = namespace.get("REFERENCE_PROFILE", {})
+    if bool(reference_profile.get("enabled", False)):
+        PART_PROFILE = analyze_part_profile()
+        apply_part_fit(PART_PROFILE)
+        print("CRAWLER-7 part-aware four-view fitting enabled")
+    else:
+        reason = str(reference_profile.get("fallback_reason", "complete orthographic pack required"))
+        PART_PROFILE = fallback_part_profile(reason)
+        print("CRAWLER-7 part-aware fitting fallback: " + reason)
     rig["part_fit_engine"] = PART_PROFILE["engine"]
+    rig["part_fit_enabled"] = bool(PART_PROFILE.get("enabled", False))
     return rig, clips, collisions
 
 
@@ -218,8 +245,12 @@ def fitted_report(path: Path, output: Path, rig, clips, collisions: int) -> None
     usage = data.setdefault("reference_usage", {})
     usage["part_fit"] = PART_PROFILE
     data["generator"] = "Blender deterministic hard-surface v7 part-aware reference-fitted"
-    data["visual_fidelity"] = "orthographic silhouette + body/leg band fit + reference-derived PS1 palette atlas"
+    if bool(PART_PROFILE.get("enabled", False)):
+        data["visual_fidelity"] = "orthographic four-view silhouette + body/leg band fit + reference-derived PS1 palette atlas"
+    else:
+        data["visual_fidelity"] = "validated deterministic crawler fallback; part deformation disabled until four orthographic views are supplied"
     data["part_fit_engine"] = PART_PROFILE.get("engine", "none")
+    data["part_fit_enabled"] = bool(PART_PROFILE.get("enabled", False))
     data["part_fit_factors"] = PART_PROFILE.get("factors", {})
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     fit_path = path.with_name(path.name.replace(".metrics.json", ".fit.json"))
