@@ -267,8 +267,8 @@ func _drop_target_to_floor() -> void:
 	var target := _selected_target()
 	if target == null:
 		return
-	var size_value = target.get_meta("size", Vector3.ONE)
-	var size := size_value if size_value is Vector3 else Vector3.ONE
+	var size_value: Variant = target.get_meta("size", Vector3.ONE)
+	var size: Vector3 = size_value as Vector3 if size_value is Vector3 else Vector3.ONE
 	target.global_position.y = size.y * 0.5
 	_log("%s reposé au sol." % target.name)
 
