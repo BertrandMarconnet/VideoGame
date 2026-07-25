@@ -41,10 +41,12 @@ func _audit_spatial_nodes(scene_root: Node3D) -> void:
 			continue
 		var node := candidate as Node3D
 		_stats["nodes_scanned"] = int(_stats["nodes_scanned"]) + 1
-		if bool(node.get_meta("worldforge_generated", false)):
+		var generated := bool(node.get_meta("worldforge_generated", false))
+		var replaceable := bool(node.get_meta("worldforge_replaceable", false))
+		if generated:
 			_stats["generated_nodes"] = int(_stats["generated_nodes"]) + 1
 		var pos := node.global_position
-		if bool(node.get_meta("worldforge_generated", false)) and (absf(pos.x) > MAP_HALF_WIDTH or pos.z < MAP_MIN_Z or pos.z > MAP_MAX_Z):
+		if generated and replaceable and (absf(pos.x) > MAP_HALF_WIDTH or pos.z < MAP_MIN_Z or pos.z > MAP_MAX_Z):
 			_add_issue("high", "out_of_bounds", node, "Élément généré hors des limites jouables.", {"position": _vec3(pos)})
 		if bool(node.get_meta("worldforge_floor_bound", false)):
 			var size := _node_size(node)
@@ -136,19 +138,16 @@ func _audit_ui(scene_root: Node3D) -> void:
 	if start_panel is Control and (start_panel as Control).visible:
 		var panel := start_panel as Control
 		if panel.z_index < 100:
-			_stats["ui_issues"] = int(_stats["ui_issues"]) + 1
 			_add_issue("high", "start_panel_behind_hud", panel, "Le menu de démarrage peut être recouvert par le HUD.", {"z_index": panel.z_index})
 		for child in panel.find_children("*", "Control", true, false):
 			if child is Control and (child as Control).visible:
 				var rect := (child as Control).get_global_rect()
 				if rect.size.x > 4.0 and rect.size.y > 4.0 and not viewport_rect.encloses(rect.grow(-1.0)):
-					_stats["ui_issues"] = int(_stats["ui_issues"]) + 1
 					_add_issue("medium", "start_ui_outside_viewport", child, "Contrôle du menu hors de la zone visible.", {"rect": [rect.position.x, rect.position.y, rect.size.x, rect.size.y]})
 	if not game_started and start_panel is Control and (start_panel as Control).visible:
 		for property_name in ["phase_label", "objective_label", "status_label", "health_label", "fear_label", "athena_hud_label", "task_hint_label"]:
 			var value = scene_root.get(property_name)
 			if value is Control and (value as Control).visible:
-				_stats["ui_issues"] = int(_stats["ui_issues"]) + 1
 				_add_issue("high", "hud_visible_over_start_menu", value, "Élément HUD visible au-dessus du menu de démarrage.", {"property": property_name})
 
 func _node_size(node: Node3D) -> Vector3:
