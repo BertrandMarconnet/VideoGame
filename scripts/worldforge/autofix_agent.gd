@@ -74,7 +74,8 @@ func _resolve_generated_overlap(scene_root: Node3D, node: Node3D, issue: Diction
 		Vector3(0.0, 0.0, -0.8),
 		Vector3(side_sign * 1.4, 0.0, 0.0)
 	]
-	var other_path := String((issue.get("details", {}) as Dictionary).get("other_path", ""))
+	var details := issue.get("details", {}) as Dictionary
+	var other_path := String(details.get("other_path", ""))
 	var other := scene_root.get_node_or_null(NodePath(other_path)) if not other_path.is_empty() else null
 	for offset in offsets:
 		var candidate := before + offset
@@ -101,19 +102,19 @@ func _repair_robot_visuals(robot_node: Node, actions: Array[Dictionary], code: S
 		return
 	var generated_3d := generated as Node3D
 	generated_3d.visible = true
+	var changed := false
 	var procedural := robot_node.find_child("ProceduralVisual", true, false)
 	if procedural is Node3D:
 		(procedural as Node3D).visible = false
 		(procedural as Node3D).process_mode = Node.PROCESS_MODE_DISABLED
 		(procedural as Node3D).queue_free()
-	var first_kept := false
+		changed = true
 	for candidate in robot_node.find_children("GeneratedVisual*", "Node3D", true, false):
-		if candidate == generated_3d and not first_kept:
-			first_kept = true
-			continue
 		if candidate is Node3D and candidate != generated_3d and not generated_3d.is_ancestor_of(candidate):
 			(candidate as Node3D).queue_free()
-	actions.append({"code": code, "node_path": str(robot_node.get_path()), "result": "generated_visual_kept_procedural_removed"})
+			changed = true
+	if changed:
+		actions.append({"code": code, "node_path": str(robot_node.get_path()), "result": "generated_visual_kept_procedural_removed"})
 
 func _repair_start_ui(scene_root: Node3D, actions: Array[Dictionary]) -> void:
 	var panel_value = scene_root.get("start_panel")
@@ -142,22 +143,28 @@ func _repair_start_ui(scene_root: Node3D, actions: Array[Dictionary]) -> void:
 				var label := child as Label
 				label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 				label.clip_text = false
-				label.custom_minimum_size.x = minf(content_width - 36.0, maxf(label.custom_minimum_size.x, 320.0))
+				var label_minimum := label.custom_minimum_size
+				label_minimum.x = minf(content_width - 36.0, maxf(label_minimum.x, 320.0))
+				label.custom_minimum_size = label_minimum
 			if child is Button:
 				var button := child as Button
-				button.custom_minimum_size.x = minf(content_width - 48.0, 520.0)
+				var button_minimum := button.custom_minimum_size
+				button_minimum.x = minf(content_width - 48.0, 520.0)
+				button.custom_minimum_size = button_minimum
 				button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	var game_started_value = scene_root.get("game_started")
 	var game_started := bool(game_started_value) if game_started_value != null else false
-	var menu_active := panel.visible and not game_started
+	var intro_value = scene_root.get("intro_panel")
+	var intro_visible := intro_value is Control and (intro_value as Control).visible
+	var overlay_active := not game_started and (panel.visible or intro_visible)
 	for property_name in ["phase_label", "objective_label", "status_label", "health_label", "fear_label", "athena_hud_label", "task_hint_label", "hud_round_label", "hud_seed_label"]:
 		var value = scene_root.get(property_name)
 		if value is Control:
-			(value as Control).visible = not menu_active
+			(value as Control).visible = not overlay_active
 	var mobile_value = scene_root.get("mobile_layer")
-	if mobile_value is Control and menu_active:
-		(mobile_value as Control).visible = false
-	actions.append({"code": "ui_safe_layout", "node_path": str(panel.get_path()), "menu_active": menu_active, "content_size": [content_width, content_height]})
+	if mobile_value is Control:
+		(mobile_value as Control).visible = game_started and not overlay_active
+	actions.append({"code": "ui_safe_layout", "node_path": str(panel.get_path()), "overlay_active": overlay_active, "content_size": [content_width, content_height]})
 
 func _node_size(node: Node3D) -> Vector3:
 	var value = node.get_meta("size", null)
