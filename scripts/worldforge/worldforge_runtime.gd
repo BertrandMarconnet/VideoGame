@@ -226,7 +226,7 @@ func _new_launch_seed() -> int:
 		Time.get_ticks_usec(),
 		current_scene_path
 	]
-	var seed_value := abs(hash(source))
+	var seed_value: int = absi(hash(source))
 	return seed_value if seed_value != 0 else 19870922
 
 func _load_or_create_installation_id() -> String:
