@@ -120,6 +120,7 @@ jobs:
             tools/generate_game_asset_v3.py \
             tools/generate_crawler7_production_v5.py \
             tools/generate_crawler7_production_v6.py \
+            tools/generate_crawler7_production_v7.py \
             tools/generate_specter5_production.py \
             tools/generate_specter5_production_v2.py \
             tools/build_asset_audio.py \
@@ -175,6 +176,31 @@ jobs:
             cp "$request_source" "$REQUEST_JSON"
           fi
 
+          # A production asset can be regenerated from reference files kept in Git history.
+          # Only a fixed commit SHA and safe historical asset_jobs input paths are accepted.
+          archive_commit="$(jq -r '.reference_source_commit // empty' "$REQUEST_JSON")"
+          if [[ -n "$archive_commit" ]]; then
+            [[ "$archive_commit" =~ ^[0-9a-fA-F]{40}$ ]] || { echo "Invalid reference_source_commit"; exit 1; }
+            refs_file="build/game-asset/archive-references.json"
+            echo '[]' > "$refs_file"
+            index=0
+            while IFS= read -r archive_path; do
+              [[ "$archive_path" =~ ^asset_jobs/[A-Za-z0-9._-]+/input/[A-Za-z0-9._-]+\.(png|jpg|jpeg|webp)$ ]] || {
+                echo "Unsafe archived reference path: $archive_path"
+                exit 1
+              }
+              git cat-file -e "${archive_commit}:${archive_path}"
+              index=$((index + 1))
+              extension="${archive_path##*.}"
+              target="$IMAGE_DIR/reference_${index}.${extension,,}"
+              git show "${archive_commit}:${archive_path}" > "$target"
+              jq --arg value "$target" '. + [$value]' "$refs_file" > "${refs_file}.tmp"
+              mv "${refs_file}.tmp" "$refs_file"
+            done < <(jq -r '.reference_images_archive[]? // empty' "$REQUEST_JSON")
+            jq --slurpfile refs "$refs_file" '.reference_images = $refs[0] | del(.reference_source_commit, .reference_images_archive)' "$REQUEST_JSON" > "${REQUEST_JSON}.tmp"
+            mv "${REQUEST_JSON}.tmp" "$REQUEST_JSON"
+          fi
+
           jq -e '
             .schema_version == 1 and
             (.slug | test("^[a-z0-9_]{1,64}$")) and
@@ -213,18 +239,23 @@ jobs:
           mkdir -p "$BUNDLE_DIR" build/game-asset/logs
           if [[ "$GENERATOR_PROFILE" == "crawler7" ]]; then
             blender --background --factory-startup \
-              --python tools/generate_crawler7_production_v6.py -- \
+              --python tools/generate_crawler7_production_v7.py -- \
               --request "$REQUEST_JSON" \
               --output "$BUNDLE_DIR/$SLUG.glb" \
               --metrics "$BUNDLE_DIR/$SLUG.metrics.json" \
               --preview "$BUNDLE_DIR/$SLUG.png" \
               --quality "$(jq -r '.quality' "$REQUEST_JSON" | sed 's/standard/high/;s/hero/high/')" \
               2>&1 | tee build/game-asset/logs/generation.log
-            jq -e '.reference_images_used >= 1 and .reference_usage.engine == "crawler_reference_fit_v2"' "$BUNDLE_DIR/$SLUG.metrics.json"
+            jq -e '
+              .reference_images_used >= 1 and
+              .reference_usage.engine == "crawler_reference_fit_v2" and
+              .part_fit_engine == "crawler_part_fit_v1"
+            ' "$BUNDLE_DIR/$SLUG.metrics.json"
             python3 tools/build_asset_sidecars.py \
               --request "$REQUEST_JSON" \
               --metrics "$BUNDLE_DIR/$SLUG.metrics.json" \
               --output-dir "$BUNDLE_DIR"
+            jq -e '.id == "crawler_7" and .integration == "replace_procedural"' "$BUNDLE_DIR/$SLUG.asset.json"
           elif [[ "$GENERATOR_PROFILE" == "specter_biped" ]]; then
             blender --background --factory-startup \
               --python tools/generate_specter5_production_v2.py -- \
@@ -267,6 +298,7 @@ jobs:
           fi
           grep -q 'ProceduralVisual' src_parts/main_03.gdpart
           grep -q '_disable_procedural_visual' scripts/generated_assets/asset_bridge.gd
+          grep -q '_remove_procedural_visual' scripts/generated_assets/asset_bridge_autoload.gd
           grep -q '_set_robot_animation' src_parts/main_08.gdpart
           grep -q 'GeneratedAssetAudio' scripts/generated_assets/asset_bridge_autoload.gd
 
@@ -353,7 +385,7 @@ jobs:
         run: |
           python3 -m py_compile \
             tools/generate_game_asset.py tools/generate_game_asset_v2.py tools/generate_game_asset_v3.py \
-            tools/generate_crawler7_production_v5.py tools/generate_crawler7_production_v6.py \
+            tools/generate_crawler7_production_v5.py tools/generate_crawler7_production_v6.py tools/generate_crawler7_production_v7.py \
             tools/generate_specter5_production.py tools/generate_specter5_production_v2.py \
             tools/build_asset_audio.py tools/build_asset_audio_v2.py tools/build_asset_sidecars.py \
             tools/sanitize_generated_glb.py tools/validate_game_asset_bundle.py
@@ -367,7 +399,7 @@ jobs:
           mkdir -p "$OUT"
           set +e
           if [[ "$PROFILE" == "crawler7" ]]; then
-            blender --background --factory-startup --python tools/generate_crawler7_production_v6.py -- \
+            blender --background --factory-startup --python tools/generate_crawler7_production_v7.py -- \
               --request "$REQUEST" --output "$OUT/$SLUG.glb" --metrics "$OUT/$SLUG.metrics.json" --preview "$OUT/$SLUG.png" --quality web \
               2>&1 | tee "$OUT/generation.log"
             status=${PIPESTATUS[0]}
@@ -383,7 +415,9 @@ jobs:
           fi
           set -e
           if [[ $status -ne 0 ]]; then tail -n 200 "$OUT/generation.log"; exit $status; fi
-          if [[ "$PROFILE" == "crawler7" ]]; then jq -e '.reference_images_used >= 1' "$OUT/$SLUG.metrics.json"; fi
+          if [[ "$PROFILE" == "crawler7" ]]; then
+            jq -e '.reference_images_used >= 1 and .part_fit_engine == "crawler_part_fit_v1"' "$OUT/$SLUG.metrics.json"
+          fi
           python3 tools/validate_game_asset_bundle.py --bundle "$OUT" --slug "$SLUG" --report "$OUT/$SLUG.validation.json"
       - name: Upload preview and diagnostics
         if: always()
