@@ -4,6 +4,15 @@
 	start_button.custom_minimum_size = Vector2(320, 54)
 	start_button.pressed.connect(_start_game)
 	box.add_child(start_button)
+	var crawler_preview := Button.new()
+	crawler_preview.text = "TESTER CRAWLER-7 GÉNÉRÉ"
+	crawler_preview.custom_minimum_size = Vector2(320, 48)
+	crawler_preview.tooltip_text = "Ouvre la scène de contrôle du GLB, du rig, des animations et des sons du CRAWLER-7."
+	crawler_preview.pressed.connect(func() -> void:
+		get_tree().paused = false
+		get_tree().change_scene_to_file("res://scenes/debug/crawler_generated_preview.tscn")
+	)
+	box.add_child(crawler_preview)
 
 func _build_pause_panel() -> void:
 	pause_panel = _overlay(Color(0.0, 0.0, 0.0, 0.82))
