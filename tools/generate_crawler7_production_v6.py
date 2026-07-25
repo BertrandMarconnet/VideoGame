@@ -25,6 +25,9 @@ if spec is None or spec.loader is None:
 fit_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(fit_module)
 
+# Compatibility export used by the v7 part-aware fitting layer.
+view_role = fit_module.view_role
+
 core = namespace["core"]
 previous_build = core.build
 previous_report = core.report
