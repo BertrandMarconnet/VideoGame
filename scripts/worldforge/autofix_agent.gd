@@ -68,7 +68,7 @@ func repair(scene_root: Node3D, report: Dictionary) -> Dictionary:
 func _resolve_generated_overlap(scene_root: Node3D, node: Node3D, issue: Dictionary, actions: Array[Dictionary]) -> void:
 	var before := node.global_position
 	var side_sign := -1.0 if before.x < 0.0 else 1.0
-	var offsets := [
+	var offsets: Array[Vector3] = [
 		Vector3(side_sign * 0.7, 0.0, 0.0),
 		Vector3(0.0, 0.0, 0.8),
 		Vector3(0.0, 0.0, -0.8),
@@ -77,8 +77,8 @@ func _resolve_generated_overlap(scene_root: Node3D, node: Node3D, issue: Diction
 	var details := issue.get("details", {}) as Dictionary
 	var other_path := String(details.get("other_path", ""))
 	var other := scene_root.get_node_or_null(NodePath(other_path)) if not other_path.is_empty() else null
-	for offset in offsets:
-		var candidate := before + offset
+	for offset: Vector3 in offsets:
+		var candidate: Vector3 = before + offset
 		candidate.x = clampf(candidate.x, -MAP_HALF_WIDTH, MAP_HALF_WIDTH)
 		candidate.z = clampf(candidate.z, MAP_MIN_Z, MAP_MAX_Z)
 		if other is Node3D and candidate.distance_to((other as Node3D).global_position) < 0.65:
