@@ -62,14 +62,17 @@ func _register_candidate(node: Node) -> void:
 		var material_id := String(node.get_meta("material_id", "metal_light"))
 		var health := float(node.get_meta("health", 0.0))
 		bridge.register_static_destructible(node as Node3D, material_id, health)
-	if node is Node3D and node.name == "GeneratedVisual":
-		var owner := node.get_parent()
-		if owner != null:
-			var asset_id := String(owner.get_meta("generated_asset_id", ""))
-			if not asset_id.is_empty():
-				_attach_audio(node as Node3D, get_asset(asset_id))
-	elif node is Node3D and node.has_meta("generated_asset_id"):
+
+	# Generated visuals carry their own asset id. Reading it first also works when a
+	# future scene places the visual below a dedicated anchor node.
+	if node is Node3D and node.has_meta("generated_asset_id"):
 		_attach_audio(node as Node3D, get_asset(String(node.get_meta("generated_asset_id", ""))))
+	elif node is Node3D and node.name == "GeneratedVisual":
+		var current := node.get_parent()
+		while current != null and not current.has_meta("generated_asset_id"):
+			current = current.get_parent()
+		if current != null:
+			_attach_audio(node as Node3D, get_asset(String(current.get_meta("generated_asset_id", ""))))
 
 func _enforce_robot_visual_replacement(robot: CharacterBody3D) -> void:
 	if not is_instance_valid(robot):
@@ -79,8 +82,18 @@ func _enforce_robot_visual_replacement(robot: CharacterBody3D) -> void:
 		generated = robot.find_child("GeneratedVisual", true, false) as Node3D
 	if generated == null:
 		return
+	generated.visible = true
+	_remove_procedural_visual(robot, generated)
+	# Some dynamically built nodes are attached during the same frame. Enforce the
+	# replacement once more after the tree has settled so no placeholder can reappear.
+	await get_tree().process_frame
+	if is_instance_valid(robot) and is_instance_valid(generated):
+		_remove_procedural_visual(robot, generated)
+		robot.set_meta("generated_visual_replacement_finalized", true)
+
+func _remove_procedural_visual(robot: CharacterBody3D, generated: Node3D) -> void:
 	var procedural := robot.get_node_or_null("ProceduralVisual") as Node3D
-	if procedural != null:
+	if procedural != null and procedural != generated and not generated.is_ancestor_of(procedural):
 		procedural.visible = false
 		procedural.process_mode = Node.PROCESS_MODE_DISABLED
 		for child in procedural.find_children("*", "GeometryInstance3D", true, false):
@@ -88,13 +101,21 @@ func _enforce_robot_visual_replacement(robot: CharacterBody3D) -> void:
 			if geometry != null:
 				geometry.visible = false
 				geometry.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		procedural.queue_free()
+
+	# Remove any stale generated visual left by an older catalog alias, and hide any
+	# remaining procedural geometry while preserving gameplay collisions and hitboxes.
+	for candidate in robot.find_children("GeneratedVisual*", "Node3D", true, false):
+		var visual := candidate as Node3D
+		if visual != null and visual != generated and not generated.is_ancestor_of(visual):
+			visual.queue_free()
 	for child in robot.find_children("*", "GeometryInstance3D", true, false):
 		var geometry := child as GeometryInstance3D
-		if geometry == null or generated.is_ancestor_of(geometry):
+		if geometry == null or geometry == generated or generated.is_ancestor_of(geometry):
 			continue
 		geometry.visible = false
 		geometry.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	robot.set_meta("generated_visual_replacement_finalized", true)
+		geometry.set_meta("hidden_by_generated_asset", true)
 
 func _attach_audio(target: Node3D, entry: Dictionary) -> void:
 	if target == null or entry.is_empty() or target.get_node_or_null("GeneratedAssetAudio") != null:
