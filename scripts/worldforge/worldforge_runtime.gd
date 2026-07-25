@@ -87,8 +87,8 @@ func _bootstrap_current_scene() -> void:
 	_save_json("user://worldforge/last_repair.json", last_repair)
 	_setup_event_director()
 	_setup_developer_editor()
-	if _open_editor_on_boot and developer_editor != null and is_instance_valid(developer_editor):
-		developer_editor.call_deferred("open_editor")
+	if _open_editor_on_boot:
+		_open_developer_editor_now()
 	print("WORLDFORGE_READY seed=%d modules=%d issues=%d repairs=%d" % [
 		current_seed,
 		(last_manifest.get("modules", []) as Array).size(),
@@ -164,8 +164,15 @@ func open_developer_editor() -> void:
 	if not developer_mode:
 		return
 	_setup_developer_editor()
-	if developer_editor != null and is_instance_valid(developer_editor):
-		developer_editor.call_deferred("open_editor")
+	_open_developer_editor_now()
+
+func _open_developer_editor_now() -> void:
+	if developer_editor == null or not is_instance_valid(developer_editor):
+		return
+	developer_editor.visible = true
+	developer_editor.call_deferred("_refresh_lists")
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	print("WORLDFORGE_EDITOR_OPENED_FROM_WEB")
 
 func _setup_event_director() -> void:
 	if scene_root == null:
