@@ -47,11 +47,37 @@ func _register_current_robot(robot: CharacterBody3D) -> void:
 func _resolve_robot_asset_id(personality: String) -> String:
 	var key := "specter" if personality == "specter" else "crawler"
 	var candidates: Array = ROBOT_ASSET_CANDIDATES[key]
+	var best_id := String(candidates[0])
+	var best_score := -1
 	for candidate_variant in candidates:
 		var candidate := String(candidate_variant)
-		if has_asset(candidate):
-			return candidate
-	return String(candidates[0])
+		if not has_asset(candidate):
+			continue
+		var entry := get_asset(candidate)
+		var score := _asset_score(candidate, entry)
+		if score > best_score:
+			best_score = score
+			best_id = candidate
+	return best_id
+
+func _asset_score(asset_id: String, entry: Dictionary) -> int:
+	var score := 0
+	var glb_path := String(entry.get("glb", ""))
+	if glb_path.begins_with("res://assets/generated/"):
+		score += 20
+	var integration := String(entry.get("integration", "catalog_only"))
+	if integration == "replace_procedural":
+		score += 8
+	elif integration == "bridge_module":
+		score += 6
+	var usage := entry.get("reference_usage", {}) as Dictionary
+	score += mini(int(usage.get("images_used", 0)), 6) * 10
+	var part_fit := usage.get("part_fit", {}) as Dictionary
+	if String(entry.get("part_fit_engine", part_fit.get("engine", ""))) == "crawler_part_fit_v1":
+		score += 15
+	if asset_id == "crawler_7" or asset_id == "specter_5":
+		score += 2
+	return score
 
 func _finalize_current_robot(robot: CharacterBody3D, asset_id: String) -> void:
 	if not is_instance_valid(robot):
