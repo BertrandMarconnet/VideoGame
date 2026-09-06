@@ -12,6 +12,7 @@ func _add_mobile_action_control(label_text: String, action: StringName, anchor_p
 	var touch_shape := RectangleShape2D.new()
 	touch_shape.size = control_size + Vector2(18, 18)
 	touch_button.shape = touch_shape
+	touch_button.set_meta("visual_v20", visual)
 	touch_button.pressed.connect(_mobile_touch_pressed.bind(action, visual))
 	touch_button.released.connect(_mobile_touch_released.bind(action, visual))
 	if action == &"primary":
@@ -30,6 +31,7 @@ func _add_mobile_callback_control(label_text: String, callback: Callable, anchor
 	var touch_shape := RectangleShape2D.new()
 	touch_shape.size = control_size + Vector2(18, 18)
 	touch_button.shape = touch_shape
+	touch_button.set_meta("visual_v20", visual)
 	touch_button.pressed.connect(_mobile_callback_pressed.bind(visual, callback))
 	touch_button.released.connect(_mobile_callback_released.bind(visual))
 	mobile_layer.add_child(touch_button)
@@ -181,17 +183,14 @@ func _mobile_up(action: StringName) -> void:
 	Input.action_release(action)
 
 func _apply_device_profile() -> void:
-	if is_mobile:
-		get_viewport().scaling_3d_scale = 0.58
-		camera.fov = 76.0
-		if world_env.environment:
-			world_env.environment.fog_density = 0.0028
-	else:
-		get_viewport().scaling_3d_scale = 0.82
+	_apply_quality_v20(quality_mode_v20)
 
 func _start_game() -> void:
 	_ensure_storyboard_act1_v16()
 	_ensure_storyboard_art_v17()
+	_ensure_act1_startup_v18()
+	_repair_entrance_blockers_v19()
+	_finish_industrial_v20()
 	_ensure_suno_audio_v14()
 	if not intro_completed:
 		_start_intro_v12()
@@ -242,6 +241,7 @@ func _process(delta: float) -> void:
 	_update_v12_ui(delta)
 	_update_v13_ui(delta)
 	_update_suno_audio_v14(delta)
+	_update_industrial_v20(delta)
 
 func _update_player(delta: float) -> void:
 	if drone_active:
@@ -274,6 +274,15 @@ func _update_player(delta: float) -> void:
 		fear_still += delta
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if intro_active and event.keycode == KEY_ESCAPE:
+			_finish_intro_v12()
+			get_viewport().set_input_as_handled()
+			return
+		if not game_started and not intro_active and event.keycode == KEY_ENTER:
+			_start_game()
+			get_viewport().set_input_as_handled()
+			return
 	if event is InputEventScreenTouch:
 		var touch_event := event as InputEventScreenTouch
 		if touch_event.pressed:

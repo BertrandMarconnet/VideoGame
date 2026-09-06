@@ -1,10 +1,20 @@
-# Blackout Protocol: Steel Echo — Storyboard v19
+# Blackout Protocol: Steel Echo — Industrial v20
 
 Vertical slice jouable d’un survival-horror industriel en vue subjective, développée avec Godot 4.7, Jolt Physics et publiée automatiquement en Web/PWA.
 
 ## Jouer en ligne
 
 **https://bertrandmarconnet.github.io/VideoGame/**
+
+## Rendu et interface v20
+
+La direction visuelle évolue vers une esthétique de console PS2 : matériaux texturés, éclairage par pixel, contours adoucis et détails industriels. Quatre couloirs couverts relient les secteurs existants ; des armoires électriques, pompes, fûts, tuyauteries et affiches équipent leurs abords. Le sas et les consoles de supervision sont dégagés.
+
+Sur téléphone, le HUD se replie lorsqu’un menu s’ouvre. La tablette, la pause et les actions disposent d’une mise en page adaptative avec défilement et fermeture accessible. Les cibles tactiles mesurent au moins 44 pixels et se repositionnent lors d’un changement d’orientation.
+
+Dans **Pause → Graphismes**, choisir Automatique, Économie, Équilibré ou Détaillé. La luminosité est réglable et mémorisée. Le mode Automatique adapte uniquement la résolution 3D ; le texte reste à la résolution de l’écran. **Entrée** lance la campagne et **Échap** permet de passer l’introduction.
+
+Détails des budgets, modèles et vérifications : [docs/VISUAL_UPGRADE_V20.md](docs/VISUAL_UPGRADE_V20.md). Les performances sur appareil réel dépendent du téléphone et de son navigateur ; aucun objectif de fréquence d’images n’est garanti.
 
 ## Générer un asset 3D
 

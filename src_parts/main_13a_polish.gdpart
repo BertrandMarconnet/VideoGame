@@ -37,7 +37,7 @@ func _relocate_control_screen_v13() -> void:
 	for child in get_children():
 		if not child is Node3D:
 			continue
-		var node_name := String(child.name)
+		var node_name := String(child.get_meta("layout_role_v20", child.name))
 		var belongs_to_screen := (
 			node_name.begins_with("MainScreenFrame") or
 			node_name.begins_with("MainControlScreen") or

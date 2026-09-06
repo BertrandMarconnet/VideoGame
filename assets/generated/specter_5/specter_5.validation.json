@@ -2,7 +2,7 @@
   "valid": true,
   "slug": "specter_5",
   "category": "robot_biped",
-  "triangles": 3636,
+  "triangles": 7572,
   "bones": 14,
   "animations": [
     "Idle-loop",
@@ -14,7 +14,9 @@
   ],
   "damage_zones": 4,
   "glb": {
-    "bytes": 378248,
-    "version": 2
-  }
+    "bytes": 583292,
+    "version": 2,
+    "nodes": 74
+  },
+  "visual_revision": "industrial_v20"
 }

@@ -1,5 +1,5 @@
 func _open_context_menu_v12() -> void:
-	if not game_started or tablet_open or drone_active:
+	if not game_started or tablet_open or drone_active or pause_panel.visible or win_panel.visible:
 		return
 	var hit := _raycast(5.2)
 	context_target = null
@@ -35,36 +35,17 @@ func _open_context_menu_v12() -> void:
 
 func _populate_action_wheel_v12(actions: Array[Dictionary]) -> void:
 	for child in context_actions.get_children():
+		context_actions.remove_child(child)
 		child.queue_free()
-	var action_count := actions.size()
-	var center := Vector2(250, 250)
-	var radius := 158.0 if action_count > 4 else 145.0
-	for index in range(action_count):
-		var info: Dictionary = actions[index]
-		var angle := -PI * 0.5 + TAU * float(index) / float(maxi(action_count, 1))
+	for info in actions:
 		var button := Button.new()
 		button.text = String(info["label"])
-		button.tooltip_text = String(info["tooltip"])
-		button.size = Vector2(138, 54)
-		button.custom_minimum_size = Vector2(138, 54)
-		button.position = center + Vector2(cos(angle), sin(angle)) * radius - button.size * 0.5
+		button.custom_minimum_size = Vector2(0, 48)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.add_theme_font_size_override("font_size", 14)
-		var normal_style := StyleBoxFlat.new()
-		normal_style.bg_color = Color(0.025, 0.085, 0.105, 0.98)
-		normal_style.border_color = Color(0.0, 0.58, 0.72, 0.95)
-		normal_style.set_border_width_all(2)
-		normal_style.corner_radius_top_left = 12
-		normal_style.corner_radius_top_right = 12
-		normal_style.corner_radius_bottom_left = 12
-		normal_style.corner_radius_bottom_right = 12
-		button.add_theme_stylebox_override("normal", normal_style)
-		var hover_style := normal_style.duplicate() as StyleBoxFlat
-		hover_style.bg_color = Color(0.0, 0.35, 0.44, 0.98)
-		hover_style.border_color = Color(0.35, 0.95, 1.0, 1.0)
-		button.add_theme_stylebox_override("hover", hover_style)
-		button.add_theme_stylebox_override("focus", hover_style)
 		button.pressed.connect(_execute_context_action_v12.bind(String(info["action"])))
 		context_actions.add_child(button)
+	reflow_interface_v20()
 
 func _execute_context_action_v12(action: String) -> void:
 	if action == "examine":

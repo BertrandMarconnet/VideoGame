@@ -3,8 +3,8 @@
   "generator": "Blender deterministic hard-surface v6 reference-fitted",
   "output": "assets/generated/crawler_07/crawler_07.glb",
   "mesh_objects": 133,
-  "vertices": 4688,
-  "triangles": 8844,
+  "vertices": 22646,
+  "triangles": 16428,
   "bones": 13,
   "animations": [
     "Idle-loop",
@@ -22,7 +22,7 @@
   ],
   "collision_helpers": 5,
   "rig_type": "rigid segmented quadruped",
-  "design_target": "CRAWLER-7 PS1 industrial low-poly storyboard",
+  "design_target": "Industrial console-era silhouettes, bevels and smooth casing normals",
   "sensor_cluster": "four red lenses plus central indicator",
   "reference_images_used": 4,
   "reference_usage": {
@@ -156,5 +156,7 @@
       0.018
     ]
   },
-  "visual_fidelity": "orthographic silhouette fit + reference-derived PS1 palette atlas"
+  "visual_fidelity": "orthographic silhouette fit + reference-derived PS1 palette atlas",
+  "visual_revision": "industrial_v20",
+  "counting_method": "Exported glTF primitives, including named collision helpers"
 }

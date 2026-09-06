@@ -21,7 +21,7 @@ func _build_shelter_v11() -> void:
 		_visual_box(Vector3(0.18, 3.2, 0.1), Vector3(side * 3.82, 2.15, -18.82), hazard_mat, "DoorHazard")
 	var door_panel := _visual_box(Vector3(3.6, 0.22, 0.72), Vector3(0, 4.15, -18.92), trim_mat, "RaisedBlastDoor")
 	door_panel.rotation_degrees = Vector3(0, 0, 0)
-	for x in [-9.0, -4.5, 0.0, 4.5, 9.0]:
+	for x in [-9.0, -4.5]:
 		_visual_box(Vector3(3.4, 0.12, 0.4), Vector3(x, 4.0, -15.8), _material(Color(0.55, 0.72, 0.82), 0.18, 0.25, Color(0.18, 0.55, 0.76)), "ShelterLight")
 	_build_main_control_screen_v11()
 	_build_shelter_consoles_v11()
@@ -49,7 +49,7 @@ func _build_main_control_screen_v11() -> void:
 
 func _build_shelter_consoles_v11() -> void:
 	var console_mat := _material(Color(0.045, 0.06, 0.072), 0.78, 0.32)
-	for x in [-9.0, -4.5, 0.0, 4.5, 9.0]:
+	for x in [-9.0, -4.5]:
 		_static_box(Vector3(3.5, 1.15, 1.65), Vector3(x, 0.58, -12.8), console_mat, "ShelterConsole")
 		var display_mat := _material(Color(0.01, 0.12, 0.14), 0.1, 0.18, Color(0.0, 0.45, 0.56))
 		var panel := _visual_box(Vector3(2.7, 0.07, 0.85), Vector3(x, 1.18, -12.55), display_mat, "ConsoleDisplay")
@@ -114,7 +114,7 @@ func _build_industrial_arm_v11(at: Vector3, side: float) -> void:
 	base_joint.position = Vector3(0, 0.4, 0)
 	rig.add_child(base_joint)
 	_v11_cylinder(base_joint, 0.48, 0.55, Vector3.ZERO, joint_mat, "BaseBearing")
-	var shoulder := _v11_bone(base_joint, "Shoulder", 2.4, 0.28, Vector3(0, 0.42, 0), Vector3(0, 0, -22.0 * side), dark)
+	var shoulder := _v11_bone(base_joint, "Shoulder", 2.4, 0.28, Vector3(0, 0.42, 0), Vector3(0, 0, 180.0 - 22.0 * side), dark)
 	var elbow := _v11_bone(shoulder, "Elbow", 2.2, 0.24, Vector3(0, -2.28, 0), Vector3(0, 0, 44.0 * side), dark)
 	var wrist := _v11_bone(elbow, "Wrist", 1.15, 0.17, Vector3(0, -2.05, 0), Vector3(0, 0, -32.0 * side), joint_mat)
 	_v11_box(wrist, Vector3(0.7, 0.28, 0.7), Vector3(0, -1.1, 0), dark, "ToolHead")
@@ -267,7 +267,7 @@ func _update_v11(delta: float) -> void:
 			base_joint.rotation.y = sin(v11_time * 0.34 + float(i)) * 0.32
 			var shoulder := base_joint.get_node_or_null("Shoulder") as Node3D
 			if shoulder:
-				shoulder.rotation.z = -0.35 + sin(v11_time * 0.52 + float(i) * 0.7) * 0.24
+				shoulder.rotation.z = PI - 0.35 + sin(v11_time * 0.52 + float(i) * 0.7) * 0.24
 	for i in range(alarm_lights.size()):
 		var light := alarm_lights[i]
 		if is_instance_valid(light):
@@ -368,7 +368,7 @@ func _v11_box(parent: Node3D, size: Vector3, at: Vector3, material: Material, la
 	mesh.name = label
 	var shape := BoxMesh.new()
 	shape.size = size
-	mesh.mesh = shape
+	mesh.mesh = visuals_v20.bevel_box(size, 0.06)
 	mesh.position = at
 	mesh.material_override = material
 	parent.add_child(mesh)
@@ -381,7 +381,8 @@ func _v11_cylinder(parent: Node3D, radius: float, height: float, at: Vector3, ma
 	shape.top_radius = radius * 0.92
 	shape.bottom_radius = radius
 	shape.height = height
-	shape.radial_segments = 8
+	shape.radial_segments = 16
+	shape.rings = 1
 	mesh.mesh = shape
 	mesh.position = at
 	mesh.rotation_degrees = rotation_value
@@ -395,8 +396,8 @@ func _v11_sphere(parent: Node3D, radius: float, at: Vector3, material: Material,
 	var shape := SphereMesh.new()
 	shape.radius = radius
 	shape.height = radius * 2.0
-	shape.radial_segments = 10
-	shape.rings = 6
+	shape.radial_segments = 16
+	shape.rings = 8
 	mesh.mesh = shape
 	mesh.position = at
 	mesh.material_override = material

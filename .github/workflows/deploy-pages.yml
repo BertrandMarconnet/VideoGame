@@ -58,7 +58,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          gdlint scripts/main.gd scripts/worldforge/*.gd > gdlint.log 2>&1
+          gdlint scripts/main.gd scripts/worldforge/*.gd scripts/visual/*.gd scripts/ui/*.gd tests/test_visual_mobile.gd > gdlint.log 2>&1
           status=$?
           set -e
           cat gdlint.log
@@ -105,6 +105,18 @@ jobs:
           if [ "$status" -ne 0 ]; then exit "$status"; fi
           grep -q 'BLACKOUT_RUNTIME_READY' godot-runtime.log
           if grep -Eqi 'SCRIPT ERROR|Invalid call|Invalid get index|Attempt to call|ERROR:' godot-runtime.log; then exit 1; fi
+
+      - name: Check mobile layout, corridors and damage behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120 "$GODOT_BIN" --headless --path . --script res://tests/test_visual_mobile.gd -- --touch-ui > build/visual-mobile-test.log 2>&1
+          cat build/visual-mobile-test.log
+          grep -q 'V20_VISUAL_MOBILE_CHECKS PASS' build/visual-mobile-test.log
+          if grep -Eqi 'SCRIPT ERROR|V20_CHECK_FAILED' build/visual-mobile-test.log; then exit 1; fi
+          timeout 60 "$GODOT_BIN" --headless --path . --script res://tests/test_damage_system.gd > build/damage-test.log 2>&1
+          cat build/damage-test.log
+          if grep -Eqi 'SCRIPT ERROR|DAMAGE_TEST_FAIL' build/damage-test.log; then exit 1; fi
 
       - name: Export Web and publish developer tools
         shell: bash
@@ -184,6 +196,8 @@ jobs:
             build/worldforge-portal.png
             build/worldforge-editor-open.png
             build/http-server.log
+            build/visual-mobile-test.log
+            build/damage-test.log
           if-no-files-found: warn
 
       - name: Publish build validation status

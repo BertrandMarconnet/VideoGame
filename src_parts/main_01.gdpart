@@ -4,20 +4,20 @@ func _build_world_environment() -> void:
 	env.background_mode = Environment.BG_COLOR
 	env.background_color = Color(0.018, 0.028, 0.038)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.34, 0.44, 0.54)
-	env.ambient_light_energy = 0.74
+	env.ambient_light_color = Color(0.64, 0.70, 0.74)
+	env.ambient_light_energy = 0.9
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_exposure = 1.42
 	env.fog_enabled = true
 	env.fog_light_color = Color(0.08, 0.12, 0.17)
 	env.fog_light_energy = 0.72
-	env.fog_density = 0.0042
+	env.fog_density = 0.0022
 	world_env.environment = env
 	add_child(world_env)
 	var moon := DirectionalLight3D.new()
 	moon.rotation_degrees = Vector3(-58.0, -22.0, 0.0)
 	moon.light_color = Color(0.48, 0.66, 0.82)
-	moon.light_energy = 0.7
+	moon.light_energy = 0.32
 	moon.shadow_enabled = false
 	add_child(moon)
 
@@ -51,14 +51,14 @@ func _build_control_room() -> void:
 	_static_box(Vector3(26, 0.25, 18), Vector3(0, 0.12, -10), _material(Color(0.16, 0.18, 0.19), 0.3, 0.75), "ControlFloor")
 	_static_box(Vector3(0.35, 4.0, 18), Vector3(-13, 2.0, -10), _material(Color(0.22, 0.24, 0.25), 0.4, 0.7), "ControlWallL")
 	_static_box(Vector3(0.35, 4.0, 18), Vector3(13, 2.0, -10), _material(Color(0.22, 0.24, 0.25), 0.4, 0.7), "ControlWallR")
-	for x in [-8.0, -2.7, 2.7, 8.0]:
+	for x in [-8.0, -2.7, 2.7]:
 		_static_box(Vector3(4.4, 1.1, 1.6), Vector3(x, 0.55, -7.5), _material(Color(0.08, 0.11, 0.13), 0.65, 0.35), "Console")
 		_visual_box(Vector3(3.2, 0.05, 0.85), Vector3(x, 1.12, -7.3), _material(Color(0.02, 0.15, 0.18), 0.15, 0.2, Color(0.0, 0.45, 0.58)), "Screen")
 
 func _build_logistics_zone() -> void:
-	for row in range(3):
+	for row in range(2):
 		for col in range(5):
-			var x := -11.5 + float(row) * 11.5
+			var x := -10.5 + float(row) * 21.0
 			var z := -30.0 - float(col) * 6.0
 			_build_rack(Vector3(x, 0, z))
 	_static_box(Vector3(10, 0.45, 1.4), Vector3(0, 0.5, -48), _material(Color(0.1, 0.14, 0.16), 0.75, 0.45), "Conveyor")

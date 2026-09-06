@@ -80,10 +80,10 @@ func _build_s01_detail_v17(root: Node3D) -> void:
 	var steel: StandardMaterial3D = _material(Color(0.105, 0.12, 0.13), 0.88, 0.38)
 	var black: StandardMaterial3D = _material(Color(0.025, 0.032, 0.038), 0.72, 0.72)
 	var cyan: StandardMaterial3D = _material(Color(0.02, 0.08, 0.09), 0.05, 0.2, Color(0.0, 0.4, 0.52))
-	for side: float in [-1.0, 1.0]:
+	for side: float in [-1.0]:
 		for z_value: float in [-6.0, -10.0, -14.0, -18.0]:
-			_v17_box(root, Vector3(2.8, 1.55, 1.1), Vector3(side * 12.5, 0.78, z_value), black, "S01ConsoleBank")
-			var display: MeshInstance3D = _v17_box(root, Vector3(2.0, 0.08, 0.72), Vector3(side * 12.15, 1.42, z_value), cyan, "S01CRT")
+			_v17_box(root, Vector3(2.8, 1.55, 1.1), Vector3(side * 11.4, 0.78, z_value), black, "S01ConsoleBank")
+			var display: MeshInstance3D = _v17_box(root, Vector3(2.0, 0.08, 0.72), Vector3(side * 11.15, 1.42, z_value), cyan, "S01CRT")
 			display.rotation_degrees.x = -18.0
 		_v17_cylinder(root, 0.16, 14.0, Vector3(side * 15.0, 5.7, -12.0), steel, "S01CeilingConduit", 6)
 	for x_value: float in [-8.0, -4.0, 0.0, 4.0, 8.0]:
@@ -181,9 +181,7 @@ func _update_storyboard_art_v17(delta: float) -> void:
 func _v17_box(parent: Node3D, size_value: Vector3, at: Vector3, material: Material, node_name: String) -> MeshInstance3D:
 	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
 	mesh_instance.name = node_name
-	var mesh: BoxMesh = BoxMesh.new()
-	mesh.size = size_value
-	mesh_instance.mesh = mesh
+	mesh_instance.mesh = visuals_v20.bevel_box(size_value, 0.035)
 	mesh_instance.position = at
 	mesh_instance.material_override = material
 	parent.add_child(mesh_instance)
@@ -196,7 +194,8 @@ func _v17_cylinder(parent: Node3D, radius: float, height: float, at: Vector3, ma
 	mesh.top_radius = radius
 	mesh.bottom_radius = radius
 	mesh.height = height
-	mesh.radial_segments = segments
+	mesh.radial_segments = maxi(segments, 16)
+	mesh.rings = 1
 	mesh_instance.mesh = mesh
 	mesh_instance.position = at
 	mesh_instance.material_override = material

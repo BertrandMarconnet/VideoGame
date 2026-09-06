@@ -195,40 +195,21 @@ try {
   consoleLines.push(`[state] ${JSON.stringify(state)}`);
   if (state.compatibilityPanelVisible) throw new Error("Compatibility panel remained visible despite WebGL2 support");
 
-  const campaignStartPositions = [
-    [0.22, 0.21],
-    [0.18, 0.24],
-    [0.27, 0.71],
-  ];
-  for (const [xRatio, yRatio] of campaignStartPositions) {
-    if (storyboardReady) break;
-    const x = bounds.x + bounds.width * xRatio;
-    const y = bounds.y + bounds.height * yRatio;
-    await page.touchscreen.tap(x, y);
-    await page.waitForTimeout(350);
-    if (!storyboardReady) await page.mouse.click(x, y);
-    await page.waitForTimeout(650);
-  }
-  if (!storyboardReady) throw new Error("The left-aligned campaign button did not initialize Act I");
+  // Keyboard activation also keeps the menu usable without a pointing device.
+  await canvas.focus();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(1_500);
+  if (!storyboardReady) throw new Error("Campaign activation did not initialize Act I");
   if (!storyboardArtReady) throw new Error("Storyboard art pass v17 was not initialized after campaign start");
-
-  const introSkipPositions = [
-    [0.59, 0.77],
-    [0.64, 0.76],
-    [0.68, 0.79],
-  ];
-  for (const [xRatio, yRatio] of introSkipPositions) {
-    if (gameplayStarted) break;
-    await page.mouse.click(bounds.x + bounds.width * xRatio, bounds.y + bounds.height * yRatio);
-    await page.waitForTimeout(800);
-  }
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(1_000);
   if (!gameplayStarted) throw new Error("The intro could not be closed to start the touchscreen gameplay test");
 
-  await page.touchscreen.tap(bounds.x + bounds.width * 0.105, bounds.y + bounds.height * 0.749);
+  await page.touchscreen.tap(bounds.x + 82, bounds.y + bounds.height - 134);
   await page.waitForTimeout(250);
-  await page.touchscreen.tap(bounds.x + bounds.width * 0.942, bounds.y + bounds.height * 0.821);
+  await page.touchscreen.tap(bounds.x + bounds.width - 134, bounds.y + bounds.height - 86);
   await page.waitForTimeout(250);
-  await page.touchscreen.tap(bounds.x + bounds.width * 0.716, bounds.y + bounds.height * 0.821);
+  await page.touchscreen.tap(bounds.x + bounds.width - 86, bounds.y + bounds.height - 86);
   await page.waitForTimeout(500);
   if (!mobileForwardPressed) throw new Error("The direct mobile move_forward control did not emit a touch action");
   if (!mobileFlashlightPressed) throw new Error("The direct mobile flashlight control did not emit a touch action");
@@ -236,10 +217,10 @@ try {
 
   await dispatchTouchLook(
     page,
-    bounds.x + bounds.width * 0.89,
-    bounds.y + bounds.height * 0.50,
-    bounds.x + bounds.width * 0.94,
-    bounds.y + bounds.height * 0.44,
+    bounds.x + bounds.width - 76,
+    bounds.y + bounds.height - 180,
+    bounds.x + bounds.width - 40,
+    bounds.y + bounds.height - 208,
   );
   await page.waitForTimeout(800);
   if (!mobileLookActive) throw new Error("The right mobile look joystick did not capture its touch identifier");

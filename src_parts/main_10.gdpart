@@ -49,7 +49,13 @@ func _show_status(text_value: String) -> void:
 func _toggle_pause() -> void:
 	if not game_started:
 		return
-	paused_from_menu = not get_tree().paused
+	if tablet_open:
+		_toggle_tablet_v12()
+		return
+	if context_menu_open:
+		_close_context_menu_v12()
+		return
+	paused_from_menu = not pause_panel.visible
 	get_tree().paused = paused_from_menu
 	pause_panel.visible = paused_from_menu
 	if paused_from_menu:
@@ -60,8 +66,11 @@ func _toggle_pause() -> void:
 		mobile_layer.visible = not paused_from_menu
 
 func _set_brightness(value: float) -> void:
-	if world_env and world_env.environment:
-		world_env.environment.tonemap_exposure = value
+	brightness_v20 = value
+	var overlay := get_node_or_null("PS1VisualLayer/PS1PostProcess") as ColorRect
+	if overlay and overlay.material is ShaderMaterial:
+		(overlay.material as ShaderMaterial).set_shader_parameter("brightness", value)
+	_save_display_settings_v20()
 
 func _set_volume(value: float) -> void:
 	if audio_player:

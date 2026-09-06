@@ -32,16 +32,15 @@ func _build_rack(at: Vector3) -> void:
 func _build_ceiling_light(at: Vector3, damaged: bool) -> void:
 	_visual_box(Vector3(4.2, 0.18, 0.55), at, _material(Color(0.15, 0.17, 0.18), 0.65, 0.35), "Fixture")
 	_visual_box(Vector3(3.7, 0.05, 0.3), at + Vector3(0, -0.13, 0), _material(Color(0.7, 0.86, 0.92), 0.1, 0.3, Color(0.35, 0.72, 0.88)), "Tube")
-	if flicker_lights.size() < (5 if is_mobile else 10):
-		var light := OmniLight3D.new()
-		light.position = at + Vector3(0, -0.4, 0)
-		light.light_color = Color(0.55, 0.76, 0.92) if not damaged else Color(1.0, 0.24, 0.12)
-		light.light_energy = 1.5 if not damaged else 0.7
-		light.omni_range = 12.0
-		light.shadow_enabled = false
-		add_child(light)
-		flicker_lights.append(light)
-
+	# Visible light budget is selected by distance in v20.
+	var light := OmniLight3D.new()
+	light.position = at + Vector3(0, -0.4, 0)
+	light.light_color = Color(0.55, 0.76, 0.92) if not damaged else Color(1.0, 0.24, 0.12)
+	light.light_energy = 2.2 if not damaged else 1.1
+	light.omni_range = 13.5
+	light.shadow_enabled = false
+	add_child(light)
+	flicker_lights.append(light)
 func _build_destructible_wall(at: Vector3, size: Vector3, label: String) -> Node3D:
 	var material_id := "brick" if label.contains("Secret") else "drywall"
 	var bridge := get_node_or_null("/root/GeneratedAssetBridge")
@@ -66,13 +65,15 @@ func _terminal(at: Vector3, terminal_id: String) -> StaticBody3D:
 func _static_box(size: Vector3, at: Vector3, material: Material, label: String) -> StaticBody3D:
 	var body := StaticBody3D.new()
 	body.name = label
+	body.set_meta("layout_role_v20", label)
 	body.position = at
 	var mesh := MeshInstance3D.new()
 	mesh.name = label + "Visual"
 	var box := BoxMesh.new()
 	box.size = size
-	mesh.mesh = box
-	mesh.material_override = material
+	var kind := _surface_kind_v20(label)
+	mesh.mesh = box if not kind.is_empty() else visuals_v20.bevel_box(size, 0.045)
+	mesh.material_override = visuals_v20.surface(kind) if not kind.is_empty() else material
 	body.add_child(mesh)
 	var collision := CollisionShape3D.new()
 	var shape := BoxShape3D.new()
@@ -97,6 +98,7 @@ func _static_box(size: Vector3, at: Vector3, material: Material, label: String) 
 func _visual_box(size: Vector3, at: Vector3, material: Material, label: String) -> MeshInstance3D:
 	var mesh := MeshInstance3D.new()
 	mesh.name = label
+	mesh.set_meta("layout_role_v20", label)
 	var box := BoxMesh.new()
 	box.size = size
 	mesh.mesh = box
@@ -108,11 +110,13 @@ func _visual_box(size: Vector3, at: Vector3, material: Material, label: String) 
 func _visual_cylinder(radius: float, height: float, at: Vector3, material: Material, label: String, rotation_value := Vector3.ZERO) -> MeshInstance3D:
 	var mesh := MeshInstance3D.new()
 	mesh.name = label
+	mesh.set_meta("layout_role_v20", label)
 	var cylinder := CylinderMesh.new()
 	cylinder.top_radius = radius
 	cylinder.bottom_radius = radius
 	cylinder.height = height
-	cylinder.radial_segments = 10
+	cylinder.radial_segments = 16
+	cylinder.rings = 1
 	mesh.mesh = cylinder
 	mesh.material_override = material
 	mesh.position = at

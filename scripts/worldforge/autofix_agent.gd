@@ -117,6 +117,9 @@ func _repair_robot_visuals(robot_node: Node, actions: Array[Dictionary], code: S
 		actions.append({"code": code, "node_path": str(robot_node.get_path()), "result": "generated_visual_kept_procedural_removed"})
 
 func _repair_start_ui(scene_root: Node3D, actions: Array[Dictionary]) -> void:
+	if scene_root.has_method("reflow_interface_v20"):
+		scene_root.call("reflow_interface_v20")
+		return
 	var panel_value = scene_root.get("start_panel")
 	if not panel_value is Control:
 		return

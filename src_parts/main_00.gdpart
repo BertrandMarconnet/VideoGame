@@ -138,9 +138,10 @@ var boot_progress: ProgressBar
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	get_tree().root.content_scale_size = Vector2i.ZERO
 	rng.randomize()
 	_setup_inputs()
-	is_mobile = OS.has_feature("mobile") or OS.has_feature("web_android") or OS.has_feature("web_ios") or DisplayServer.is_touchscreen_available()
+	is_mobile = OS.has_feature("mobile") or OS.has_feature("web_android") or OS.has_feature("web_ios") or DisplayServer.is_touchscreen_available() or "--touch-ui" in OS.get_cmdline_user_args()
 	_build_boot_overlay_v15()
 	await get_tree().process_frame
 	_set_boot_status_v15("INITIALISATION DU RÉSEAU S-01", 10.0)
@@ -167,6 +168,7 @@ func _ready() -> void:
 	_set_boot_status_v15("APPLICATION DU PROFIL WEB", 92.0)
 	_build_v13_polish()
 	_apply_device_profile()
+	_prepare_industrial_v20()
 	get_tree().paused = true
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	_set_boot_status_v15("SYSTÈME PRÊT — INCIDENT MATRYOSHKA", 100.0)

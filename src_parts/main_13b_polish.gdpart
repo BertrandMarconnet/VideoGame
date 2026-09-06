@@ -13,8 +13,8 @@ func _apply_round_environment_v13() -> void:
 	_build_round_clutter_v13(local_rng)
 	_build_round_lighting_v13(local_rng)
 	if world_env and world_env.environment:
-		world_env.environment.fog_density = 0.0036 + float(current_round - 1) * 0.0007
-		world_env.environment.ambient_light_energy = max(0.42, 0.74 - float(current_round - 1) * 0.065)
+		world_env.environment.fog_density = 0.0022 + float(current_round - 1) * 0.0003
+		world_env.environment.ambient_light_energy = max(0.65, 0.76 - float(current_round - 1) * 0.025)
 
 func _build_assembly_lines_v13(local_rng: RandomNumberGenerator) -> void:
 	var conveyor_material := _material(Color(0.055, 0.07, 0.08), 0.82, 0.28)
@@ -125,7 +125,7 @@ func _update_industrial_arms_v13() -> void:
 		base_joint.rotation.y = sin(phase) * 0.72 * activation
 		var shoulder := base_joint.get_node_or_null("Shoulder") as Node3D
 		if shoulder:
-			shoulder.rotation.z = deg_to_rad(-22.0 * side) + sin(phase * 1.25) * 0.58 * activation
+			shoulder.rotation.z = deg_to_rad(180.0 - 22.0 * side) + sin(phase * 1.25) * 0.58 * activation
 			var elbow := shoulder.get_node_or_null("Elbow") as Node3D
 			if elbow:
 				elbow.rotation.z = deg_to_rad(44.0 * side) + cos(phase * 1.5) * 0.72 * activation

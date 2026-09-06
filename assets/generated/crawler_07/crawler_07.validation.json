@@ -2,7 +2,7 @@
   "valid": true,
   "slug": "crawler_07",
   "category": "robot_quadruped",
-  "triangles": 8844,
+  "triangles": 16428,
   "mesh_objects": 133,
   "bones": 13,
   "animations": [
@@ -19,9 +19,10 @@
   "collision_mode": "local_boxes",
   "reference_images_used": 4,
   "glb": {
-    "bytes": 795584,
+    "bytes": 1051628,
     "version": 2,
     "nodes": 152,
     "visible_helpers": 0
-  }
+  },
+  "visual_revision": "industrial_v20"
 }

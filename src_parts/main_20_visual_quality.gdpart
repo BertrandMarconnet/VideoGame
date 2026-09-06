@@ -1,0 +1,132 @@
+# Industrial art direction: readable lighting, shaped hardware, Web budgets.
+var visuals_v20 := preload("res://scripts/visual/industrial_visuals.gd").new()
+var responsive_ui_v20 := preload("res://scripts/ui/responsive_game_ui.gd").new()
+var lighting_clock_v20 := 0.0
+var quality_mode_v20 := 0
+var quality_scale_v20 := 1.0
+var brightness_v20 := 1.15
+var quality_elapsed_v20 := 0.0
+var quality_frames_v20 := 0
+var local_lights_v20: Array[OmniLight3D] = []
+
+func _prepare_industrial_v20() -> void:
+	_apply_act1_interface_v18()
+	visuals_v20.build_factory_detail(self)
+	responsive_ui_v20.install(self)
+	var settings := ConfigFile.new()
+	if settings.load("user://display_settings.cfg") == OK:
+		quality_mode_v20 = clampi(int(settings.get_value("display", "quality", 0)), 0, 3)
+		brightness_v20 = clampf(float(settings.get_value("display", "brightness", 1.15)), 0.85, 1.65)
+	brightness_slider.set_value_no_signal(brightness_v20)
+	_apply_quality_v20(quality_mode_v20)
+	get_viewport().size_changed.connect(reflow_interface_v20)
+	reflow_interface_v20()
+	_refresh_lights_v20()
+	print("BLACKOUT_INDUSTRIAL_V20_READY")
+
+func _finish_industrial_v20() -> void:
+	if bool(get_meta("v20_art_finished", false)):
+		return
+	set_meta("v20_art_finished", true)
+	# Existing geometry is retained; material replacement is restricted to walls
+	# and floors. Imported rigs keep their meshes and all animation/damage names.
+	for candidate in find_children("*", "MeshInstance3D", true, false):
+		var mesh := candidate as MeshInstance3D
+		var label := String(mesh.name) + " " + String(mesh.get_parent().name)
+		if mesh.mesh is BoxMesh and not mesh.has_meta("v20_surface"):
+			var kind := _surface_kind_v20(label)
+			if not kind.is_empty():
+				mesh.material_override = visuals_v20.surface(kind)
+				mesh.set_meta("v20_surface", true)
+	visuals_v20.polish_imported(self)
+	# Add readable fittings within the actual airlock wall thickness.
+	if act1_airlock_root_v18:
+		visuals_v20.poster(act1_airlock_root_v18, Vector3(8.99, 1.95, -3.7), 0, 90.0)
+		visuals_v20.sign_board(act1_airlock_root_v18, Vector3(10.5, 2.7, -10.1), "S-01  /  OPERATIONS")
+		visuals_v20.cabinet(act1_airlock_root_v18, Vector3(5.4, 0.13, -15.08), 0.0)
+	_refresh_lights_v20()
+	_set_brightness(brightness_v20)
+	reflow_interface_v20()
+
+func _surface_kind_v20(label: String) -> String:
+	if "Floor" in label or "Ground" in label or "Approach" in label:
+		return "floor"
+	if "Ceiling" in label and not "Light" in label:
+		return "concrete"
+	if "Wall" in label or "Shell" in label or "FacadeRight" in label or "CentralGateSealed" in label:
+		return "concrete"
+	return ""
+
+func _apply_quality_v20(mode: int) -> void:
+	quality_mode_v20 = mode
+	var mobile_profile := is_mobile or mode == 1
+	quality_scale_v20 = [0.78 if is_mobile else 1.0, 0.65, 0.86, 1.0][mode]
+	get_viewport().scaling_3d_scale = quality_scale_v20
+	get_viewport().msaa_3d = Viewport.MSAA_DISABLED if mobile_profile else Viewport.MSAA_2X
+	if camera:
+		camera.fov = 76.0 if is_mobile else 74.0
+		camera.far = 210.0
+	if flashlight:
+		flashlight.shadow_enabled = mode == 3 and not is_mobile
+		flashlight.spot_range = 28.0
+	if world_env:
+		world_env.environment.ambient_light_color = Color(0.64, 0.70, 0.74)
+		world_env.environment.ambient_light_energy = 0.72
+		world_env.environment.fog_density = 0.0022
+	_save_display_settings_v20()
+
+func _save_display_settings_v20() -> void:
+	var settings := ConfigFile.new()
+	settings.set_value("display", "brightness", brightness_v20)
+	settings.set_value("display", "quality", quality_mode_v20)
+	settings.save("user://display_settings.cfg")
+
+func _refresh_lights_v20() -> void:
+	local_lights_v20.clear()
+	for candidate in find_children("*", "OmniLight3D", true, false):
+		local_lights_v20.append(candidate as OmniLight3D)
+
+func _update_industrial_v20(delta: float) -> void:
+	responsive_ui_v20.sync()
+	if not game_started or get_tree().paused:
+		quality_elapsed_v20 = 0.0
+		quality_frames_v20 = 0
+		return
+	lighting_clock_v20 += delta
+	if lighting_clock_v20 >= 0.4:
+		lighting_clock_v20 = 0.0
+		var viewer := drone_camera if drone_active else camera
+		if viewer:
+			var origin := viewer.global_position
+			local_lights_v20.sort_custom(func(a: OmniLight3D, b: OmniLight3D) -> bool: return a.global_position.distance_squared_to(origin) < b.global_position.distance_squared_to(origin))
+			var budget := 8 if is_mobile or quality_mode_v20 == 1 else 12
+			for index in range(local_lights_v20.size()):
+				var light := local_lights_v20[index]
+				if is_instance_valid(light):
+					light.visible = index < budget and light.global_position.distance_squared_to(origin) < 2200.0
+	# Auto reduces only the 3D resolution. Text and touch targets stay sharp.
+	if quality_mode_v20 == 0:
+		quality_elapsed_v20 += minf(delta, 0.25)
+		quality_frames_v20 += 1
+		if quality_elapsed_v20 >= 4.0:
+			var fps := float(quality_frames_v20) / quality_elapsed_v20
+			var ceiling := 0.85 if is_mobile else 1.0
+			if fps < 27.0:
+				quality_scale_v20 = maxf(0.60, quality_scale_v20 - 0.05)
+			elif fps > 55.0:
+				quality_scale_v20 = minf(ceiling, quality_scale_v20 + 0.025)
+			get_viewport().scaling_3d_scale = quality_scale_v20
+			quality_elapsed_v20 = 0.0
+			quality_frames_v20 = 0
+
+func reflow_interface_v20() -> void:
+	responsive_ui_v20.reflow()
+
+func _release_touch_actions_v20() -> void:
+	for action in ["move_forward", "move_back", "move_left", "move_right", "jump", "sprint", "crouch", "drone_down", "interact", "primary", "flashlight", "drone"]:
+		Input.action_release(action)
+	mobile_look_touch_id = -1
+	mobile_look_active = false
+	mobile_look_target = Vector2.ZERO
+	mobile_look_smoothed = Vector2.ZERO
+	look_touch_id = -1

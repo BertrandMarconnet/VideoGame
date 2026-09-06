@@ -102,32 +102,29 @@ func _repair_entrance_blockers_v19() -> void:
 	print("BLACKOUT_ENTRANCE_ROUTE_V19_CLEAR")
 
 func _relocate_main_control_screen_v19() -> void:
-	# The former screen crossed the circulation axis between S-01 and the factory.
-	# It is now mounted against the right wall and remains non-colliding equipment.
-	var screen_frame := find_child("MainScreenFrame", true, false)
-	if screen_frame is CollisionObject3D:
-		var collision_object := screen_frame as CollisionObject3D
-		collision_object.global_position = Vector3(12.55, 3.25, -10.0)
-		collision_object.rotation_degrees = Vector3(0.0, 90.0, 0.0)
-		collision_object.collision_layer = 0
-		collision_object.collision_mask = 0
-		for child in collision_object.get_children():
-			if child is CollisionShape3D:
-				(child as CollisionShape3D).set_deferred("disabled", true)
-		collision_object.set_meta("visual_only", true)
-
-	var old_origin := Vector3(0.0, 3.25, -16.52)
-	var new_origin := Vector3(12.32, 3.25, -10.0)
+	var screen_frame := find_child("MainScreenFrame", true, false) as Node3D
+	if screen_frame:
+		screen_frame.global_position = Vector3(-12.72, 3.25, -10.0)
+		screen_frame.rotation_degrees = Vector3(0.0, 90.0, 0.0)
+		if screen_frame is CollisionObject3D:
+			screen_frame.collision_layer = 0
+			screen_frame.collision_mask = 0
+	var screen := find_child("MainControlScreen", true, false) as Node3D
+	var old_origin := screen.global_position if screen else Vector3(0.0, 3.25, -0.52)
+	var new_origin := Vector3(-12.48, 3.25, -10.0)
 	var turn := Basis(Vector3.UP, deg_to_rad(90.0))
-	var visual_names := [
-		"MainControlScreen",
-		"ScreenGrid",
-		"SignalBar",
-		"ThreatBar",
-	]
-	for node_name in visual_names:
-		for candidate in find_children(node_name, "MeshInstance3D", true, false):
-			var visual := candidate as MeshInstance3D
-			var offset := visual.global_position - old_origin
-			visual.global_position = new_origin + turn * offset
-			visual.rotation_degrees.y += 90.0
+	for candidate in get_children():
+		if not candidate is MeshInstance3D:
+			continue
+		var role := String(candidate.get_meta("layout_role_v20", candidate.name))
+		if role not in ["MainControlScreen", "ScreenGrid", "SignalBar", "ThreatBar"]:
+			continue
+		var visual := candidate as MeshInstance3D
+		visual.global_position = new_origin + turn * (visual.global_position - old_origin)
+		visual.rotation_degrees.y = 90.0
+	if control_screen_status_label:
+		control_screen_status_label.position = Vector3(-12.40, 3.62, -10.0)
+		control_screen_status_label.rotation_degrees.y = 90.0
+	if control_screen_alert_label:
+		control_screen_alert_label.position = Vector3(-12.39, 2.34, -10.0)
+		control_screen_alert_label.rotation_degrees.y = 90.0

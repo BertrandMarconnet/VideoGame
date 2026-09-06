@@ -5,8 +5,8 @@
   "generator": "Blackout category-aware Blender generator v1",
   "category": "robot_biped",
   "mesh_objects": 59,
-  "vertices": 1936,
-  "triangles": 3636,
+  "vertices": 10006,
+  "triangles": 7572,
   "bones": 14,
   "animations": [
     "Idle-loop",
@@ -26,5 +26,8 @@
   ],
   "collision_helpers": 1,
   "damage_zones": 4,
-  "reference_images_used": 0
+  "reference_images_used": 0,
+  "visual_revision": "industrial_v20",
+  "counting_method": "Exported glTF primitives, including named collision helpers",
+  "design_target": "Industrial console-era silhouettes, bevels and smooth casing normals"
 }

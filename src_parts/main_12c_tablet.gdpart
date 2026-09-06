@@ -62,7 +62,7 @@ func _finish_intro_v12() -> void:
 	_start_game()
 
 func _toggle_tablet_v12() -> void:
-	if not game_started:
+	if not game_started or pause_panel.visible or win_panel.visible:
 		return
 	if context_menu_open:
 		_close_context_menu_v12(false)

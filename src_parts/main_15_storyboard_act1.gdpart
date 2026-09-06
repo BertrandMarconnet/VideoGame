@@ -150,18 +150,6 @@ func _build_first_person_tool_v16() -> void:
 	tool.add_child(hand)
 
 func _build_ps1_visual_profile_v16() -> void:
-	for candidate: Node in find_children("*", "MeshInstance3D", true, false):
-		var mesh_instance: MeshInstance3D = candidate as MeshInstance3D
-		var material: Material = mesh_instance.material_override
-		if material is StandardMaterial3D:
-			var standard: StandardMaterial3D = material as StandardMaterial3D
-			var source_color: Color = standard.albedo_color
-			var levels: float = 31.0
-			standard.albedo_color = Color(round(source_color.r * levels) / levels, round(source_color.g * levels) / levels, round(source_color.b * levels) / levels, source_color.a)
-			standard.roughness = maxf(standard.roughness, 0.58)
-			standard.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-			if not standard.emission_enabled:
-				standard.shading_mode = BaseMaterial3D.SHADING_MODE_PER_VERTEX
 	var layer: CanvasLayer = CanvasLayer.new()
 	layer.name = "PS1VisualLayer"
 	layer.layer = -1
@@ -175,14 +163,15 @@ func _build_ps1_visual_profile_v16() -> void:
 	shader.code = """
 shader_type canvas_item;
 render_mode unshaded;
-uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_nearest;
-uniform float intensity : hint_range(0.0, 1.0) = 0.64;
-uniform float pixel_size : hint_range(1.0, 4.0) = 2.0;
+uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_linear;
+uniform float intensity : hint_range(0.0, 1.0) = 0.0;
+uniform float pixel_size : hint_range(1.0, 4.0) = 1.0;
 uniform float color_steps : hint_range(8.0, 64.0) = 28.0;
+uniform float brightness = 1.15;
 void fragment() {
 	vec2 screen_size = vec2(textureSize(screen_texture, 0));
 	vec2 snapped_uv = floor(SCREEN_UV * screen_size / pixel_size) * pixel_size / screen_size;
-	vec3 original = texture(screen_texture, SCREEN_UV).rgb;
+	vec3 original = pow(max(texture(screen_texture, SCREEN_UV).rgb, vec3(0.0)), vec3(1.0 / brightness));
 	vec3 sampled = texture(screen_texture, snapped_uv).rgb;
 	float noise = fract(sin(dot(floor(FRAGCOORD.xy), vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
 	vec3 quantized = floor(sampled * color_steps + noise * 0.7) / color_steps;
@@ -195,8 +184,9 @@ void fragment() {
 """
 	var shader_material: ShaderMaterial = ShaderMaterial.new()
 	shader_material.shader = shader
-	shader_material.set_shader_parameter("intensity", 0.46 if is_mobile else 0.64)
-	shader_material.set_shader_parameter("pixel_size", 1.5 if is_mobile else 2.0)
+	shader_material.set_shader_parameter("intensity", 0.0)
+	shader_material.set_shader_parameter("brightness", brightness_v20)
+	shader_material.set_shader_parameter("pixel_size", 1.0)
 	overlay.material = shader_material
 	layer.add_child(overlay)
 
@@ -212,7 +202,7 @@ func _add_retro_accessibility_control_v16() -> void:
 	slider.min_value = 0.0
 	slider.max_value = 1.0
 	slider.step = 0.05
-	slider.value = 0.46 if is_mobile else 0.64
+	slider.value = 0.0
 	slider.value_changed.connect(_set_retro_intensity_v16)
 	box.add_child(_setting_row("Filtre rétro", slider))
 

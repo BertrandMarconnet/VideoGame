@@ -65,10 +65,11 @@ func _build_pause_panel() -> void:
 
 func _setting_row(label_text: String, control: Control) -> HBoxContainer:
 	var row := HBoxContainer.new()
-	row.custom_minimum_size = Vector2(440, 52)
+	row.custom_minimum_size = Vector2(0, 52)
 	var label := Label.new()
 	label.text = label_text
-	label.custom_minimum_size = Vector2(150, 40)
+	label.custom_minimum_size = Vector2(120, 40)
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	row.add_child(label)
 	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(control)
