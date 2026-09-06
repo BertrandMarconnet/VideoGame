@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1200" viewBox="0 0 1600 1200">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#10171b"/>
+      <stop offset="1" stop-color="#070b0e"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#233039" stroke-width="1"/>
+    </pattern>
+    <filter id="glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#62d4d9"/></marker>
+    <style>
+      .title{font:700 34px monospace;fill:#d9eeee;letter-spacing:2px}.subtitle{font:18px monospace;fill:#8aa5ad}.room{stroke:#5c747d;stroke-width:3;fill:#1c272c}.sector{font:700 20px monospace;fill:#d6e2df}.small{font:15px monospace;fill:#9fb3b5}.route{fill:none;stroke:#62d4d9;stroke-width:8;stroke-dasharray:20 10;marker-end:url(#arrow);filter:url(#glow)}.wall{fill:#34454b}.machine{fill:#6a5540;stroke:#9b7953;stroke-width:2}.destruct{fill:#742d24;stroke:#ff704e;stroke-width:3;stroke-dasharray:8 5}.secret{fill:none;stroke:#ff9f43;stroke-width:6;stroke-dasharray:10 7}.locked{fill:#66231f;stroke:#ff6049;stroke-width:4}.labelbox{fill:#0a1115;stroke:#405963;stroke-width:2}.door{fill:#2b3e44;stroke:#8ea5aa;stroke-width:2}.safe{fill:#163a3b;stroke:#65d7d3;stroke-width:3}
+    </style>
+  </defs>
+  <rect width="1600" height="1200" fill="url(#bg)"/><rect width="1600" height="1200" fill="url(#grid)" opacity=".55"/>
+  <text x="70" y="70" class="title">BLACKOUT PROTOCOL — TOYGUARD FACTORY / ACT I — LAYOUT V21</text>
+  <text x="70" y="105" class="subtitle">Plan de circulation cohérent · hub S-01 compact · lignes de vue cassées · route secrète M-04 · destruction locale</text>
+
+  <!-- Legend -->
+  <rect x="1160" y="135" width="360" height="185" rx="12" class="labelbox"/>
+  <text x="1190" y="170" class="sector">LÉGENDE</text>
+  <line x1="1190" y1="205" x2="1260" y2="205" class="route"/><text x="1280" y="212" class="small">route principale joueur</text>
+  <line x1="1190" y1="245" x2="1260" y2="245" class="secret"/><text x="1280" y="252" class="small">passage secret / accroupi</text>
+  <rect x="1190" y="270" width="55" height="25" class="destruct"/><text x="1280" y="290" class="small">cloison destructible</text>
+
+  <!-- Exterior -->
+  <rect x="95" y="155" width="920" height="95" rx="8" fill="#121b20" stroke="#495c64" stroke-width="3"/>
+  <text x="125" y="194" class="sector">EXTÉRIEUR / COUR DE SERVICE</text>
+  <text x="125" y="222" class="small">grillage · pluie · quai de livraison · façade centrale condamnée</text>
+  <rect x="790" y="180" width="120" height="42" class="door"/><text x="807" y="207" class="small">SERVICE</text>
+
+  <!-- Airlock -->
+  <rect x="790" y="250" width="120" height="150" class="room"/><text transform="translate(835 370) rotate(-90)" class="sector">SAS 01</text>
+  <rect x="800" y="262" width="100" height="18" class="door"/><rect x="800" y="370" width="100" height="18" class="door"/>
+  <text x="925" y="295" class="small">décontamination</text><text x="925" y="319" class="small">double porte</text><text x="925" y="343" class="small">pression / alarme</text>
+
+  <!-- lateral vestibule -->
+  <rect x="555" y="385" width="355" height="82" class="room"/><text x="585" y="435" class="sector">VESTIBULE LATÉRAL</text>
+  <text x="585" y="458" class="small">virage à 90° — aucune vue directe sur le hub</text>
+
+  <!-- compact hub -->
+  <rect x="195" y="385" width="340" height="240" rx="6" class="safe"/>
+  <text x="225" y="425" class="sector">S-01 // OPERATIONS HUB</text>
+  <text x="225" y="450" class="small">≈ 13 × 11 m — vraie pièce, pas un hall</text>
+  <rect x="213" y="475" width="54" height="110" class="machine"/><text transform="translate(250 570) rotate(-90)" class="small">CRT PRINCIPAL</text>
+  <rect x="303" y="490" width="72" height="40" class="machine"/><rect x="393" y="490" width="72" height="40" class="machine"/><rect x="303" y="550" width="162" height="40" class="machine"/>
+  <rect x="518" y="498" width="22" height="75" class="locked"/><text x="550" y="525" class="small" fill="#ff7e68">PORTE BADGE</text><text x="550" y="548" class="small">verrouillée au départ</text>
+  <rect x="315" y="606" width="112" height="14" class="door"/><text x="438" y="619" class="small">sortie nord décalée</text>
+
+  <!-- main factory body -->
+  <rect x="170" y="650" width="865" height="460" rx="8" fill="#121b20" stroke="#4b5f67" stroke-width="4"/>
+  <text x="1065" y="690" class="small">coque industrielle existante conservée</text>
+
+  <!-- logistics -->
+  <rect x="195" y="675" width="815" height="90" class="room"/>
+  <text x="220" y="705" class="sector">01 LOGISTICS / RECEIVING</text>
+  <g class="machine"><rect x="220" y="725" width="120" height="22"/><rect x="365" y="725" width="120" height="22"/><rect x="720" y="725" width="120" height="22"/><rect x="865" y="725" width="120" height="22"/></g>
+  <!-- J1 opening right -->
+  <rect x="195" y="765" width="500" height="22" class="wall"/><rect x="845" y="765" width="165" height="22" class="wall"/><text x="716" y="783" class="small">J1 →</text>
+
+  <!-- assembly -->
+  <rect x="195" y="787" width="815" height="95" class="room"/>
+  <text x="220" y="820" class="sector">02 ASSEMBLY / ROBOT CELLS</text>
+  <g class="machine"><rect x="245" y="838" width="78" height="28"/><rect x="380" y="838" width="78" height="28"/><rect x="745" y="838" width="78" height="28"/><rect x="880" y="838" width="78" height="28"/></g>
+  <rect x="520" y="842" width="105" height="18" class="destruct"/><text x="632" y="857" class="small">cloison légère destructible</text>
+  <!-- J2 opening left -->
+  <rect x="195" y="882" width="160" height="22" class="wall"/><rect x="505" y="882" width="505" height="22" class="wall"/><text x="380" y="900" class="small">← J2</text>
+
+  <!-- archives -->
+  <rect x="195" y="904" width="815" height="92" class="room"/>
+  <text x="220" y="935" class="sector">03 ARCHIVES / RECORDS</text>
+  <g class="machine"><rect x="225" y="950" width="110" height="20"/><rect x="355" y="950" width="110" height="20"/><rect x="760" y="950" width="110" height="20"/><rect x="890" y="950" width="95" height="20"/></g>
+  <rect x="198" y="933" width="20" height="52" class="destruct"/><text x="35" y="947" class="small">M-04</text><text x="35" y="969" class="small">mur caché</text>
+  <!-- J3 opening right -->
+  <rect x="195" y="996" width="490" height="22" class="wall"/><rect x="835" y="996" width="175" height="22" class="wall"/><text x="708" y="1014" class="small">J3 →</text>
+
+  <!-- foundry -->
+  <rect x="195" y="1018" width="815" height="72" class="room"/>
+  <text x="220" y="1048" class="sector">04 FOUNDRY / PRESS SHOP / RELAY VAULT</text>
+  <g class="machine"><rect x="265" y="1060" width="85" height="22"/><rect x="455" y="1060" width="85" height="22"/><rect x="690" y="1060" width="85" height="22"/><rect x="880" y="1060" width="85" height="22"/></g>
+  <rect x="195" y="1090" width="165" height="18" class="wall"/><rect x="510" y="1090" width="500" height="18" class="wall"/><text x="388" y="1106" class="small">← J4</text>
+
+  <!-- secret room and crawl -->
+  <rect x="40" y="915" width="125" height="120" class="room"/><text x="53" y="944" class="small">SECRET</text><text x="53" y="966" class="small">ROOM</text>
+  <rect x="155" y="940" width="15" height="52" class="destruct"/>
+  <rect x="65" y="1035" width="55" height="120" class="room"/><text transform="translate(100 1140) rotate(-90)" class="small">M-04 CRAWLSPACE</text>
+  <rect x="65" y="1030" width="55" height="12" class="destruct"/>
+
+  <!-- routes -->
+  <path d="M850 215 L850 330 L770 425 L520 425 L520 610 L800 700 L805 776 L320 842 L330 893 L805 950 L805 1007 L330 1050" class="route"/>
+  <path d="M205 960 L155 960 L100 980 L92 1090 L200 1062" class="secret"/>
+
+  <!-- annotations -->
+  <rect x="1080" y="355" width="430" height="270" rx="12" class="labelbox"/>
+  <text x="1110" y="390" class="sector">PRINCIPES DE LEVEL DESIGN</text>
+  <text x="1110" y="425" class="small">1. Chaque secteur a une fonction industrielle lisible.</text>
+  <text x="1110" y="457" class="small">2. Les portes sont dans des murs, jamais isolées.</text>
+  <text x="1110" y="489" class="small">3. Les jonctions alternent droite/gauche.</text>
+  <text x="1110" y="521" class="small">4. Le hub est petit, sécurisé et contournable.</text>
+  <text x="1110" y="553" class="small">5. Les objets restent en bandes latérales.</text>
+  <text x="1110" y="585" class="small">6. M-04 crée une boucle secrète destructible.</text>
+
+  <text x="70" y="1170" class="subtitle">Schéma de conception — proportions fonctionnelles, non plan d'architecture contractuel. Coordonnées d'implantation cohérentes avec la scène Godot v21.</text>
+</svg>
