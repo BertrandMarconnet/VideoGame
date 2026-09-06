@@ -12,6 +12,8 @@ func _interact() -> void:
 		held_body = null
 		_show_status("OBJET RELÂCHÉ")
 		return
+	if _try_secure_hub_gate_v21():
+		return
 	var hit := _raycast(4.2)
 	if hit.is_empty():
 		return
@@ -26,6 +28,14 @@ func _interact() -> void:
 		return
 	if collider and collider.get_meta("ambient_agent", false):
 		_inspect_agent_v12(collider as CharacterBody3D)
+
+func _try_secure_hub_gate_v21() -> bool:
+	var gate := find_child("SecureHubGateV21", true, false) as Node3D
+	if gate == null or not gate.has_method("authorize_nearby_player"):
+		return false
+	if player.global_position.distance_to(gate.global_position) >= 2.7:
+		return false
+	return bool(gate.call("authorize_nearby_player", player))
 
 func _primary_action() -> void:
 	if held_body:
