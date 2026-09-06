@@ -59,7 +59,7 @@ func _run() -> void:
 		{"name": "junction-logistics", "at": Vector3(6.0, 0.95, -20.2), "yaw": 0.0},
 		{"name": "assembly", "at": Vector3(-2.5, 0.95, -67), "yaw": 30.0},
 		{"name": "secret-room", "at": Vector3(-10.8, 0.95, -119.0), "yaw": -90.0},
-		{"name": "maintenance-crawl", "at": Vector3(-14.05, 0.60, -129.0), "yaw": 180.0},
+		{"name": "maintenance-crawl", "at": Vector3(-14.05, 0.76, -129.0), "yaw": 180.0},
 	]:
 		game.player.global_position = sample["at"]
 		game.player.rotation_degrees = Vector3(0, float(sample["yaw"]), 0)
@@ -177,13 +177,14 @@ func _check_routes() -> void:
 		var hits: Array[Dictionary] = game.get_world_3d().direct_space_state.intersect_shape(query)
 		_check(hits.is_empty(), "Player capsule blocked on v21 route at %s" % point)
 
-	# The secret maintenance route is intentionally crouch-only.
+	# Full crouch keeps the player origin near y=1.1 while the collision shape is
+	# shifted down by 0.34 m, giving a collider centre around y=0.76 m.
 	var crouch_capsule := CapsuleShape3D.new()
 	crouch_capsule.radius = 0.34
 	crouch_capsule.height = 1.08
 	query.shape = crouch_capsule
 	for z in [-126.0, -129.0, -132.0, -135.0]:
-		query.transform = Transform3D(Basis.IDENTITY, Vector3(-14.05, 0.56, z))
+		query.transform = Transform3D(Basis.IDENTITY, Vector3(-14.05, 0.76, z))
 		var crouch_hits: Array[Dictionary] = game.get_world_3d().direct_space_state.intersect_shape(query)
 		_check(crouch_hits.is_empty(), "Crouch route blocked at z=%s" % z)
 
