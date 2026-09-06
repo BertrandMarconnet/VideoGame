@@ -13,6 +13,7 @@ var status_light: MeshInstance3D
 var status_material: StandardMaterial3D
 var prompt_label: Label3D
 var _hint_cooldown := 0.0
+var _route_guard_done := false
 
 
 func configure(
@@ -87,6 +88,8 @@ func configure(
 
 
 func _physics_process(delta: float) -> void:
+	if not _route_guard_done:
+		_apply_route_guard()
 	if not is_instance_valid(player):
 		if game:
 			player = game.get("player") as CharacterBody3D
@@ -109,6 +112,46 @@ func _physics_process(delta: float) -> void:
 	var should_open := authorized and distance < 3.4
 	var target := open_position if should_open else closed_position
 	position = position.move_toward(target, delta * 2.65)
+
+
+func _apply_route_guard() -> void:
+	if not game:
+		return
+	_route_guard_done = true
+	var hub_floor := game.find_child("HubFloorV21", true, false)
+	if hub_floor is StaticBody3D:
+		(hub_floor as StaticBody3D).position.y = -0.10
+
+	var protected_routes: Array[Vector3] = [
+		Vector3(6.0, 0.0, -22.5),
+		Vector3(-6.0, 0.0, -58.0),
+		Vector3(5.5, 0.0, -92.0),
+		Vector3(-5.5, 0.0, -126.0),
+	]
+	var moved := 0
+	for candidate in game.find_children("*", "RigidBody3D", true, false):
+		var body := candidate as RigidBody3D
+		var p := body.global_position
+		var blocks_route := absf(p.z + 55.0) < 1.3 and absf(p.x) < 7.2
+		if not blocks_route:
+			for route in protected_routes:
+				if absf(p.z - route.z) < 3.8 and absf(p.x - route.x) < 3.8:
+					blocks_route = true
+					break
+		if not blocks_route:
+			continue
+		var side := -1.0 if p.x < 0.0 else 1.0
+		if absf(p.x) < 0.5:
+			side = -1.0 if moved % 2 == 0 else 1.0
+		body.global_position = Vector3(
+			side * (13.0 + float(moved % 4) * 0.65),
+			maxf(0.75, p.y),
+			p.z + float((moved % 3) - 1) * 1.15
+		)
+		body.linear_velocity = Vector3.ZERO
+		body.angular_velocity = Vector3.ZERO
+		moved += 1
+	game.set_meta("factory_route_guard_v21_moved", moved)
 
 
 func _update_status(is_authorized: bool) -> void:
