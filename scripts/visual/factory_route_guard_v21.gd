@@ -14,7 +14,8 @@ const PROTECTED_ROUTES: Array[Vector3] = [
 func apply(scene: Node3D) -> void:
 	_cleanup_hub_floors(scene)
 	_open_m04_j4_aperture(scene)
-	var removed := _remove_worldforge_route_blockers(scene)
+	var removed := _remove_legacy_crawl_blockers(scene)
+	removed += _remove_worldforge_route_blockers(scene)
 	var moved := _move_dynamic_route_blockers(scene)
 	scene.set_meta("factory_route_guard_v21_removed", removed)
 	scene.set_meta("factory_route_guard_v21_moved", moved)
@@ -43,6 +44,26 @@ func _move_dynamic_route_blockers(scene: Node3D) -> int:
 		body.set_meta("factory_route_guard_v21_relocated", true)
 		moved += 1
 	return moved
+
+
+func _remove_legacy_crawl_blockers(scene: Node3D) -> int:
+	# Older procedural decoration created anonymous root-level StaticBody3D
+	# colliders. They have no semantic role, but one can land inside M-04. Only
+	# anonymous direct children that physically intersect the crawl volume are
+	# removed; named factory structure and destructible walls are untouched.
+	var removed := 0
+	for candidate in scene.get_children():
+		if not candidate is StaticBody3D:
+			continue
+		var body := candidate as StaticBody3D
+		if not String(body.name).begins_with("@StaticBody3D@"):
+			continue
+		var size := _body_size(body)
+		if not _volume_blocks_crawlspace(body.global_position, size):
+			continue
+		body.queue_free()
+		removed += 1
+	return removed
 
 
 func _remove_worldforge_route_blockers(scene: Node3D) -> int:
@@ -76,6 +97,20 @@ func _volume_blocks_crawlspace(p: Vector3, size: Vector3) -> bool:
 	var within_x := absf(p.x + 14.05) < 1.90 + size.x * 0.5
 	var within_z := absf(p.z + 130.0) < 6.35 + size.z * 0.5
 	return within_x and within_z
+
+
+func _body_size(body: StaticBody3D) -> Vector3:
+	var meta_size = body.get_meta("size", null)
+	if meta_size is Vector3:
+		return meta_size as Vector3
+	for candidate in body.find_children("*", "CollisionShape3D", true, false):
+		var collision := candidate as CollisionShape3D
+		if collision.shape is BoxShape3D:
+			return (collision.shape as BoxShape3D).size
+		if collision.shape is CapsuleShape3D:
+			var capsule := collision.shape as CapsuleShape3D
+			return Vector3(capsule.radius * 2.0, capsule.height, capsule.radius * 2.0)
+	return Vector3.ONE
 
 
 func _cleanup_hub_floors(scene: Node3D) -> void:
