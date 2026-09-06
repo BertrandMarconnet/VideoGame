@@ -111,9 +111,12 @@ jobs:
       - name: Render and beta-test FNAF v21 gameplay
         shell: bash
         run: |
-          set -euo pipefail
+          set +e
           xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 MESA_GL_VERSION_OVERRIDE=3.3 timeout 150 "$GODOT_BIN" --path . --script res://tests/test_fnaf_v21.gd -- --touch-ui > build/fnaf-v21-test.log 2>&1
+          status=$?
+          set -e
           cat build/fnaf-v21-test.log
+          if [ "$status" -ne 0 ]; then exit "$status"; fi
           grep -q 'V21_FNAF_CHECKS PASS' build/fnaf-v21-test.log
           if grep -Eqi 'SCRIPT ERROR|V21_FNAF_CHECK_FAILED' build/fnaf-v21-test.log; then exit 1; fi
           test -s build/fnaf-v21/01-hub.png
