@@ -34,6 +34,8 @@ func _run() -> void:
 	_check(game.has_node("IndustrialVisualsV20"), "Industrial world did not load")
 	_check(game.has_node("FactoryLayoutV21"), "Coherent factory layout v21 did not load")
 	_check(bool(game.get_meta("factory_layout_v21_ready", false)), "Factory layout v21 readiness flag missing")
+	_check(bool(game.get_meta("factory_route_guard_v21_ready", false)), "Factory route guard v21 did not run")
+	_check(game.find_child("ControlFloor", true, false) == null, "Legacy oversized ControlFloor still exists")
 	_check_dialog_text(game.start_panel)
 	await _capture("desktop-menu")
 	for size in [Vector2i(390, 844), Vector2i(667, 375)]:
@@ -131,11 +133,14 @@ func _check_secure_hub_gate() -> void:
 	if gate == null:
 		return
 	_check(not bool(gate.get("authorized")), "S-01 hub should start locked")
+	paused = false
 	game.player.global_position = Vector3(2.25, 0.95, -13.4)
 	Input.action_press("interact")
-	await _frames(3)
+	await physics_frame
+	await physics_frame
 	Input.action_release("interact")
-	await _frames(5)
+	await physics_frame
+	await _frames(3)
 	_check(bool(gate.get("authorized")), "S-01 hub badge interaction did not unlock the gate")
 	_check(bool(game.get_meta("s01_hub_authorized_v21", false)), "S-01 authorization state was not recorded")
 
@@ -163,7 +168,7 @@ func _check_routes() -> void:
 	capsule.height = 1.8
 	var query := PhysicsShapeQueryParameters3D.new()
 	query.shape = capsule
-	query.exclude = [game.player.get_rid()]
+	query.exclude = _dynamic_route_exclusions()
 	query.collision_mask = 1
 	var route_points := [
 		Vector3(-6.2, 0.95, -15.45),
@@ -175,7 +180,7 @@ func _check_routes() -> void:
 	for point in route_points:
 		query.transform = Transform3D(Basis.IDENTITY, point)
 		var hits: Array[Dictionary] = game.get_world_3d().direct_space_state.intersect_shape(query)
-		_check(hits.is_empty(), "Player capsule blocked on v21 route at %s" % point)
+		_check(hits.is_empty(), "Static architecture blocks v21 route at %s: %s" % [point, _hit_names(hits)])
 
 	# Full crouch keeps the player origin near y=1.1 while the collision shape is
 	# shifted down by 0.34 m, giving a collider centre around y=0.76 m.
@@ -186,7 +191,46 @@ func _check_routes() -> void:
 	for z in [-126.0, -129.0, -132.0, -135.0]:
 		query.transform = Transform3D(Basis.IDENTITY, Vector3(-14.05, 0.76, z))
 		var crouch_hits: Array[Dictionary] = game.get_world_3d().direct_space_state.intersect_shape(query)
-		_check(crouch_hits.is_empty(), "Crouch route blocked at z=%s" % z)
+		_check(crouch_hits.is_empty(), "Static architecture blocks crouch route at z=%s: %s" % [z, _hit_names(crouch_hits)])
+	_check_procedural_route_guard()
+
+func _dynamic_route_exclusions() -> Array[RID]:
+	var excluded: Array[RID] = [game.player.get_rid()]
+	for candidate in game.find_children("*", "RigidBody3D", true, false):
+		excluded.append((candidate as RigidBody3D).get_rid())
+	for candidate in game.find_children("*", "CharacterBody3D", true, false):
+		var body := candidate as CharacterBody3D
+		if body != game.player:
+			excluded.append(body.get_rid())
+	return excluded
+
+func _check_procedural_route_guard() -> void:
+	var protected_routes: Array[Vector3] = [
+		Vector3(6.0, 0.0, -22.5),
+		Vector3(-6.0, 0.0, -58.0),
+		Vector3(5.5, 0.0, -92.0),
+		Vector3(-5.5, 0.0, -126.0),
+	]
+	for candidate in game.find_children("*", "RigidBody3D", true, false):
+		var body := candidate as RigidBody3D
+		var p := body.global_position
+		var in_old_barrier := absf(p.z + 55.0) < 1.3 and absf(p.x) < 7.2
+		_check(not in_old_barrier, "Dynamic prop still recreates the old z=-55 barrier: %s" % body.name)
+		for route in protected_routes:
+			var blocks := absf(p.z - route.z) < 3.8 and absf(p.x - route.x) < 3.8
+			_check(not blocks, "Dynamic prop %s blocks guaranteed v21 route near %s" % [body.name, route])
+		var blocks_crawl := absf(p.x + 14.05) < 1.55 and p.z < -123.6 and p.z > -136.4
+		_check(not blocks_crawl, "Dynamic prop %s blocks M-04 crawlspace" % body.name)
+
+func _hit_names(hits: Array[Dictionary]) -> String:
+	var names: Array[String] = []
+	for hit in hits:
+		var collider = hit.get("collider")
+		if collider is Node:
+			names.append(String((collider as Node).name))
+		else:
+			names.append(str(collider))
+	return ", ".join(names)
 
 func _check_dialog_text(panel: Control) -> void:
 	for candidate in panel.find_children("*", "Control", true, false):
