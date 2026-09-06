@@ -30,7 +30,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p scripts build/web
+          mkdir -p scripts build/web build/fnaf-v21
           cat src_parts/main_*.gdpart > scripts/main.gd
           test -s scripts/main.gd
           test "$(grep -c '^func ' scripts/main.gd)" -ge 70
@@ -49,6 +49,7 @@ jobs:
           grep -q 'func _update_suno_audio_v14' scripts/main.gd
           grep -q 'func _build_boot_overlay_v15' scripts/main.gd
           grep -q 'BLACKOUT_RUNTIME_READY' scripts/main.gd
+          grep -q 'BLACKOUT_FNAF_SURVEILLANCE_V21_READY' scripts/gameplay/fnaf_surveillance_v21.gd
           grep -q 'WORLDFORGE_EDITOR_OPENED_FROM_WEB' scripts/worldforge/worldforge_runtime.gd
 
       - name: Install validation tools
@@ -58,7 +59,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          gdlint scripts/main.gd scripts/worldforge/*.gd scripts/visual/*.gd scripts/ui/*.gd tests/test_visual_mobile.gd > gdlint.log 2>&1
+          gdlint scripts/main.gd scripts/worldforge/*.gd scripts/visual/*.gd scripts/gameplay/*.gd scripts/ui/*.gd tests/test_fnaf_v21.gd tests/test_damage_system.gd > gdlint.log 2>&1
           status=$?
           set -e
           cat gdlint.log
@@ -69,8 +70,8 @@ jobs:
         run: |
           set -euo pipefail
           GODOT_TAG="4.7-stable"
-          curl -fsSL --retry 5 --retry-delay 3 -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_TAG}/Godot_v${GODOT_TAG}_linux.x86_64.zip"
-          curl -fsSL --retry 5 --retry-delay 3 -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_TAG}/Godot_v${GODOT_TAG}_export_templates.tpz"
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 3 -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_TAG}/Godot_v${GODOT_TAG}_linux.x86_64.zip"
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 3 -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_TAG}/Godot_v${GODOT_TAG}_export_templates.tpz"
           mkdir -p .godot-bin .templates
           unzip -q godot.zip -d .godot-bin
           unzip -q templates.tpz -d .templates
@@ -104,16 +105,22 @@ jobs:
           cat godot-runtime.log
           if [ "$status" -ne 0 ]; then exit "$status"; fi
           grep -q 'BLACKOUT_RUNTIME_READY' godot-runtime.log
+          grep -q 'BLACKOUT_FACTORY_FNAF_V21_READY' godot-runtime.log
           if grep -Eqi 'SCRIPT ERROR|Invalid call|Invalid get index|Attempt to call|ERROR:' godot-runtime.log; then exit 1; fi
 
-      - name: Check mobile layout, corridors and damage behavior
+      - name: Render and beta-test FNAF v21 gameplay
         shell: bash
         run: |
           set -euo pipefail
-          timeout 120 "$GODOT_BIN" --headless --path . --script res://tests/test_visual_mobile.gd -- --touch-ui > build/visual-mobile-test.log 2>&1
-          cat build/visual-mobile-test.log
-          grep -q 'V21_VISUAL_MOBILE_CHECKS PASS' build/visual-mobile-test.log
-          if grep -Eqi 'SCRIPT ERROR|V21_CHECK_FAILED' build/visual-mobile-test.log; then exit 1; fi
+          xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 MESA_GL_VERSION_OVERRIDE=3.3 timeout 150 "$GODOT_BIN" --path . --script res://tests/test_fnaf_v21.gd -- --touch-ui > build/fnaf-v21-test.log 2>&1
+          cat build/fnaf-v21-test.log
+          grep -q 'V21_FNAF_CHECKS PASS' build/fnaf-v21-test.log
+          if grep -Eqi 'SCRIPT ERROR|V21_FNAF_CHECK_FAILED' build/fnaf-v21-test.log; then exit 1; fi
+          test -s build/fnaf-v21/01-hub.png
+          test -s build/fnaf-v21/02-west-hall.png
+          test -s build/fnaf-v21/04-east-hall.png
+          test -s build/fnaf-v21/08-camera-network.png
+          test -s build/fnaf-v21/10-mobile-camera.png
           timeout 60 "$GODOT_BIN" --headless --path . --script res://tests/test_damage_system.gd > build/damage-test.log 2>&1
           cat build/damage-test.log
           if grep -Eqi 'SCRIPT ERROR|DAMAGE_TEST_FAIL' build/damage-test.log; then exit 1; fi
@@ -179,7 +186,7 @@ jobs:
           cat build/firefox-console.log
           cat build/worldforge-portal-console.log
 
-      - name: Upload Godot, portal and Firefox diagnostics
+      - name: Upload Godot, rendered beta-test and Firefox diagnostics
         if: always()
         uses: actions/upload-artifact@v6
         with:
@@ -189,6 +196,8 @@ jobs:
             godot-import.log
             godot-runtime.log
             godot-export.log
+            build/fnaf-v21-test.log
+            build/fnaf-v21/*.png
             build/firefox-console.log
             build/firefox-smoke.png
             build/firefox-after-start.png
@@ -196,7 +205,6 @@ jobs:
             build/worldforge-portal.png
             build/worldforge-editor-open.png
             build/http-server.log
-            build/visual-mobile-test.log
             build/damage-test.log
           if-no-files-found: warn
 
@@ -208,7 +216,7 @@ jobs:
           JOB_STATUS: ${{ job.status }}
         run: |
           set -euo pipefail
-          if [ "$JOB_STATUS" = "success" ]; then state="success"; description="Godot, WorldForge portal, asset generator and Firefox validated"; else state="failure"; description="Godot, WorldForge portal or Firefox validation failed"; fi
+          if [ "$JOB_STATUS" = "success" ]; then state="success"; description="Godot FNAF v21, rendered beta-test and Firefox validated"; else state="failure"; description="Godot FNAF v21 or Firefox validation failed"; fi
           curl --fail-with-body -sS -L -X POST -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -d "{\"state\":\"$state\",\"context\":\"blackout/firefox-web\",\"description\":\"$description\",\"target_url\":\"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}"
 
       - name: Configure GitHub Pages

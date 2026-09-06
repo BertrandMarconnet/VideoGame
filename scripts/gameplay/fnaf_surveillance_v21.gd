@@ -17,12 +17,14 @@ var power_label: Label
 var threat_label: Label
 var story_label: Label
 var cam_button: Button
+var ui_frame: VBoxContainer
 var left_shutter: AnimatableBody3D
 var right_shutter: AnimatableBody3D
 var left_closed := false
 var right_closed := false
 var alert_cooldown := 0.0
 var _saved_mouse_mode := Input.MOUSE_MODE_CAPTURED
+var _worldforge_generation_id := 0
 
 var camera_nodes: Array[Dictionary] = [
 	{"name":"CAM 01 // S-01", "position":Vector3(0.0, 2.7, -18.8), "look":Vector3(0.0, 1.2, -13.0)},
@@ -51,18 +53,11 @@ var route_nodes := {
 }
 
 var route_edges := {
-	"HUB_L": ["W1"],
-	"W1": ["HUB_L", "W2"],
-	"W2": ["W1", "W3"],
-	"W3": ["W2", "NW"],
-	"NW": ["W3", "NE"],
-	"NE": ["NW", "E3", "RELAY_TURN"],
-	"E3": ["NE", "E2"],
-	"E2": ["E3", "E1"],
-	"E1": ["E2", "HUB_R"],
-	"HUB_R": ["E1"],
-	"RELAY_TURN": ["NE", "RELAY"],
-	"RELAY": ["RELAY_TURN"],
+	"HUB_L": ["W1"], "W1": ["HUB_L", "W2"], "W2": ["W1", "W3"],
+	"W3": ["W2", "NW"], "NW": ["W3", "NE"],
+	"NE": ["NW", "E3", "RELAY_TURN"], "E3": ["NE", "E2"],
+	"E2": ["E3", "E1"], "E1": ["E2", "HUB_R"], "HUB_R": ["E1"],
+	"RELAY_TURN": ["NE", "RELAY"], "RELAY": ["RELAY_TURN"],
 }
 
 func configure(game_scene: Node3D) -> void:
@@ -135,7 +130,6 @@ func _build_ui() -> void:
 	layer.name = "FNAFSurveillanceUIV21"
 	layer.layer = 240
 	add_child(layer)
-
 	cam_button = Button.new()
 	cam_button.text = "CAM"
 	cam_button.name = "CameraNetworkButtonV21"
@@ -145,7 +139,6 @@ func _build_ui() -> void:
 	cam_button.focus_mode = Control.FOCUS_NONE
 	cam_button.pressed.connect(toggle_surveillance)
 	layer.add_child(cam_button)
-
 	overlay = Control.new()
 	overlay.name = "CameraOverlayV21"
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -156,16 +149,13 @@ func _build_ui() -> void:
 	backdrop.color = Color(0.005, 0.008, 0.01, 0.93)
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.add_child(backdrop)
-
-	var frame := VBoxContainer.new()
-	frame.set_anchors_preset(Control.PRESET_CENTER)
-	frame.position = Vector2(-360.0, -250.0)
-	frame.size = Vector2(720.0, 500.0)
-	frame.custom_minimum_size = Vector2(720.0, 500.0)
-	overlay.add_child(frame)
-
+	ui_frame = VBoxContainer.new()
+	ui_frame.set_anchors_preset(Control.PRESET_CENTER)
+	ui_frame.size = Vector2(720.0, 500.0)
+	ui_frame.custom_minimum_size = Vector2(720.0, 500.0)
+	overlay.add_child(ui_frame)
 	var header := HBoxContainer.new()
-	frame.add_child(header)
+	ui_frame.add_child(header)
 	cam_label = Label.new()
 	cam_label.text = "CAM 01 // S-01"
 	cam_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -175,32 +165,30 @@ func _build_ui() -> void:
 	power_label.text = "POWER 100%"
 	power_label.add_theme_font_size_override("font_size", 18)
 	header.add_child(power_label)
-
 	feed = TextureRect.new()
 	feed.custom_minimum_size = Vector2(720.0, 405.0)
 	feed.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	feed.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	feed.texture = camera_view.get_texture()
-	frame.add_child(feed)
-
+	ui_frame.add_child(feed)
 	threat_label = Label.new()
 	threat_label.text = "MOTION // NONE"
 	threat_label.add_theme_font_size_override("font_size", 15)
-	frame.add_child(threat_label)
+	ui_frame.add_child(threat_label)
 	story_label = Label.new()
 	story_label.text = "S-01: surveillez les halls. Ne laissez pas les deux accès sans contrôle."
 	story_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	story_label.add_theme_font_size_override("font_size", 14)
-	frame.add_child(story_label)
-
+	ui_frame.add_child(story_label)
 	var controls := HBoxContainer.new()
 	controls.alignment = BoxContainer.ALIGNMENT_CENTER
-	frame.add_child(controls)
+	ui_frame.add_child(controls)
 	_add_button(controls, "◀ CAM", previous_camera)
 	_add_button(controls, "CAM ▶", next_camera)
 	_add_button(controls, "LOCK L", toggle_left_shutter)
 	_add_button(controls, "LOCK R", toggle_right_shutter)
 	_add_button(controls, "FERMER", toggle_surveillance)
+	_reflow_overlay()
 
 func _add_button(parent: Control, text_value: String, callback: Callable) -> void:
 	var button := Button.new()
@@ -230,12 +218,19 @@ func _unhandled_input(event: InputEvent) -> void:
 			toggle_right_shutter()
 
 func _process(delta: float) -> void:
+	_reconcile_worldforge_if_needed()
 	cam_button.visible = _game_active() and not get_tree().paused
 	alert_cooldown = maxf(0.0, alert_cooldown - delta)
 	if not _game_active():
 		if surveillance_open:
 			_close_surveillance()
 		return
+	if surveillance_open and player:
+		for action in ["move_forward", "move_back", "move_left", "move_right", "sprint", "jump", "crouch"]:
+			Input.action_release(action)
+		player.velocity.x = 0.0
+		player.velocity.z = 0.0
+		_reflow_overlay()
 	var drain := 0.012
 	if surveillance_open:
 		drain += 0.065
@@ -258,6 +253,14 @@ func _process(delta: float) -> void:
 	if surveillance_open:
 		_update_overlay()
 	_check_hub_threat()
+
+func _reflow_overlay() -> void:
+	if ui_frame == null:
+		return
+	var viewport_size := get_viewport().get_visible_rect().size
+	var scale_value := minf(1.0, minf(viewport_size.x / 760.0, viewport_size.y / 550.0))
+	ui_frame.scale = Vector2.ONE * scale_value
+	ui_frame.position = -ui_frame.size * 0.5 * scale_value
 
 func _game_active() -> bool:
 	if game == null or not is_instance_valid(game):
@@ -310,14 +313,12 @@ func _apply_camera_node() -> void:
 		cam_label.text = String(data["name"])
 
 func toggle_left_shutter() -> void:
-	if power <= 0.0:
-		return
-	left_closed = not left_closed
+	if power > 0.0:
+		left_closed = not left_closed
 
 func toggle_right_shutter() -> void:
-	if power <= 0.0:
-		return
-	right_closed = not right_closed
+	if power > 0.0:
+		right_closed = not right_closed
 
 func _update_shutter(shutter: AnimatableBody3D, closed: bool, delta: float) -> void:
 	if shutter == null:
@@ -382,8 +383,6 @@ func is_robot_observed(robot: Node3D) -> bool:
 	return not hit.is_empty() and hit.get("collider") == robot
 
 func next_route_target(from_position: Vector3, target_position: Vector3) -> Vector3:
-	if route_nodes.is_empty():
-		return target_position
 	var start := _nearest_route_node(from_position)
 	var goal := _nearest_route_node(target_position)
 	if start == goal:
@@ -416,3 +415,40 @@ func _nearest_route_node(position_value: Vector3) -> String:
 			best_distance = distance
 			best = String(key)
 	return best
+
+func _reconcile_worldforge_if_needed() -> void:
+	if game == null:
+		return
+	var generated := game.get_node_or_null("WorldForgeGenerated")
+	if generated == null:
+		return
+	var generation_id := generated.get_instance_id()
+	if generation_id == _worldforge_generation_id:
+		return
+	_worldforge_generation_id = generation_id
+	for node in game.find_children("*", "StaticBody3D", true, false):
+		var body := node as StaticBody3D
+		if bool(body.get_meta("worldforge_generated", false)) and _blocks_route(body.global_position, body.get_meta("size", Vector3.ONE) as Vector3):
+			body.queue_free()
+	var slot_index := 0
+	for node in game.find_children("*", "RigidBody3D", true, false):
+		var body := node as RigidBody3D
+		var size := body.get_meta("size", Vector3.ONE) as Vector3
+		if not _blocks_route(body.global_position, size):
+			continue
+		var side := -12.2 if slot_index % 2 == 0 else 12.2
+		body.global_position = Vector3(side, maxf(body.global_position.y, 0.8), -30.0 - float(slot_index % 6) * 6.0)
+		body.linear_velocity = Vector3.ZERO
+		body.angular_velocity = Vector3.ZERO
+		slot_index += 1
+	game.set_meta("fnaf_worldforge_reconciled_v21", true)
+
+func _blocks_route(p: Vector3, size: Vector3) -> bool:
+	var margin_x := size.x * 0.5 + 0.45
+	var margin_z := size.z * 0.5 + 0.45
+	var in_hub := absf(p.x) < 7.0 + margin_x and p.z < -10.0 + margin_z and p.z > -22.0 - margin_z
+	var west_hall := absf(p.x + 5.55) < 2.1 + margin_x and p.z < -21.0 + margin_z and p.z > -67.0 - margin_z
+	var east_hall := absf(p.x - 5.55) < 2.1 + margin_x and p.z < -21.0 + margin_z and p.z > -67.0 - margin_z
+	var north_cross := absf(p.z + 69.0) < 2.7 + margin_z and absf(p.x) < 9.0 + margin_x
+	var relay_approach := absf(p.x - 6.0) < 2.3 + margin_x and p.z < -68.0 + margin_z and p.z > -81.0 - margin_z
+	return in_hub or west_hall or east_hall or north_cross or relay_approach

@@ -1,6 +1,8 @@
 # Industrial art direction: readable lighting, shaped hardware, Web budgets.
 var visuals_v20 := preload("res://scripts/visual/industrial_visuals.gd").new()
-var factory_layout_v21 := preload("res://scripts/visual/factory_layout_v21.gd").new()
+var fnaf_factory_v21 := preload("res://scripts/visual/fnaf_factory_v21.gd").new()
+var fnaf_surveillance_script_v21 := preload("res://scripts/gameplay/fnaf_surveillance_v21.gd")
+var fnaf_surveillance_v21: Node
 var responsive_ui_v20 := preload("res://scripts/ui/responsive_game_ui.gd").new()
 var lighting_clock_v20 := 0.0
 var quality_mode_v20 := 0
@@ -13,7 +15,10 @@ var local_lights_v20: Array[OmniLight3D] = []
 func _prepare_industrial_v20() -> void:
 	_apply_act1_interface_v18()
 	visuals_v20.build_factory_detail(self)
-	factory_layout_v21.install(self, visuals_v20)
+	fnaf_factory_v21.install(self, visuals_v20)
+	fnaf_surveillance_v21 = fnaf_surveillance_script_v21.new()
+	add_child(fnaf_surveillance_v21)
+	fnaf_surveillance_v21.call("configure", self)
 	responsive_ui_v20.install(self)
 	var settings := ConfigFile.new()
 	if settings.load("user://display_settings.cfg") == OK:
@@ -25,14 +30,12 @@ func _prepare_industrial_v20() -> void:
 	reflow_interface_v20()
 	_refresh_lights_v20()
 	print("BLACKOUT_INDUSTRIAL_V20_READY")
-	print("BLACKOUT_FACTORY_LAYOUT_V21_READY")
+	print("BLACKOUT_FACTORY_FNAF_V21_READY")
 
 func _finish_industrial_v20() -> void:
 	if bool(get_meta("v20_art_finished", false)):
 		return
 	set_meta("v20_art_finished", true)
-	# Existing geometry is retained; material replacement is restricted to walls
-	# and floors. Imported rigs keep their meshes and all animation/damage names.
 	for candidate in find_children("*", "MeshInstance3D", true, false):
 		var mesh := candidate as MeshInstance3D
 		var label := String(mesh.name) + " " + String(mesh.get_parent().name)
@@ -42,10 +45,9 @@ func _finish_industrial_v20() -> void:
 				mesh.material_override = visuals_v20.surface(kind)
 				mesh.set_meta("v20_surface", true)
 	visuals_v20.polish_imported(self)
-	# Add readable fittings within the actual airlock wall thickness.
 	if act1_airlock_root_v18:
 		visuals_v20.poster(act1_airlock_root_v18, Vector3(8.99, 1.95, -3.7), 0, 90.0)
-		visuals_v20.sign_board(act1_airlock_root_v18, Vector3(10.5, 2.7, -10.1), "S-01  /  OPERATIONS")
+		visuals_v20.sign_board(act1_airlock_root_v18, Vector3(10.5, 2.7, -10.1), "S-01  /  SECURITY")
 		visuals_v20.cabinet(act1_airlock_root_v18, Vector3(5.4, 0.13, -15.08), 0.0)
 	_refresh_lights_v20()
 	_set_brightness(brightness_v20)
@@ -68,14 +70,14 @@ func _apply_quality_v20(mode: int) -> void:
 	get_viewport().msaa_3d = Viewport.MSAA_DISABLED if mobile_profile else Viewport.MSAA_2X
 	if camera:
 		camera.fov = 76.0 if is_mobile else 74.0
-		camera.far = 210.0
+		camera.far = 140.0
 	if flashlight:
 		flashlight.shadow_enabled = mode == 3 and not is_mobile
-		flashlight.spot_range = 28.0
+		flashlight.spot_range = 24.0
 	if world_env:
-		world_env.environment.ambient_light_color = Color(0.64, 0.70, 0.74)
-		world_env.environment.ambient_light_energy = 0.72
-		world_env.environment.fog_density = 0.0022
+		world_env.environment.ambient_light_color = Color(0.54, 0.60, 0.64)
+		world_env.environment.ambient_light_energy = 0.62
+		world_env.environment.fog_density = 0.0042
 	_save_display_settings_v20()
 
 func _save_display_settings_v20() -> void:
@@ -106,8 +108,7 @@ func _update_industrial_v20(delta: float) -> void:
 			for index in range(local_lights_v20.size()):
 				var light := local_lights_v20[index]
 				if is_instance_valid(light):
-					light.visible = index < budget and light.global_position.distance_squared_to(origin) < 2200.0
-	# Auto reduces only the 3D resolution. Text and touch targets stay sharp.
+					light.visible = index < budget and light.global_position.distance_squared_to(origin) < 1800.0
 	if quality_mode_v20 == 0:
 		quality_elapsed_v20 += minf(delta, 0.25)
 		quality_frames_v20 += 1
@@ -126,7 +127,7 @@ func reflow_interface_v20() -> void:
 	responsive_ui_v20.reflow()
 
 func _release_touch_actions_v20() -> void:
-	for action in ["move_forward", "move_back", "move_left", "move_right", "jump", "sprint", "crouch", "drone_down", "interact", "primary", "flashlight", "drone"]:
+	for action in ["move_forward", "move_back", "move_left", "move_right", "jump", "sprint", "crouch", "drone_down", "interact", "primary", "flashlight", "drone", "camera_network"]:
 		Input.action_release(action)
 	mobile_look_touch_id = -1
 	mobile_look_active = false

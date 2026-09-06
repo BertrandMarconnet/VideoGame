@@ -1,35 +1,44 @@
 	var frames := audio_playback.get_frames_available()
 	var mix_rate := 22050.0
-	var sequence := PackedFloat32Array([55.0, 55.0, 65.41, 55.0, 73.42, 65.41, 49.0, 55.0])
 	var threat := 0.0
 	if game_started and robots.size() > 0:
-		threat = clampf(1.0 - robots[0].global_position.distance_to(player.global_position) / 28.0, 0.0, 1.0)
+		var nearest := 999.0
+		for robot in robots:
+			if is_instance_valid(robot) and robot.visible:
+				nearest = minf(nearest, robot.global_position.distance_to(player.global_position))
+		threat = clampf(1.0 - nearest / 24.0, 0.0, 1.0)
 	var round_energy := float(current_round - 1) / float(maxi(TOTAL_ROUNDS - 1, 1))
 	for i in range(frames):
 		var t := audio_phase + float(i) / mix_rate
-		var tempo := 0.72 + round_energy * 0.2 + threat * 0.16
-		var beat_phase := fmod(t * tempo, 1.0)
-		var beat_envelope := exp(-beat_phase * 11.0)
-		var step_index := int(floor(t * tempo * 2.0)) % sequence.size()
-		var bass_frequency := sequence[step_index]
-		var bass := sin(t * TAU * bass_frequency) * 0.026 * (0.45 + round_energy * 0.55)
-		var pad := (
-			sin(t * TAU * 55.0) +
-			sin(t * TAU * 65.41) * 0.72 +
-			sin(t * TAU * 82.41) * 0.5
-		) * 0.009
-		var kick := sin(t * TAU * 48.0) * beat_envelope * (0.035 + round_energy * 0.025)
-		var machine_hum := sin(t * TAU * 43.0) * 0.022 + sin(t * TAU * 86.0) * 0.01
-		var metallic_tick := 0.0
-		if fmod(t * tempo * 4.0, 1.0) < 0.025:
-			metallic_tick = sin(t * TAU * 1180.0) * 0.026 * (0.4 + round_energy)
-		var threat_tone := sin(t * TAU * (92.0 + threat * 44.0)) * threat * 0.025
+		# Constant low-frequency machinery. Deliberately non-musical.
+		var machine_hum := sin(t * TAU * 31.0) * 0.030
+		machine_hum += sin(t * TAU * 47.0) * 0.016
+		machine_hum += sin(t * TAU * 63.0) * 0.008
+		var transformer := sin(t * TAU * 50.0) * 0.006 + sin(t * TAU * 100.0) * 0.003
+		# Slow pressure pulse only when something is close; it stays sub-bass.
+		var pulse_env := (sin(t * TAU * (0.62 + threat * 0.18)) * 0.5 + 0.5) * threat
+		var threat_pulse := sin(t * TAU * (37.0 + round_energy * 7.0)) * pulse_env * 0.028
+		# Dull impact cue, used for distant movement, shutters and jumpscare buildup.
+		var thud := 0.0
+		if industrial_thud_remaining_v21 > 0.0:
+			var thud_env := clampf(industrial_thud_remaining_v21 / 0.9, 0.0, 1.0)
+			thud = (sin(t * TAU * 42.0) * 0.065 + sin(t * TAU * 68.0) * 0.026) * thud_env * maxf(industrial_cue_strength_v21, 0.35)
+		# Mechanical servo: low scrape plus a muted harmonic, never a bright beep.
+		var servo := 0.0
+		if industrial_servo_remaining_v21 > 0.0:
+			var servo_env := clampf(industrial_servo_remaining_v21 / 0.7, 0.0, 1.0)
+			servo = (sin(t * TAU * 118.0) * 0.020 + sin(t * TAU * 176.0) * 0.010) * servo_env * maxf(industrial_cue_strength_v21, 0.35)
+		var scrape := 0.0
+		if industrial_noise_remaining_v21 > 0.0:
+			var scrape_env := clampf(industrial_noise_remaining_v21 / 0.9, 0.0, 1.0)
+			var rough := sin(t * TAU * 613.0) * sin(t * TAU * 73.0)
+			scrape = rough * 0.016 * scrape_env * maxf(industrial_cue_strength_v21, 0.35)
 		var status_beep := 0.0
 		if status_beep_remaining > 0.0:
-			status_beep = sin(t * TAU * status_beep_frequency) * minf(status_beep_remaining * 5.0, 1.0) * 0.055
+			status_beep = sin(t * TAU * status_beep_frequency) * minf(status_beep_remaining * 5.0, 1.0) * 0.025
 			status_beep_remaining = maxf(status_beep_remaining - 1.0 / mix_rate, 0.0)
-		var sample: float = clampf(machine_hum + pad + bass + kick + metallic_tick + threat_tone + status_beep, -0.22, 0.22)
-		audio_playback.push_frame(Vector2(sample, sample * 0.97))
+		var sample: float = clampf(machine_hum + transformer + threat_pulse + thud + servo + scrape + status_beep, -0.18, 0.18)
+		audio_playback.push_frame(Vector2(sample, sample * 0.965))
 	audio_phase += float(frames) / mix_rate
 
 func _update_hud() -> void:
@@ -43,8 +52,14 @@ func _show_status(text_value: String) -> void:
 	if status_label:
 		status_label.text = text_value
 	last_status_time = Time.get_ticks_msec() / 1000.0
-	status_beep_remaining = 0.16
-	status_beep_frequency = 360.0 if ("ALERTE" in text_value or "ENDOMMAG" in text_value or "ATTAQUE" in text_value) else 720.0
+	status_beep_remaining = 0.12
+	status_beep_frequency = 215.0 if ("ALERTE" in text_value or "ENDOMMAG" in text_value or "ATTAQUE" in text_value or "PROXIMITY" in text_value) else 305.0
+	if "BRUIT" in text_value or "MOUVEMENT" in text_value or "PROXIMITY" in text_value:
+		_industrial_audio_cue_v21("thud", 0.75)
+	elif "ENDOMMAG" in text_value or "ATTAQUE" in text_value or "DÉSACTIV" in text_value:
+		_industrial_audio_cue_v21("servo", 0.9)
+	elif "POWER" in text_value or "TENSION" in text_value:
+		_industrial_audio_cue_v21("scrape", 0.55)
 
 func _toggle_pause() -> void:
 	if not game_started:
