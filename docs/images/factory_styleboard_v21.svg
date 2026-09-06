@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1100" viewBox="0 0 1600 1100">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#11191d"/><stop offset="1" stop-color="#05080a"/></linearGradient>
+  <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#132a2e"/><stop offset="1" stop-color="#356d73"/></linearGradient>
+  <linearGradient id="amber" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#24150d"/><stop offset="1" stop-color="#985427"/></linearGradient>
+  <linearGradient id="red" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#210b09"/><stop offset="1" stop-color="#8e271d"/></linearGradient>
+  <pattern id="hazard" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="12" height="24" fill="#c79c32"/><rect x="12" width="12" height="24" fill="#171b1d"/></pattern>
+  <filter id="glow"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <style>.t{font:700 31px monospace;fill:#d8e8e6}.h{font:700 22px monospace;fill:#e0e9e5}.s{font:15px monospace;fill:#9fb1b2}.line{stroke:#587079;stroke-width:3}.metal{fill:#34464b;stroke:#71858b;stroke-width:2}.dark{fill:#10181c;stroke:#374b53;stroke-width:2}.screen{fill:#51c8cc;filter:url(#glow)}.warning{fill:#e55439;filter:url(#glow)}.pipe{fill:none;stroke:#66777a;stroke-width:16}.thinpipe{fill:none;stroke:#9b5e36;stroke-width:8}.floor{fill:#252d2e;stroke:#4e5e61;stroke-width:2}.note{fill:#091013;stroke:#344a52;stroke-width:2}</style>
+</defs>
+<rect width="1600" height="1100" fill="url(#bg)"/>
+<text x="65" y="62" class="t">BLACKOUT PROTOCOL — FACTORY STYLEBOARD V21</text>
+<text x="65" y="92" class="s">Cible visuelle : console PS2/PS3 précoce, industrielle crédible, lisible sur Web/mobile, années 1987–1994 sans architecture futuriste propre.</text>
+
+<!-- PANEL 1 HUB -->
+<g transform="translate(60 135)">
+ <rect width="710" height="390" rx="14" fill="#10171a" stroke="#47616a" stroke-width="3"/>
+ <text x="24" y="38" class="h">01 — S-01 / HUB COMPACT ET VERROUILLÉ</text>
+ <polygon points="35,325 670,325 570,210 135,210" class="floor"/>
+ <polygon points="35,70 135,210 135,325 35,325" fill="#202a2d"/>
+ <polygon points="670,70 570,210 570,325 670,325" fill="#263035"/>
+ <rect x="70" y="120" width="130" height="125" class="metal"/><rect x="82" y="135" width="105" height="70" class="screen"/>
+ <line x1="95" y1="218" x2="175" y2="218" stroke="#a47c43" stroke-width="7"/>
+ <rect x="245" y="245" width="115" height="56" class="dark"/><rect x="375" y="245" width="115" height="56" class="dark"/>
+ <rect x="550" y="105" width="72" height="220" class="metal"/><rect x="558" y="125" width="12" height="180" fill="#5a1d17"/><circle cx="580" cy="150" r="9" class="warning"/>
+ <text x="510" y="90" class="s">porte badge Jolt</text>
+ <path d="M120 80 C170 50 220 70 265 60" class="pipe"/><path d="M120 105 C180 80 245 100 320 88" class="thinpipe"/>
+ <rect x="40" y="320" width="635" height="14" fill="url(#hazard)"/>
+ <text x="30" y="362" class="s">Bas plafond · CRT principal sur mur · 3 postes max · armoires contre paroi · aucun mobilier dans l'axe de fuite.</text>
+</g>
+
+<!-- PANEL 2 JUNCTION -->
+<g transform="translate(825 135)">
+ <rect width="710" height="390" rx="14" fill="#10171a" stroke="#47616a" stroke-width="3"/>
+ <text x="24" y="38" class="h">02 — JONCTION DÉCALÉE / LOGISTIQUE</text>
+ <polygon points="40,330 670,330 555,205 155,205" class="floor"/>
+ <rect x="40" y="88" width="315" height="122" fill="#343f42"/><rect x="485" y="88" width="185" height="122" fill="#343f42"/>
+ <rect x="355" y="88" width="130" height="122" fill="#172126"/>
+ <rect x="352" y="82" width="136" height="18" fill="#879397"/>
+ <path d="M60 80 L330 80" class="pipe"/><path d="M510 75 L655 75" class="thinpipe"/>
+ <rect x="75" y="250" width="105" height="55" class="metal"/><rect x="205" y="260" width="120" height="45" class="metal"/>
+ <rect x="540" y="248" width="92" height="58" fill="#725842" stroke="#ad8a61" stroke-width="2"/>
+ <path d="M320 320 C360 285 390 255 430 220" fill="none" stroke="#57d0d5" stroke-width="9" filter="url(#glow)"/>
+ <text x="365" y="73" class="s">ouverture 6 m à droite</text>
+ <text x="30" y="362" class="s">Le joueur doit se décaler ; les poursuivants disparaissent brièvement de vue. Marquage au sol et signalétique donnent la logique industrielle.</text>
+</g>
+
+<!-- PANEL 3 ASSEMBLY -->
+<g transform="translate(60 570)">
+ <rect width="710" height="390" rx="14" fill="#10171a" stroke="#47616a" stroke-width="3"/>
+ <text x="24" y="38" class="h">03 — ASSEMBLAGE / CLOISONS DESTRUCTIBLES</text>
+ <polygon points="40,330 670,330 570,205 140,205" class="floor"/>
+ <rect x="80" y="210" width="150" height="95" class="metal"/><rect x="470" y="205" width="150" height="100" class="metal"/>
+ <g stroke="#c98536" stroke-width="14" fill="none"><path d="M125 205 L145 135 L190 120"/><path d="M530 205 L550 142 L590 122"/></g>
+ <rect x="275" y="140" width="120" height="155" fill="#3a3c3b" stroke="#a65e4a" stroke-width="3" stroke-dasharray="10 6"/>
+ <path d="M310 155 L330 190 L305 220 L350 245 L325 280" fill="none" stroke="#d0735c" stroke-width="6"/>
+ <rect x="40" y="320" width="635" height="14" fill="url(#hazard)"/>
+ <circle cx="335" cy="110" r="16" class="warning"/><text x="360" y="116" class="s">mur léger = raccourci risqué</text>
+ <text x="30" y="362" class="s">Machines alignées sur cellules, bras au-dessus des postes. La destruction crée une option tactique, pas un trou arbitraire dans la structure porteuse.</text>
+</g>
+
+<!-- PANEL 4 SECRET -->
+<g transform="translate(825 570)">
+ <rect width="710" height="390" rx="14" fill="#0b1013" stroke="#47616a" stroke-width="3"/>
+ <text x="24" y="38" class="h">04 — M-04 / PASSAGE SECRET DE MAINTENANCE</text>
+ <polygon points="80,320 630,320 540,220 170,220" fill="#161f22" stroke="#43555a" stroke-width="2"/>
+ <polygon points="80,105 170,220 170,320 80,320" fill="#1b2427"/><polygon points="630,105 540,220 540,320 630,320" fill="#1c2528"/>
+ <line x1="170" y1="155" x2="540" y2="155" stroke="#3f5054" stroke-width="18"/>
+ <path d="M95 125 C220 100 360 125 610 105" class="pipe"/><path d="M100 155 C220 135 410 160 610 145" class="thinpipe"/>
+ <g stroke="#50646a" stroke-width="3"><line x1="180" y1="295" x2="530" y2="295"/><line x1="200" y1="275" x2="510" y2="275"/><line x1="225" y1="255" x2="485" y2="255"/></g>
+ <rect x="535" y="170" width="20" height="145" fill="#4b2620" stroke="#e25d45" stroke-width="3" stroke-dasharray="8 5"/>
+ <circle cx="585" cy="190" r="13" class="warning"/>
+ <text x="565" y="230" class="s">issue cachée</text><text x="565" y="252" class="s">destructible</text>
+ <text x="30" y="362" class="s">1,7 m sous plafond : accroupissement obligatoire. Conduites, grilles et câbles justifient le volume ; la route rejoint la fonderie et crée une vraie boucle.</text>
+</g>
+
+<rect x="60" y="1000" width="1475" height="65" rx="10" class="note"/>
+<text x="82" y="1028" class="s">RÈGLE V21 : chaque objet doit avoir une raison d'être (maintenance, stockage, production, sécurité) et ne doit jamais couper une voie sans ouverture lisible.</text>
+<text x="82" y="1052" class="s">Palette : béton sale / acier peint / caoutchouc / ambre sécurité / cyan CRT / rouge alarme. Détails géométriques concentrés près du joueur pour préserver Web + smartphone.</text>
+</svg>
