@@ -50,10 +50,12 @@ func _run() -> void:
 	await _capture("desktop-intro")
 	game._finish_intro_v12()
 	await _frames(20)
-	game.set_physics_process(false)
 	_check(game.game_started, "Campaign did not start")
 	_check(game.get_meta("v20_art_finished", false), "Act I materials were not finalized")
 	await _check_secure_hub_gate()
+	# Freeze only the game director after validating a real gameplay interaction.
+	# Child visuals and the responsive UI continue to process for captures.
+	game.set_physics_process(false)
 	for sample in [
 		{"name": "exterior", "at": Vector3(4, 0.95, 17), "yaw": -12.0},
 		{"name": "airlock", "at": Vector3(10.5, 0.95, -2.6), "yaw": 0.0},
@@ -135,13 +137,20 @@ func _check_secure_hub_gate() -> void:
 	_check(not bool(gate.get("authorized")), "S-01 hub should start locked")
 	paused = false
 	game.player.global_position = Vector3(2.25, 0.95, -13.4)
-	Input.action_press("interact")
+	game.player.velocity = Vector3.ZERO
 	await physics_frame
+	var press := InputEventAction.new()
+	press.action = "interact"
+	press.pressed = true
+	Input.parse_input_event(press)
+	await process_frame
 	await physics_frame
-	Input.action_release("interact")
-	await physics_frame
-	await _frames(3)
-	_check(bool(gate.get("authorized")), "S-01 hub badge interaction did not unlock the gate")
+	var release := InputEventAction.new()
+	release.action = "interact"
+	release.pressed = false
+	Input.parse_input_event(release)
+	await process_frame
+	_check(bool(gate.get("authorized")), "S-01 hub badge input did not unlock the gate")
 	_check(bool(game.get_meta("s01_hub_authorized_v21", false)), "S-01 authorization state was not recorded")
 
 func _check_touch_layout() -> void:
@@ -214,23 +223,34 @@ func _check_procedural_route_guard() -> void:
 	for candidate in game.find_children("*", "RigidBody3D", true, false):
 		var body := candidate as RigidBody3D
 		var p := body.global_position
-		var in_old_barrier := absf(p.z + 55.0) < 1.3 and absf(p.x) < 7.2
+		var size := body.get_meta("size", Vector3.ONE) as Vector3
+		var in_old_barrier := absf(p.z + 55.0) < 1.3 + size.z * 0.5 and absf(p.x) < 7.2 + size.x * 0.5
 		_check(not in_old_barrier, "Dynamic prop still recreates the old z=-55 barrier: %s" % body.name)
 		for route in protected_routes:
-			var blocks := absf(p.z - route.z) < 3.8 and absf(p.x - route.x) < 3.8
-			_check(not blocks, "Dynamic prop %s blocks guaranteed v21 route near %s" % [body.name, route])
-		var blocks_crawl := absf(p.x + 14.05) < 1.55 and p.z < -123.6 and p.z > -136.4
-		_check(not blocks_crawl, "Dynamic prop %s blocks M-04 crawlspace" % body.name)
+			var blocks_x := absf(p.x - route.x) < 3.65 + size.x * 0.5
+			var blocks_z := absf(p.z - route.z) < 3.35 + size.z * 0.5
+			_check(not (blocks_x and blocks_z), "Dynamic prop %s blocks guaranteed v21 route near %s" % [body.name, route])
+		var crawl_x := absf(p.x + 14.05) < 1.90 + size.x * 0.5
+		var crawl_z := absf(p.z + 130.0) < 6.35 + size.z * 0.5
+		_check(not (crawl_x and crawl_z), "Dynamic prop %s blocks M-04 crawlspace" % body.name)
 
 func _hit_names(hits: Array[Dictionary]) -> String:
 	var names: Array[String] = []
 	for hit in hits:
 		var collider = hit.get("collider")
-		if collider is Node:
+		if collider is Node3D:
+			var node := collider as Node3D
+			var details := "%s path=%s pos=%s" % [node.name, node.get_path(), node.global_position]
+			if node.has_meta("layout_role_v21"):
+				details += " role=" + String(node.get_meta("layout_role_v21"))
+			if bool(node.get_meta("worldforge_generated", false)):
+				details += " worldforge=true"
+			names.append(details)
+		elif collider is Node:
 			names.append(String((collider as Node).name))
 		else:
 			names.append(str(collider))
-	return ", ".join(names)
+	return " | ".join(names)
 
 func _check_dialog_text(panel: Control) -> void:
 	for candidate in panel.find_children("*", "Control", true, false):
