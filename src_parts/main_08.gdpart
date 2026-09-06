@@ -79,7 +79,7 @@ func _robot_detection_enabled(robot: Node) -> bool:
 func _robot_route_target_v21(robot: CharacterBody3D, final_target: Vector3) -> Vector3:
 	var director := get_node_or_null("FNAFSurveillanceV21")
 	if director != null and director.has_method("next_route_target"):
-		var routed := director.call("next_route_target", robot.global_position, final_target)
+		var routed: Variant = director.call("next_route_target", robot.global_position, final_target)
 		if routed is Vector3:
 			return routed as Vector3
 	return final_target
