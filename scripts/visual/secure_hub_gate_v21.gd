@@ -1,7 +1,6 @@
 extends AnimatableBody3D
-## S-01 operations gate. It starts locked and only opens after the technician
-## explicitly validates the local badge reader. The body itself slides, so the
-## collision always matches the visible door in Godot/Jolt and Web builds.
+## S-01 operations gate. Input remains owned by the main gameplay interaction
+## system; this node owns authorization state, feedback and physical movement.
 
 const ROUTE_GUARD := preload("res://scripts/visual/factory_route_guard_v21.gd")
 
@@ -15,7 +14,6 @@ var status_light: MeshInstance3D
 var status_material: StandardMaterial3D
 var prompt_label: Label3D
 var _hint_cooldown := 0.0
-var _interact_latched := false
 var _worldforge_generation_id := 0
 
 
@@ -35,10 +33,8 @@ func configure(
 	collision_layer = 1
 	collision_mask = 1
 	sync_to_physics = true
-	# The route reconciler must also observe WorldForge while the start screen is
-	# paused. Gameplay interaction itself remains explicitly disabled when paused.
+	# Route reconciliation must also observe WorldForge while menus are paused.
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	set_process_input(true)
 
 	var shape := BoxShape3D.new()
 	shape.size = size_value
@@ -104,8 +100,6 @@ func configure(
 	add_child(prompt_label)
 
 	add_to_group("secure_hub_gate_v21")
-	# First pass handles authored geometry and legacy props. A second pass runs
-	# automatically for every new WorldForge generation, including editor regen.
 	ROUTE_GUARD.new().apply(game_scene)
 
 
@@ -119,12 +113,9 @@ func _process(_delta: float) -> void:
 	if generation_id == _worldforge_generation_id:
 		return
 	_worldforge_generation_id = generation_id
+	# WorldForge can regenerate at runtime from the developer editor. Reapply the
+	# v21 route contract to every new procedural generation.
 	ROUTE_GUARD.new().apply(game)
-
-
-func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("interact"):
-		_try_authorize()
 
 
 func _physics_process(delta: float) -> void:
@@ -136,41 +127,31 @@ func _physics_process(delta: float) -> void:
 		return
 	_hint_cooldown = maxf(0.0, _hint_cooldown - delta)
 	var distance := player.global_position.distance_to(global_position)
-	var interact_down := Input.is_action_pressed("interact")
-
-	if not authorized and distance < 2.7:
-		if interact_down and not _interact_latched:
-			_interact_latched = true
-			_try_authorize()
-		elif not interact_down and _hint_cooldown <= 0.0:
-			_hint_cooldown = 2.4
-			if game and game.has_method("_show_status"):
-				game.call(
-					"_show_status",
-					"S-01 verrouillé — approchez le lecteur et appuyez sur E."
-				)
-	if not interact_down:
-		_interact_latched = false
-
+	if not authorized and distance < 2.7 and _hint_cooldown <= 0.0:
+		_hint_cooldown = 2.4
+		if game and game.has_method("_show_status"):
+			game.call(
+				"_show_status",
+				"S-01 verrouillé — approchez le lecteur et appuyez sur E."
+			)
 	var should_open := authorized and distance < 3.4
 	var target := open_position if should_open else closed_position
 	position = position.move_toward(target, delta * 2.65)
 
 
-func _try_authorize() -> bool:
-	if authorized or get_tree().paused:
-		return authorized
+func authorize_nearby_player(actor: CharacterBody3D) -> bool:
+	if authorized:
+		return true
+	if actor == null or get_tree().paused:
+		return false
 	if game == null or not is_instance_valid(game):
 		return false
 	var started_value = game.get("game_started")
 	if started_value != null and not bool(started_value):
 		return false
-	if not is_instance_valid(player):
-		player = game.get("player") as CharacterBody3D
-	if not is_instance_valid(player):
+	if actor.global_position.distance_to(global_position) >= 2.7:
 		return false
-	if player.global_position.distance_to(global_position) >= 2.7:
-		return false
+	player = actor
 	authorized = true
 	game.set_meta("s01_hub_authorized_v21", true)
 	if game.has_method("_show_status"):
