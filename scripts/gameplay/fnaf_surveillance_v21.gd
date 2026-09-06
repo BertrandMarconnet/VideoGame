@@ -66,12 +66,22 @@ func configure(game_scene: Node3D) -> void:
 	name = "FNAFSurveillanceV21"
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_install_input()
+	_open_hub_halls()
 	_build_shutters()
 	_build_camera_view()
 	_build_ui()
 	game.set_meta("fnaf_surveillance_open", false)
 	game.set_meta("fnaf_power_v21", power)
 	print("BLACKOUT_FNAF_SURVEILLANCE_V21_READY")
+
+func _open_hub_halls() -> void:
+	# The new hub uses two lateral approaches. Remove only the obsolete outer
+	# pieces of the former north wall so the left/right hall openings are broad,
+	# visible and never read as a wall dropped in the middle of the corridor.
+	for label in ["HubNorthOuterLeftV21", "HubNorthOuterRightV21"]:
+		var wall := game.find_child(label, true, false)
+		if wall is Node3D:
+			(wall as Node3D).queue_free()
 
 func _install_input() -> void:
 	if not InputMap.has_action("camera_network"):
@@ -390,7 +400,7 @@ func next_route_target(from_position: Vector3, target_position: Vector3) -> Vect
 	var queue: Array[String] = [start]
 	var came_from := {start: ""}
 	while not queue.is_empty():
-		var current := queue.pop_front()
+		var current: String = queue.pop_front()
 		if current == goal:
 			break
 		for neighbor_variant in route_edges.get(current, []):
