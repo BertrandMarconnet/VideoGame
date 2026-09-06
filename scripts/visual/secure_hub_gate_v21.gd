@@ -3,6 +3,8 @@ extends AnimatableBody3D
 ## explicitly validates the local badge reader. The body itself slides, so the
 ## collision always matches the visible door in Godot/Jolt and Web builds.
 
+const ROUTE_GUARD := preload("res://scripts/visual/factory_route_guard_v21.gd")
+
 var game: Node3D
 var player: CharacterBody3D
 var closed_position := Vector3.ZERO
@@ -13,7 +15,7 @@ var status_light: MeshInstance3D
 var status_material: StandardMaterial3D
 var prompt_label: Label3D
 var _hint_cooldown := 0.0
-var _route_guard_done := false
+var _interact_latched := false
 
 
 func configure(
@@ -85,73 +87,41 @@ func configure(
 	add_child(prompt_label)
 
 	add_to_group("secure_hub_gate_v21")
+	# Apply once, immediately after all v21 architecture and legacy props exist.
+	# This keeps layout safety independent from the door's runtime interaction.
+	ROUTE_GUARD.new().apply(game_scene)
 
 
 func _physics_process(delta: float) -> void:
-	if not _route_guard_done:
-		_apply_route_guard()
 	if not is_instance_valid(player):
 		if game:
 			player = game.get("player") as CharacterBody3D
 		return
 	_hint_cooldown = maxf(0.0, _hint_cooldown - delta)
 	var distance := player.global_position.distance_to(global_position)
+	var interact_down := Input.is_action_pressed("interact")
 
 	if not authorized and distance < 2.7:
-		if Input.is_action_just_pressed("interact"):
+		if interact_down and not _interact_latched:
+			_interact_latched = true
 			authorized = true
 			if game:
 				game.set_meta("s01_hub_authorized_v21", true)
 				if game.has_method("_show_status"):
 					game.call("_show_status", "S-01 : badge technicien validé — porte du hub déverrouillée.")
 			_update_status(true)
-		elif _hint_cooldown <= 0.0 and game and game.has_method("_show_status"):
+		elif not interact_down and _hint_cooldown <= 0.0 and game and game.has_method("_show_status"):
 			_hint_cooldown = 2.4
 			game.call("_show_status", "S-01 verrouillé — approchez le lecteur et appuyez sur E.")
+	elif not interact_down:
+		_interact_latched = false
+
+	if not interact_down:
+		_interact_latched = false
 
 	var should_open := authorized and distance < 3.4
 	var target := open_position if should_open else closed_position
 	position = position.move_toward(target, delta * 2.65)
-
-
-func _apply_route_guard() -> void:
-	if not game:
-		return
-	_route_guard_done = true
-	var hub_floor := game.find_child("HubFloorV21", true, false)
-	if hub_floor is StaticBody3D:
-		(hub_floor as StaticBody3D).position.y = -0.10
-
-	var protected_routes: Array[Vector3] = [
-		Vector3(6.0, 0.0, -22.5),
-		Vector3(-6.0, 0.0, -58.0),
-		Vector3(5.5, 0.0, -92.0),
-		Vector3(-5.5, 0.0, -126.0),
-	]
-	var moved := 0
-	for candidate in game.find_children("*", "RigidBody3D", true, false):
-		var body := candidate as RigidBody3D
-		var p := body.global_position
-		var blocks_route := absf(p.z + 55.0) < 1.3 and absf(p.x) < 7.2
-		if not blocks_route:
-			for route in protected_routes:
-				if absf(p.z - route.z) < 3.8 and absf(p.x - route.x) < 3.8:
-					blocks_route = true
-					break
-		if not blocks_route:
-			continue
-		var side := -1.0 if p.x < 0.0 else 1.0
-		if absf(p.x) < 0.5:
-			side = -1.0 if moved % 2 == 0 else 1.0
-		body.global_position = Vector3(
-			side * (13.0 + float(moved % 4) * 0.65),
-			maxf(0.75, p.y),
-			p.z + float((moved % 3) - 1) * 1.15
-		)
-		body.linear_velocity = Vector3.ZERO
-		body.angular_velocity = Vector3.ZERO
-		moved += 1
-	game.set_meta("factory_route_guard_v21_moved", moved)
 
 
 func _update_status(is_authorized: bool) -> void:
