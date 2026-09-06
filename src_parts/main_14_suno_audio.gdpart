@@ -26,9 +26,14 @@ func _ensure_suno_audio_v14() -> void:
 		chase.play()
 
 func _load_suno_stream_v14(path: String) -> AudioStream:
-	var resource := load(path)
+	# Some repository preview MP3s are deliberately tiny placeholders. Asking
+	# load() to open an unsupported/unimported file emits an engine ERROR every
+	# frame in headless/Web validation. ResourceLoader.exists() lets the adaptive
+	# audio system fall back silently to the procedural AudioStreamGenerator.
+	if not ResourceLoader.exists(path, "AudioStream"):
+		return null
+	var resource := ResourceLoader.load(path, "AudioStream", ResourceLoader.CACHE_MODE_REUSE)
 	if not resource is AudioStream:
-		push_warning("Suno stream unavailable: " + path)
 		return null
 	var stream := resource as AudioStream
 	if stream is AudioStreamMP3:
