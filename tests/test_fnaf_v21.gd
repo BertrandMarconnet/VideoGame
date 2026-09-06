@@ -44,7 +44,7 @@ func _run() -> void:
 	game._finish_intro_v12()
 	await _frames(30)
 	_check(game.game_started, "campaign did not start")
-	_check(game.relay_terminal.global_position.distance_to(Vector3(0.0, 1.1, -84.0)) < 1.0, "relay terminal was not moved into north relay room")
+	_check(game.relay_terminal.global_position.distance_to(Vector3(0.0, 1.1, -87.8)) < 0.5, "relay terminal must sit against the north wall, clear of circulation")
 	_check(game.uplink_terminal.global_position.distance_to(Vector3(-3.2, 1.1, -18.4)) < 1.0, "uplink terminal was not moved into S-01")
 
 	# The old centre line must be physically blocked by a utility core, while both
@@ -56,7 +56,7 @@ func _run() -> void:
 	for point in [
 		Vector3(-5.55, 0.93, -29.0), Vector3(-5.55, 0.93, -44.0), Vector3(-5.55, 0.93, -62.0),
 		Vector3(5.55, 0.93, -29.0), Vector3(5.55, 0.93, -44.0), Vector3(5.55, 0.93, -62.0),
-		Vector3(-2.0, 0.93, -69.0), Vector3(5.9, 0.93, -74.0), Vector3(0.0, 0.93, -84.0)
+		Vector3(-2.0, 0.93, -69.0), Vector3(5.9, 0.93, -71.1), Vector3(5.9, 0.93, -74.0), Vector3(0.0, 0.93, -84.0)
 	]:
 		_check(_space_clear(point, capsule), "authored FNAF route blocked at %s" % point)
 

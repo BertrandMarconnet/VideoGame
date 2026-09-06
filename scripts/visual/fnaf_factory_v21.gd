@@ -112,6 +112,7 @@ func _build_lateral_halls(
 	halls.name = "TwinHallsV21"
 	root.add_child(halls)
 	# Central utility core removes the impossible uninterrupted sightline.
+	_static_box(halls, Vector3(6.7, WALL_HEIGHT, 21.0), Vector3(0.0, WALL_HEIGHT * 0.5, -36.0), concrete, "SealedUtilityPlantV22")
 	_static_box(halls, Vector3(7.0, WALL_HEIGHT, 0.30), Vector3(0.0, WALL_HEIGHT * 0.5, -24.0), concrete, "UtilityCoreSouthV21")
 	_static_box(halls, Vector3(7.0, WALL_HEIGHT, 0.30), Vector3(0.0, WALL_HEIGHT * 0.5, -65.0), concrete, "UtilityCoreNorthV21")
 	_static_box(halls, Vector3(0.30, WALL_HEIGHT, 19.0), Vector3(3.5, WALL_HEIGHT * 0.5, -33.5), concrete, "UtilityCoreEastSouthV21")
@@ -202,7 +203,8 @@ func _build_north_loop(
 	north.name = "NorthLoopV21"
 	root.add_child(north)
 	_visual_box(north, Vector3(18.0, 0.025, 4.2), Vector3(0.0, 0.02, -69.0), floor_mat, "NorthCrossFloorV21")
-	_static_box(north, Vector3(18.0, WALL_HEIGHT, 0.24), Vector3(0.0, WALL_HEIGHT * 0.5, -71.1), concrete, "NorthCrossWallV21")
+	_static_box(north, Vector3(13.0, WALL_HEIGHT, 0.24), Vector3(-2.5, WALL_HEIGHT * 0.5, -71.1), concrete, "NorthCrossWallV21")
+	_static_box(north, Vector3(1.0, WALL_HEIGHT, 0.24), Vector3(8.5, WALL_HEIGHT * 0.5, -71.1), concrete, "NorthCrossReturnV22")
 	# L-shaped approach to relay room; no direct axial view from the hub.
 	_visual_box(north, Vector3(4.0, 0.025, 12.0), Vector3(6.0, 0.02, -75.0), floor_mat, "RelayApproachFloorV21")
 	_static_box(north, Vector3(0.24, WALL_HEIGHT, 12.0), Vector3(4.0, WALL_HEIGHT * 0.5, -75.0), steel, "RelayApproachWestV21")
@@ -216,7 +218,7 @@ func _build_north_loop(
 	var relay_value = scene.get("relay_terminal")
 	if relay_value is Node3D:
 		var relay := relay_value as Node3D
-		relay.global_position = Vector3(0.0, 1.1, -84.0)
+		relay.global_position = Vector3(0.0, 1.1, -87.8)
 		relay.rotation_degrees.y = 180.0
 	_visual_box(north, Vector3(0.08, 0.018, 10.0), Vector3(6.0, 0.035, -75.0), paint, "RelayGuideV21")
 
