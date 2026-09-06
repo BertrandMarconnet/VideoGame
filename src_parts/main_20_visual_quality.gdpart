@@ -1,5 +1,6 @@
 # Industrial art direction: readable lighting, shaped hardware, Web budgets.
 var visuals_v20 := preload("res://scripts/visual/industrial_visuals.gd").new()
+var factory_layout_v21 := preload("res://scripts/visual/factory_layout_v21.gd").new()
 var responsive_ui_v20 := preload("res://scripts/ui/responsive_game_ui.gd").new()
 var lighting_clock_v20 := 0.0
 var quality_mode_v20 := 0
@@ -12,6 +13,7 @@ var local_lights_v20: Array[OmniLight3D] = []
 func _prepare_industrial_v20() -> void:
 	_apply_act1_interface_v18()
 	visuals_v20.build_factory_detail(self)
+	factory_layout_v21.install(self, visuals_v20)
 	responsive_ui_v20.install(self)
 	var settings := ConfigFile.new()
 	if settings.load("user://display_settings.cfg") == OK:
@@ -23,6 +25,7 @@ func _prepare_industrial_v20() -> void:
 	reflow_interface_v20()
 	_refresh_lights_v20()
 	print("BLACKOUT_INDUSTRIAL_V20_READY")
+	print("BLACKOUT_FACTORY_LAYOUT_V21_READY")
 
 func _finish_industrial_v20() -> void:
 	if bool(get_meta("v20_art_finished", false)):
