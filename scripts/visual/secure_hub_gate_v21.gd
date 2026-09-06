@@ -16,6 +16,7 @@ var status_material: StandardMaterial3D
 var prompt_label: Label3D
 var _hint_cooldown := 0.0
 var _interact_latched := false
+var _worldforge_generation_id := 0
 
 
 func configure(
@@ -34,6 +35,10 @@ func configure(
 	collision_layer = 1
 	collision_mask = 1
 	sync_to_physics = true
+	# The route reconciler must also observe WorldForge while the start screen is
+	# paused. Gameplay interaction itself remains explicitly disabled when paused.
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	set_process_input(true)
 
 	var shape := BoxShape3D.new()
 	shape.size = size_value
@@ -50,7 +55,11 @@ func configure(
 	add_child(door_mesh)
 
 	var inset_shape := BoxMesh.new()
-	inset_shape.size = Vector3(size_value.x + 0.035, size_value.y * 0.72, size_value.z * 0.64)
+	inset_shape.size = Vector3(
+		size_value.x + 0.035,
+		size_value.y * 0.72,
+		size_value.z * 0.64
+	)
 	var inset := MeshInstance3D.new()
 	inset.name = "SecureHubGateInsetV21"
 	inset.mesh = inset_shape
@@ -66,7 +75,11 @@ func configure(
 	status_light = MeshInstance3D.new()
 	status_light.name = "SecureHubGateStatusV21"
 	status_light.mesh = lamp_shape
-	status_light.position = Vector3(-size_value.x * 0.55, size_value.y * 0.31, 0.0)
+	status_light.position = Vector3(
+		-size_value.x * 0.55,
+		size_value.y * 0.31,
+		0.0
+	)
 	status_material = StandardMaterial3D.new()
 	status_material.albedo_color = Color(0.32, 0.03, 0.02)
 	status_material.emission_enabled = true
@@ -80,19 +93,43 @@ func configure(
 	prompt_label.text = "%s\nBADGE REQUIRED — E" % gate_label
 	prompt_label.font_size = 34
 	prompt_label.pixel_size = 0.0022
-	prompt_label.position = Vector3(-size_value.x * 0.62, size_value.y * 0.12, 0.0)
+	prompt_label.position = Vector3(
+		-size_value.x * 0.62,
+		size_value.y * 0.12,
+		0.0
+	)
 	prompt_label.rotation_degrees.y = 90.0
 	prompt_label.modulate = Color(1.0, 0.42, 0.22)
 	prompt_label.outline_size = 0
 	add_child(prompt_label)
 
 	add_to_group("secure_hub_gate_v21")
-	# Apply once, immediately after all v21 architecture and legacy props exist.
-	# This keeps layout safety independent from the door's runtime interaction.
+	# First pass handles authored geometry and legacy props. A second pass runs
+	# automatically for every new WorldForge generation, including editor regen.
 	ROUTE_GUARD.new().apply(game_scene)
 
 
+func _process(_delta: float) -> void:
+	if game == null or not is_instance_valid(game):
+		return
+	var generated := game.get_node_or_null("WorldForgeGenerated")
+	if generated == null:
+		return
+	var generation_id := generated.get_instance_id()
+	if generation_id == _worldforge_generation_id:
+		return
+	_worldforge_generation_id = generation_id
+	ROUTE_GUARD.new().apply(game)
+
+
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("interact"):
+		_try_authorize()
+
+
 func _physics_process(delta: float) -> void:
+	if get_tree().paused:
+		return
 	if not is_instance_valid(player):
 		if game:
 			player = game.get("player") as CharacterBody3D
@@ -104,18 +141,14 @@ func _physics_process(delta: float) -> void:
 	if not authorized and distance < 2.7:
 		if interact_down and not _interact_latched:
 			_interact_latched = true
-			authorized = true
-			if game:
-				game.set_meta("s01_hub_authorized_v21", true)
-				if game.has_method("_show_status"):
-					game.call("_show_status", "S-01 : badge technicien validé — porte du hub déverrouillée.")
-			_update_status(true)
-		elif not interact_down and _hint_cooldown <= 0.0 and game and game.has_method("_show_status"):
+			_try_authorize()
+		elif not interact_down and _hint_cooldown <= 0.0:
 			_hint_cooldown = 2.4
-			game.call("_show_status", "S-01 verrouillé — approchez le lecteur et appuyez sur E.")
-	elif not interact_down:
-		_interact_latched = false
-
+			if game and game.has_method("_show_status"):
+				game.call(
+					"_show_status",
+					"S-01 verrouillé — approchez le lecteur et appuyez sur E."
+				)
 	if not interact_down:
 		_interact_latched = false
 
@@ -124,10 +157,51 @@ func _physics_process(delta: float) -> void:
 	position = position.move_toward(target, delta * 2.65)
 
 
+func _try_authorize() -> bool:
+	if authorized or get_tree().paused:
+		return authorized
+	if game == null or not is_instance_valid(game):
+		return false
+	var started_value = game.get("game_started")
+	if started_value != null and not bool(started_value):
+		return false
+	if not is_instance_valid(player):
+		player = game.get("player") as CharacterBody3D
+	if not is_instance_valid(player):
+		return false
+	if player.global_position.distance_to(global_position) >= 2.7:
+		return false
+	authorized = true
+	game.set_meta("s01_hub_authorized_v21", true)
+	if game.has_method("_show_status"):
+		game.call(
+			"_show_status",
+			"S-01 : badge technicien validé — porte du hub déverrouillée."
+		)
+	_update_status(true)
+	return true
+
+
 func _update_status(is_authorized: bool) -> void:
 	if status_material:
-		status_material.albedo_color = Color(0.03, 0.28, 0.08) if is_authorized else Color(0.32, 0.03, 0.02)
-		status_material.emission = Color(0.08, 0.92, 0.22) if is_authorized else Color(0.85, 0.035, 0.015)
+		status_material.albedo_color = (
+			Color(0.03, 0.28, 0.08)
+			if is_authorized
+			else Color(0.32, 0.03, 0.02)
+		)
+		status_material.emission = (
+			Color(0.08, 0.92, 0.22)
+			if is_authorized
+			else Color(0.85, 0.035, 0.015)
+		)
 	if prompt_label:
-		prompt_label.text = "S-01 OPERATIONS\nAUTHORIZED" if is_authorized else "S-01 OPERATIONS\nBADGE REQUIRED — E"
-		prompt_label.modulate = Color(0.3, 1.0, 0.48) if is_authorized else Color(1.0, 0.42, 0.22)
+		prompt_label.text = (
+			"S-01 OPERATIONS\nAUTHORIZED"
+			if is_authorized
+			else "S-01 OPERATIONS\nBADGE REQUIRED — E"
+		)
+		prompt_label.modulate = (
+			Color(0.3, 1.0, 0.48)
+			if is_authorized
+			else Color(1.0, 0.42, 0.22)
+		)
