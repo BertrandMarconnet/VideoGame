@@ -1,7 +1,7 @@
 extends SceneTree
 ## Integration checks against the actual scene, physics and responsive controls.
 ## Run with --headless --script res://tests/test_visual_mobile.gd -- --touch-ui.
-## With a display, this also saves real game captures under build/visual-v20/.
+## With a display, this also saves real game captures under build/visual-v21/.
 
 var game: Node3D
 var failures: Array[String] = []
@@ -16,14 +16,14 @@ func _frames(count: int) -> void:
 func _check(condition: bool, message: String) -> void:
 	if not condition:
 		failures.append(message)
-		push_error("V20_CHECK_FAILED " + message)
+		push_error("V21_CHECK_FAILED " + message)
 
 func _capture(label: String) -> void:
 	if DisplayServer.get_name() == "headless":
 		return
 	await RenderingServer.frame_post_draw
-	DirAccess.make_dir_recursive_absolute("res://build/visual-v20")
-	root.get_texture().get_image().save_png("res://build/visual-v20/%s.png" % label)
+	DirAccess.make_dir_recursive_absolute("res://build/visual-v21")
+	root.get_texture().get_image().save_png("res://build/visual-v21/%s.png" % label)
 
 func _run() -> void:
 	root.size = Vector2i(1280, 720)
@@ -32,6 +32,8 @@ func _run() -> void:
 	current_scene = game
 	await _frames(65)
 	_check(game.has_node("IndustrialVisualsV20"), "Industrial world did not load")
+	_check(game.has_node("FactoryLayoutV21"), "Coherent factory layout v21 did not load")
+	_check(bool(game.get_meta("factory_layout_v21_ready", false)), "Factory layout v21 readiness flag missing")
 	_check_dialog_text(game.start_panel)
 	await _capture("desktop-menu")
 	for size in [Vector2i(390, 844), Vector2i(667, 375)]:
@@ -49,19 +51,22 @@ func _run() -> void:
 	game.set_physics_process(false)
 	_check(game.game_started, "Campaign did not start")
 	_check(game.get_meta("v20_art_finished", false), "Act I materials were not finalized")
+	await _check_secure_hub_gate()
 	for sample in [
 		{"name": "exterior", "at": Vector3(4, 0.95, 17), "yaw": -12.0},
 		{"name": "airlock", "at": Vector3(10.5, 0.95, -2.6), "yaw": 0.0},
-		{"name": "corridor", "at": Vector3(0, 0.95, -20.1), "yaw": 0.0},
+		{"name": "compact-hub", "at": Vector3(-5.8, 0.95, -9.2), "yaw": 28.0},
+		{"name": "junction-logistics", "at": Vector3(6.0, 0.95, -20.2), "yaw": 0.0},
 		{"name": "assembly", "at": Vector3(-2.5, 0.95, -67), "yaw": 30.0},
-		{"name": "maintenance", "at": Vector3(-12, 0.95, -26.8), "yaw": 68.0},
+		{"name": "secret-room", "at": Vector3(-10.8, 0.95, -119.0), "yaw": -90.0},
+		{"name": "maintenance-crawl", "at": Vector3(-14.05, 0.60, -129.0), "yaw": 180.0},
 	]:
 		game.player.global_position = sample["at"]
 		game.player.rotation_degrees = Vector3(0, float(sample["yaw"]), 0)
 		game.camera.rotation = Vector3.ZERO
 		await _frames(10)
 		await _capture(String(sample["name"]))
-	await _check_corridors()
+	await _check_routes()
 	# Inspect the actual skinned campaign robots, without altering the story gates.
 	for robot: CharacterBody3D in game.robots:
 		var kind := String(robot.get_meta("personality", ""))
@@ -114,11 +119,25 @@ func _run() -> void:
 	var post := game.get_node("PS1VisualLayer/PS1PostProcess") as ColorRect
 	_check(is_equal_approx(float(post.material.get_shader_parameter("brightness")), 1.35), "Brightness has no shader effect")
 	game._set_brightness(1.15)
-	print("V20_VISUAL_MOBILE_CHECKS ", "PASS" if failures.is_empty() else failures)
+	print("V21_VISUAL_MOBILE_CHECKS ", "PASS" if failures.is_empty() else failures)
 	game.queue_free()
 	game = null
 	await _frames(3)
 	quit(0 if failures.is_empty() else 1)
+
+func _check_secure_hub_gate() -> void:
+	var gate := game.find_child("SecureHubGateV21", true, false)
+	_check(gate != null, "Secure S-01 hub gate is missing")
+	if gate == null:
+		return
+	_check(not bool(gate.get("authorized")), "S-01 hub should start locked")
+	game.player.global_position = Vector3(2.25, 0.95, -13.4)
+	Input.action_press("interact")
+	await _frames(3)
+	Input.action_release("interact")
+	await _frames(5)
+	_check(bool(gate.get("authorized")), "S-01 hub badge interaction did not unlock the gate")
+	_check(bool(game.get_meta("s01_hub_authorized_v21", false)), "S-01 authorization state was not recorded")
 
 func _check_touch_layout() -> void:
 	var bounds := Rect2(Vector2.ZERO, root.get_visible_rect().size)
@@ -136,7 +155,7 @@ func _check_touch_layout() -> void:
 		for other in range(index + 1, occupied.size()):
 			_check(not rect.intersects(occupied[other]["rect"]), "%s overlaps %s at %s" % [occupied[index]["name"], occupied[other]["name"], bounds.size])
 
-func _check_corridors() -> void:
+func _check_routes() -> void:
 	paused = false
 	await physics_frame
 	var capsule := CapsuleShape3D.new()
@@ -146,11 +165,27 @@ func _check_corridors() -> void:
 	query.shape = capsule
 	query.exclude = [game.player.get_rid()]
 	query.collision_mask = 1
-	for z in [-22.5, -58.0, -92.0, -126.0]:
-		for offset in [-1.0, 0.0, 1.0]:
-			query.transform = Transform3D(Basis.IDENTITY, Vector3(0, 0.95, z + offset))
-			var hits: Array[Dictionary] = game.get_world_3d().direct_space_state.intersect_shape(query)
-			_check(hits.is_empty(), "Player capsule blocked in corridor at z=%s" % (z + offset))
+	var route_points := [
+		Vector3(-6.2, 0.95, -15.45),
+		Vector3(6.0, 0.95, -23.4), Vector3(6.0, 0.95, -22.5), Vector3(6.0, 0.95, -21.6),
+		Vector3(-6.0, 0.95, -58.9), Vector3(-6.0, 0.95, -58.0), Vector3(-6.0, 0.95, -57.1),
+		Vector3(5.5, 0.95, -92.9), Vector3(5.5, 0.95, -92.0), Vector3(5.5, 0.95, -91.1),
+		Vector3(-5.5, 0.95, -126.9), Vector3(-5.5, 0.95, -126.0), Vector3(-5.5, 0.95, -125.1),
+	]
+	for point in route_points:
+		query.transform = Transform3D(Basis.IDENTITY, point)
+		var hits: Array[Dictionary] = game.get_world_3d().direct_space_state.intersect_shape(query)
+		_check(hits.is_empty(), "Player capsule blocked on v21 route at %s" % point)
+
+	# The secret maintenance route is intentionally crouch-only.
+	var crouch_capsule := CapsuleShape3D.new()
+	crouch_capsule.radius = 0.34
+	crouch_capsule.height = 1.08
+	query.shape = crouch_capsule
+	for z in [-126.0, -129.0, -132.0, -135.0]:
+		query.transform = Transform3D(Basis.IDENTITY, Vector3(-14.05, 0.56, z))
+		var crouch_hits: Array[Dictionary] = game.get_world_3d().direct_space_state.intersect_shape(query)
+		_check(crouch_hits.is_empty(), "Crouch route blocked at z=%s" % z)
 
 func _check_dialog_text(panel: Control) -> void:
 	for candidate in panel.find_children("*", "Control", true, false):
