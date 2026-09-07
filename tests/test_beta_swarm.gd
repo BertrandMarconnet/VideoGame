@@ -1,7 +1,7 @@
 extends SceneTree
 ## Multi-agent regression test built from the user-reported blocked entrance video.
-## It physically walks the onboarding route and repeats structural audits after
-## several WorldForge seeds. Any blocker prevents Web deployment.
+## It sweeps the real player capsule through the onboarding route and repeats
+## structural audits after several WorldForge seeds. Any blocker prevents Web deployment.
 
 var game: Node3D
 var player: CharacterBody3D
@@ -28,20 +28,28 @@ func _capture(label: String) -> void:
 	DirAccess.make_dir_recursive_absolute("res://build/beta-swarm")
 	root.get_texture().get_image().save_png("res://build/beta-swarm/%s.png" % label)
 
-func _walk_to(destination: Vector3, max_frames := 260) -> bool:
-	for _step in range(max_frames):
-		var offset: Vector3 = destination - player.global_position
-		offset.y = 0.0
-		if offset.length() < 0.38:
-			return true
-		player.velocity = offset.normalized() * 4.6
-		player.velocity.y = -1.0
-		player.move_and_slide()
+func _walk_to(destination: Vector3, _max_frames := 260) -> bool:
+	# Deterministic physical traversal using the exact CharacterBody3D and its
+	# gameplay capsule. Each 18 cm sweep is rejected by Jolt if any solid body
+	# blocks the player. Unlike direct move_and_slide calls from a SceneTree test,
+	# this does not depend on an external physics callback owning the body.
+	var start: Vector3 = player.global_position
+	var horizontal := Vector3(destination.x - start.x, 0.0, destination.z - start.z)
+	var distance := horizontal.length()
+	if distance < 0.01:
+		return true
+	var steps := maxi(1, ceili(distance / 0.18))
+	for step in range(1, steps + 1):
+		var target := start.lerp(destination, float(step) / float(steps))
+		var motion := target - player.global_position
+		if player.test_move(player.global_transform, motion):
+			return false
+		player.global_position = target
 		await physics_frame
 	return Vector2(
 		player.global_position.x - destination.x,
 		player.global_position.z - destination.z
-	).length() < 0.45
+	).length() < 0.22
 
 func _run() -> void:
 	DirAccess.make_dir_recursive_absolute("res://build/beta-swarm")
@@ -52,22 +60,21 @@ func _run() -> void:
 	await _frames(120)
 	game._start_game()
 	game._finish_intro_v12()
-	# The airlock is late-authored by Act I. Give the production safety agent a
-	# few real frames to observe and repair that newly created geometry.
+	# The airlock is late-authored by Act I. Give both production guards a few
+	# real frames to observe and remove obsolete vestibule geometry.
 	await _frames(45)
 	player = game.get("player") as CharacterBody3D
 	var swarm: Node = game.get_node_or_null("BetaTestSwarmV22")
 	_check(player != null, "player missing")
 	_check(swarm != null, "beta swarm runtime agent missing")
 	_check(bool(game.get_meta("beta_swarm_v22_ready", false)), "beta swarm readiness metadata missing")
+	_check(game.get_node_or_null("EntryClearanceGuardV22") != null, "entry clearance runtime guard missing")
 	if swarm == null or player == null:
 		await _finish()
 		return
 
-	# Structural walking uses the same deterministic strategy as the established
-	# NightShift explorer: stop the player's normal input physics so two movement
-	# loops cannot overwrite each other, open legitimate doors, then walk the
-	# CharacterBody through every metre of the onboarding route.
+	# Freeze the game director while the player's real Jolt capsule is swept.
+	# Legitimate doors are opened explicitly; moving actors are parked away.
 	game.set_physics_process(false)
 	for robot_body in game.get("robots") as Array:
 		if robot_body is CharacterBody3D:
@@ -84,22 +91,22 @@ func _run() -> void:
 		inner_door.position.x = 8.05
 	await _frames(5)
 
-	# ENTRY SENTINEL — reproduce the exact public onboarding path instead of
-	# teleporting directly into S-01 as the older integration tests did.
-	player.global_position = Vector3(10.5, 0.95, 3.0)
+	# ENTRY SENTINEL — reproduces the public onboarding route with the real player capsule.
+	player.global_position = Vector3(10.5, 1.1, 2.6)
 	player.velocity = Vector3.ZERO
 	await _frames(8)
 	await _capture("00-service-approach")
-	_check(game.find_child("VestibuleNorthWallV18", true, false) == null, "obsolete wall still exists immediately after inner blast door")
-	_check(await _walk_to(Vector3(10.5, 0.95, -1.0)), "ENTRY_SENTINEL blocked at outer service door: " + String(swarm.call("describe_blocker", player.global_position)))
+	_check(game.find_child("VestibuleNorthWallV18", true, false) == null, "obsolete north vestibule wall still exists")
+	_check(game.find_child("VestibuleSouthWallV18", true, false) == null, "obsolete south vestibule wall still exists")
+	_check(await _walk_to(Vector3(10.5, 1.1, -1.0)), "ENTRY_SENTINEL blocked at outer service door: " + String(swarm.call("describe_blocker", player.global_position)))
 	await _capture("01-airlock-entry")
-	_check(await _walk_to(Vector3(10.5, 0.95, -5.3)), "ENTRY_SENTINEL cannot cross decontamination airlock: " + String(swarm.call("describe_blocker", player.global_position)))
-	_check(await _walk_to(Vector3(10.5, 0.95, -12.7)), "ENTRY_SENTINEL blocked after inner blast door: " + String(swarm.call("describe_blocker", player.global_position)))
+	_check(await _walk_to(Vector3(10.5, 1.1, -5.3)), "ENTRY_SENTINEL cannot cross decontamination airlock: " + String(swarm.call("describe_blocker", player.global_position)))
+	_check(await _walk_to(Vector3(10.5, 1.1, -12.7)), "ENTRY_SENTINEL blocked after inner blast door: " + String(swarm.call("describe_blocker", player.global_position)))
 	await _capture("02-vestibule-open")
-	for point: Vector3 in [Vector3(9.1, 0.95, -13.4), Vector3(7.5, 0.95, -13.4), Vector3(5.8, 0.95, -14.8), Vector3(3.2, 0.95, -16.5), Vector3(0.0, 0.95, -18.0)]:
+	for point: Vector3 in [Vector3(9.1, 1.1, -13.4), Vector3(7.5, 1.1, -13.4), Vector3(5.8, 1.1, -14.8), Vector3(3.2, 1.1, -16.5), Vector3(0.0, 1.1, -18.0)]:
 		_check(await _walk_to(point), "ENTRY_SENTINEL route to S-01 blocked near %s by %s" % [point, String(swarm.call("describe_blocker", player.global_position))])
 	await _capture("03-hub-arrival")
-	_check(player.global_position.distance_to(Vector3(0.0, 0.95, -18.0)) < 0.65, "ENTRY_SENTINEL did not reach S-01")
+	_check(player.global_position.distance_to(Vector3(0.0, 1.1, -18.0)) < 0.35, "ENTRY_SENTINEL did not reach S-01")
 
 	# ROUTE EXPLORER + GEOMETRY WATCH + SECURITY GUARD.
 	var report: Dictionary = swarm.call("audit_now") as Dictionary
