@@ -1,16 +1,10 @@
 		pause_panel.visible = true
 
 func _activate_terminal(terminal_id: String) -> void:
-	if terminal_id == "relay" and objective_stage == 0:
-		objective_stage = 1
-		objective_label.text = "OBJECTIF : revenir à S-01 et lancer l'uplink."
-		_show_status("RELAIS NORD ACTIF — une seconde unité vient de s'éveiller.")
-		next_scare_time = elapsed + 8.0
-	elif terminal_id == "uplink" and objective_stage == 1:
-		objective_stage = 2
-		_win_game()
-	elif terminal_id == "uplink":
-		_show_status("UPLINK INCOMPLET — le relais nord ne répond pas.")
+	if terminal_id == "uplink":
+		shift.finish_at_hub()
+	elif terminal_id == "relay":
+		shift.interact(relay_terminal)
 
 func _win_game() -> void:
 	_complete_round_v13()
@@ -89,7 +83,3 @@ func _reposition_specter() -> void:
 
 func _update_audio(delta: float) -> void:
 	audio_phase += delta * (1.0 + clamp((150.0 - robots[0].global_position.distance_to(player.global_position)) / 150.0, 0.0, 0.55))
-
-func _fill_audio(_delta: float) -> void:
-	if not audio_playback:
-		return

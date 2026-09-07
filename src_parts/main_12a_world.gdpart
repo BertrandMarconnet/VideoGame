@@ -17,7 +17,7 @@ func _build_story_signage_v12() -> void:
 		54
 	)
 	_make_label3d_v12(
-		"AUTHORIZED PERSONNEL ONLY\nPROJECT PERSEUS // LEVEL -2",
+		"AUTHORIZED PERSONNEL ONLY\nMATRYOSHKA // NIVEAU -2",
 		Vector3(-16.55, 3.3, -74.0),
 		Vector3(0, 90, 0),
 		Color(1.0, 0.22, 0.08),
@@ -25,14 +25,14 @@ func _build_story_signage_v12() -> void:
 	)
 	_make_label3d_v12(
 		"TOY SAFETY LAB\nBEHAVIORAL LEARNING CELL",
-		Vector3(16.55, 3.0, -108.0),
+		Vector3(16.55, 3.0, -60.0),
 		Vector3(0, -90, 0),
 		Color(0.32, 0.84, 0.92),
 		38
 	)
 	_make_label3d_v12(
 		"MATRYOSHKA QUARANTINE\nANALOG SYSTEMS ONLY",
-		Vector3(0, 4.4, -175.55),
+		Vector3(0, 3.0, -88.6),
 		Vector3.ZERO,
 		Color(1.0, 0.12, 0.04),
 		44
@@ -52,10 +52,10 @@ func _make_label3d_v12(text_value: String, at: Vector3, rotation_value: Vector3,
 	add_child(label)
 
 func _build_factory_population_v12() -> void:
-	var unit_count := 6 if is_mobile else 10
+	var unit_count := 4
 	for i in range(unit_count):
 		var lane := -1.0 if i % 2 == 0 else 1.0
-		var at := Vector3(lane * rng.randf_range(5.2, 12.0), 0.62, -27.0 - float(i) * 12.8)
+		var at := Vector3(lane * 14.7, 0.62, -30.0 - float(i) * 9.5)
 		_spawn_toy_unit_v12(i, at)
 
 func _spawn_toy_unit_v12(index: int, at: Vector3) -> void:

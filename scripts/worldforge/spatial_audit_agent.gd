@@ -2,10 +2,10 @@ class_name WorldForgeSpatialAuditAgent
 extends RefCounted
 
 const MAP_HALF_WIDTH := 16.4
-const MAP_MIN_Z := -174.0
+const MAP_MIN_Z := -89.5
 const MAP_MAX_Z := -1.0
 const FLOOR_Y := 0.0
-const CEILING_Y := 8.1
+const CEILING_Y := 3.8
 
 var _issues: Array[Dictionary] = []
 var _stats: Dictionary = {}
@@ -26,6 +26,7 @@ func audit(scene_root: Node3D) -> Dictionary:
 	_audit_robots(scene_root)
 	_audit_audio(scene_root)
 	_audit_ui(scene_root)
+	_audit_facility(scene_root)
 	return {
 		"schema_version": 1,
 		"agent": "worldforge_spatial_audit_agent_v1",
@@ -117,7 +118,7 @@ func _audit_audio(scene_root: Node3D) -> void:
 		if not candidate is AudioStreamPlayer3D:
 			continue
 		var player := candidate as AudioStreamPlayer3D
-		if player.stream == null:
+		if player.stream == null and not player.get_meta("pooled_voice", false):
 			_stats["audio_issues"] = int(_stats["audio_issues"]) + 1
 			_add_issue("medium", "missing_audio_stream", player, "Source audio 3D sans flux sonore.")
 		if player.max_distance <= 0.0 or player.max_distance > 80.0:
@@ -204,3 +205,29 @@ func _summary_severity() -> String:
 
 func _vec3(value: Vector3) -> Array:
 	return [round(value.x * 1000.0) / 1000.0, round(value.y * 1000.0) / 1000.0, round(value.z * 1000.0) / 1000.0]
+
+func _audit_facility(scene_root: Node3D) -> void:
+	var shift: Node = scene_root.get("shift")
+	if not shift:
+		return
+	var reported: Dictionary = {}
+	for issue in shift.navigation.audit():
+		var path := String(issue.node_path)
+		if not reported.has(path):
+			reported[path] = true
+			_add_issue("high","blocked_route",scene_root.get_node_or_null(path),"Passage principal bloqué : " + str(issue.edge),issue)
+	for door in shift.details.doors:
+		if not is_instance_valid(door):
+			continue
+		var at: Vector3 = door.closed_at
+		var framed := false
+		for frame in scene_root.find_children("IntegratedDoorFrame*","Node3D",true,false):
+			if frame.global_position.distance_to(at) < 1.7:
+				framed = true
+		if not framed:
+			_add_issue("high","isolated_door",door,"Porte sans cadre à proximité.")
+	for node in scene_root.find_children("*","Node3D",true,false):
+		if not node.get_meta("facility_editable",false):
+			continue
+		if node.scale.length() > 5 or minf(node.scale.x, minf(node.scale.y, node.scale.z)) <= 0:
+			_add_issue("medium","incoherent_scale",node,"Échelle du décor à vérifier.")

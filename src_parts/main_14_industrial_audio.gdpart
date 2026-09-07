@@ -1,0 +1,5 @@
+# Animation transitions feed a bounded pool of spatial industrial sounds.
+func _industrial_audio_cue_v21(kind: String, strength := 1.0) -> void:
+	if shift and shift.sound:
+		var cue: String = {"thud":"Impact", "servo":"ServoHip", "scrape":"MetalScrape"}.get(kind, "Impact")
+		shift.sound.emit(cue, player.global_position, strength - 3)

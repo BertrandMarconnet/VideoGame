@@ -42,7 +42,7 @@ func _build_ceiling_light(at: Vector3, damaged: bool) -> void:
 	add_child(light)
 	flicker_lights.append(light)
 func _build_destructible_wall(at: Vector3, size: Vector3, label: String) -> Node3D:
-	var material_id := "brick" if label.contains("Secret") else "drywall"
+	var material_id := "brick" if label.contains("Secret") and not label.contains("Maintenance") else "drywall"
 	var bridge := get_node_or_null("/root/GeneratedAssetBridge")
 	if bridge != null and bridge.has_method("create_segmented_wall"):
 		var segmented := bridge.call("create_segmented_wall", self, at, size, material_id, label) as Node3D
@@ -59,7 +59,8 @@ func _terminal(at: Vector3, terminal_id: String) -> StaticBody3D:
 	var body := _static_box(Vector3(2.0, 2.2, 1.1), at, _material(Color(0.06, 0.09, 0.11), 0.72, 0.35), "Terminal")
 	body.set_meta("terminal", terminal_id)
 	body.set_meta("destructible", false)
-	_visual_box(Vector3(1.35, 0.75, 0.05), at + Vector3(0, 0.25, -0.58), _material(Color(0.02, 0.12, 0.14), 0.1, 0.15, Color(0.0, 0.62, 0.72)), "TerminalScreen")
+	var screen: MeshInstance3D = visuals_v20.box(body, Vector3(1.35, 0.75, 0.05), Vector3(0, 0.25, 0.58), _material(Color(0.02, 0.12, 0.14), 0.1, 0.15, Color(0.0, 0.62, 0.72)), "TerminalScreen", true)
+	screen.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return body
 
 func _static_box(size: Vector3, at: Vector3, material: Material, label: String) -> StaticBody3D:

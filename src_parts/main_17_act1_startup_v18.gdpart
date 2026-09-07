@@ -72,17 +72,17 @@ func _build_act1_airlock_v18() -> void:
 	_v18_label(act1_airlock_root_v18, "S-01", Vector3(ACT1_SERVICE_X_V18, 2.15, ACT1_INNER_Z_V18 + 0.24), 38, Color(0.88, 0.25, 0.08))
 
 	# Lateral vestibule: the route turns left and breaks the sightline to the main CRT.
-	_v18_static_box(act1_airlock_root_v18, Vector3(10.0, 0.22, 4.2), Vector3(6.05, 0.02, -13.4), floor_material, "VestibuleFloorV18")
-	_v18_static_box(act1_airlock_root_v18, Vector3(10.0, 0.22, 4.2), Vector3(6.05, 3.35, -13.4), dark, "VestibuleCeilingV18")
-	_v18_static_box(act1_airlock_root_v18, Vector3(10.0, 3.35, 0.24), Vector3(6.05, 1.68, -15.45), steel, "VestibuleSouthWallV18")
-	_v18_static_box(act1_airlock_root_v18, Vector3(6.5, 3.35, 0.24), Vector3(7.8, 1.68, -11.35), steel, "VestibuleNorthWallV18")
+	_v18_static_box(act1_airlock_root_v18, Vector3(4.0, 0.22, 4.2), Vector3(9.05, 0.02, -13.4), floor_material, "VestibuleFloorV18")
+	_v18_static_box(act1_airlock_root_v18, Vector3(4.0, 0.22, 4.2), Vector3(9.05, 3.35, -13.4), dark, "VestibuleCeilingV18")
+	_v18_static_box(act1_airlock_root_v18, Vector3(4.0, 3.35, 0.24), Vector3(9.05, 1.68, -15.45), steel, "VestibuleSouthWallV18")
+	_v18_static_box(act1_airlock_root_v18, Vector3(4.0, 3.35, 0.24), Vector3(9.05, 1.68, -11.35), steel, "VestibuleNorthWallV18")
 	_v18_static_box(act1_airlock_root_v18, Vector3(0.24, 3.35, 4.2), Vector3(11.05, 1.68, -13.4), steel, "VestibuleEndWallV18")
 	var vestibule_marker: Marker3D = Marker3D.new()
 	vestibule_marker.name = "VestibuleLateralV18"
 	vestibule_marker.position = Vector3(2.0, 1.2, -13.4)
 	vestibule_marker.rotation_degrees.y = -90.0
 	act1_airlock_root_v18.add_child(vestibule_marker)
-	_v18_label(act1_airlock_root_v18, "VESTIBULE LATÉRAL // SENTINEL", Vector3(6.1, 2.65, -15.28), 18, Color(0.42, 0.88, 0.92))
+	_v18_label(act1_airlock_root_v18, "VESTIBULE LATÉRAL // SENTINEL", Vector3(9.1, 2.65, -15.28), 18, Color(0.42, 0.88, 0.92))
 	_build_v18_vestibule_console(act1_airlock_root_v18)
 
 func _build_v18_vestibule_console(parent: Node3D) -> void:

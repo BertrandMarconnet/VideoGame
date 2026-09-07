@@ -133,8 +133,8 @@ func _update_industrial_arms_v13() -> void:
 				if wrist:
 					wrist.rotation.z = deg_to_rad(-32.0 * side) + sin(phase * 2.1) * 0.9 * activation
 		if current_round >= 4 and activation > 0.65 and arm_attack_cooldown <= 0.0:
-			var attack_range := 9.0 + float(current_round - 4) * 1.5
-			if rig.global_position.distance_to(player.global_position) < attack_range and sin(phase * 2.0) > 0.97:
+			var attack_range := 3.2
+			if rig.global_position.distance_to(player.global_position) < attack_range and sin(phase * 2.0) > 0.97 and shift.navigation.clear_ray(rig.global_position + Vector3.UP, player.global_position + Vector3.UP * 0.4, [player.get_rid()]):
 				arm_attack_cooldown = 2.6
 				_hurt_player(5.0 + float(current_round) * 1.5, "UN BRAS 6 AXES DÉVIE SA TRAJECTOIRE VERS VOUS")
 

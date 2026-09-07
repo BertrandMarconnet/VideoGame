@@ -1,8 +1,4 @@
-func _update_v12(delta: float) -> void:
-	_update_factory_population_v12(delta)
-	if elapsed >= next_narrative_event:
-		next_narrative_event = elapsed + rng.randf_range(24.0, 42.0)
-		_run_narrative_event_v12()
+func _update_v12(_delta: float) -> void:
 	_update_athena_stage_v12()
 
 func _update_v12_ui(delta: float) -> void:
@@ -21,93 +17,6 @@ func _update_v12_ui(delta: float) -> void:
 		task_hint_label.visible = game_started and not tablet_open and not context_menu_open
 	if tablet_open:
 		_refresh_tablet_v12()
-
-func _update_factory_population_v12(delta: float) -> void:
-	for unit in factory_agents:
-		if not is_instance_valid(unit) or not factory_agent_data.has(unit):
-			continue
-		var data: Dictionary = factory_agent_data[unit]
-		var attack_cd: float = maxf(float(unit.get_meta("attack_cd", 0.0)) - delta, 0.0)
-		unit.set_meta("attack_cd", attack_cd)
-		var target: Vector3 = data["target"]
-		var direction := target - unit.global_position
-		direction.y = 0.0
-		var threat_distance := 999.0
-		var threat_position := Vector3.ZERO
-		for robot in robots:
-			if is_instance_valid(robot) and robot.visible:
-				var distance := unit.global_position.distance_to(robot.global_position)
-				if distance < threat_distance:
-					threat_distance = distance
-					threat_position = robot.global_position
-		var corrupted := bool(data["corrupted"])
-		var speed := float(data["speed"])
-		if corrupted:
-			direction = player.global_position - unit.global_position
-			direction.y = 0.0
-			speed = 1.65
-			if direction.length() < 1.2 and attack_cd <= 0.0:
-				_hurt_player(4.0, "%s répète une consigne militaire avec une voix d'enfant." % unit.name)
-				unit.set_meta("attack_cd", 3.5)
-		elif threat_distance < 7.5:
-			direction = unit.global_position - threat_position
-			direction.y = 0.0
-			speed = 2.6
-		elif direction.length() < 1.0:
-			data["target"] = _random_patrol_target_v12(unit.global_position.z)
-			direction = Vector3.ZERO
-		if direction.length() > 0.1:
-			unit.velocity = direction.normalized() * speed
-			unit.look_at(Vector3(unit.global_position.x + direction.x, unit.global_position.y, unit.global_position.z + direction.z), Vector3.UP)
-		else:
-			unit.velocity = Vector3.ZERO
-		unit.move_and_slide()
-		var phase := v12_time * (5.0 + speed) + float(data["phase"])
-		var gait := sin(phase) * 0.45 if unit.velocity.length() > 0.1 else sin(phase * 0.25) * 0.04
-		var left_leg := data["left_leg"] as Node3D
-		var right_leg := data["right_leg"] as Node3D
-		if left_leg:
-			left_leg.rotation.x = gait
-		if right_leg:
-			right_leg.rotation.x = -gait
-		factory_agent_data[unit] = data
-
-func _run_narrative_event_v12() -> void:
-	var event_roll := rng.randi_range(0, 4)
-	if objective_stage > 0 and event_roll <= 1:
-		_corrupt_random_agent_v12()
-		_athena_speak_v12("corruption")
-	elif athena_empathy >= 65.0 and event_roll == 2:
-		athena_last_line = "J'ai détourné une unité utilitaire pour éloigner SPECTER-5. Est-ce cela, protéger ?"
-		for robot in robots:
-			if is_instance_valid(robot):
-				robot.set_meta("stun", max(float(robot.get_meta("stun", 0.0)), 2.0))
-		_show_status("ATHENA DÉVIE UNE PATROUILLE HOSTILE")
-	elif athena_discipline >= 68.0 and event_roll == 3:
-		athena_last_line = "J'applique votre doctrine : priorité au confinement, même si l'atelier doit être sacrifié."
-		_flicker()
-		_show_status("ATHENA FERME UN SECTEUR — baisse de tension")
-	else:
-		_athena_speak_v12("question")
-
-func _corrupt_random_agent_v12() -> void:
-	var candidates: Array[CharacterBody3D] = []
-	for unit in factory_agents:
-		if is_instance_valid(unit) and factory_agent_data.has(unit):
-			var data: Dictionary = factory_agent_data[unit]
-			if not bool(data["corrupted"]):
-				candidates.append(unit)
-	if candidates.is_empty():
-		return
-	var unit: CharacterBody3D = candidates[rng.randi_range(0, candidates.size() - 1)]
-	var data: Dictionary = factory_agent_data[unit]
-	data["corrupted"] = true
-	var eye_material := data["eye_material"] as StandardMaterial3D
-	if eye_material:
-		eye_material.emission = Color(1.0, 0.01, 0.005)
-		eye_material.albedo_color = Color(0.22, 0.005, 0.003)
-	factory_agent_data[unit] = data
-	_show_status("%s A QUITTÉ LE RÉSEAU DE SÉCURITÉ" % unit.name)
 
 func _inspect_agent_v12(unit: CharacterBody3D) -> void:
 	if not factory_agent_data.has(unit):

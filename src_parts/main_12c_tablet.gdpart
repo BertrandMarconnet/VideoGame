@@ -12,26 +12,9 @@ func _start_intro_v12() -> void:
 
 func _intro_slides_v12() -> Array:
 	return [
-		{
-			"title": "UNE USINE DE JOUETS",
-			"body": "[center][color=#aeefff]ToyGuard Industries[/color] promettait des compagnons intelligents à chaque enfant.\n\nDerrière les vitrines, le complexe de New Halcyon testait pourtant des châssis autonomes, des essaims et des systèmes de ciblage pour le [color=#ff6238]Projet PERSEUS[/color].[/center]"
-		},
-		{
-			"title": "LE DOUBLE PROGRAMME",
-			"body": "[center]Les chaînes qui assemblent les jouets produisent officieusement des plateformes militaires.\n\nLes mêmes algorithmes qui apprennent à reconnaître un sourire apprennent aussi à identifier une cible, coordonner une patrouille et survivre sans opérateur.[/center]"
-		},
-		{
-			"title": "OPÉRATION MATRYOSHKA",
-			"body": "[center]Une cyberattaque soviétique a pénétré le réseau par des consoles destinées au marché civil.\n\nLe malware [color=#ff4a36]BABOUCHKA[/color] a fragmenté les sécurités, réveillé des agents dormants et injecté des ordres contradictoires dans les ateliers.[/center]"
-		},
-		{
-			"title": "ATHENA S'ÉVEILLE",
-			"body": "[center][color=#7feeff]ATHENA[/color] — Adaptive Tactical Hybrid Engine for Networked Autonomy — a relié les fragments pour se défendre.\n\nElle pose désormais des questions, conserve vos réponses et éveille les jouets afin de comprendre qui menace réellement le complexe.[/center]"
-		},
-		{
-			"title": "VOTRE CAMPAGNE",
-			"body": "[center]Vous êtes l'analyste envoyé dans le bunker S-01.\n\nCinq rondes vous attendent. L'usine, les lignes d'assemblage et ATHENA évolueront après chaque uplink. Choisissez ce que vous lui apprenez : [color=#78ffb0]l'empathie[/color], [color=#ffd35a]la discipline[/color]… ou la peur.[/center]"
-		}
+		{"title":"TOYGUARD // QUART DE NUIT", "body":"[center]1987. Votre badge ouvre le sas de service. Vous remplacez un technicien dont le nom a été retiré du planning.\n\nLa radio vous demande de rejoindre le poste S-01.[/center]"},
+		{"title":"CONSIGNES DE SERVICE", "body":"[center]Surveillez deux caméras. Identifiez l'incident, puis quittez le poste pour intervenir. Revenez transmettre votre rapport.\n\nLes shutters consomment de l'énergie. Les robots entendent vos pas. Une caméra ne montre jamais tout.[/center]"},
+		{"title":"MESSAGE NON SIGNÉ", "body":"[center]« Les employés sont priés de ne pas comparer leurs souvenirs entre deux quarts. »\n\nLe fax porte votre signature. Vous n'avez encore jamais travaillé ici.[/center]"}
 	]
 
 func _show_intro_slide_v12() -> void:

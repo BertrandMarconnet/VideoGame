@@ -21,22 +21,8 @@
 	robot_data[robot] = {"home": at, "target": at, "seen": false, "reposition": 0.0}
 
 func _build_audio() -> void:
-	# Godot's AudioStreamGenerator cannot be sampled by the single-threaded Web
-	# playback path. The browser build uses the licensed Suno stream director
-	# instead, initialized only after the player's first click.
-	if OS.has_feature("web"):
-		audio_player = null
-		audio_playback = null
-		return
-	var generator := AudioStreamGenerator.new()
-	generator.mix_rate = 22050.0
-	generator.buffer_length = 0.6
-	audio_player = AudioStreamPlayer.new()
-	audio_player.stream = generator
-	audio_player.volume_db = -9.0
-	add_child(audio_player)
-	audio_player.play()
-	audio_playback = audio_player.get_stream_playback() as AudioStreamGeneratorPlayback
+	audio_player = null
+	audio_playback = null
 
 func _build_ui() -> void:
 	hud_layer = CanvasLayer.new()
@@ -86,18 +72,18 @@ func _build_start_panel() -> void:
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	start_panel.add_child(box)
 	var title := Label.new()
-	title.text = "BLACKOUT PROTOCOL\nSTEEL ECHO"
+	title.text = "BLACKOUT PROTOCOL"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 44)
 	title.modulate = Color(0.86, 0.95, 1.0)
 	box.add_child(title)
 	var subtitle := Label.new()
-	subtitle.text = "ACTE I // NEW HALCYON, SEPTEMBRE 1987 // ATHENA PROTOCOL"
+	subtitle.text = "CINQ NUITS // TOYGUARD, 1987 // MATRYOSHKA"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.modulate = Color(1.0, 0.43, 0.22)
 	box.add_child(subtitle)
 	var brief := Label.new()
-	brief.text = "Arrivez sous la pluie devant ToyGuard Industries, rejoignez le bunker S-01,\nouvrez Sentinel OS puis rétablissez le relais nord. ATHENA observe vos choix."
+	brief.text = "Technicien de nuit, vous surveillez ToyGuard depuis S-01.\nObservez les caméras, économisez l'énergie, intervenez puis revenez transmettre votre rapport. ATHENA retient vos habitudes."
 	brief.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	brief.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	brief.custom_minimum_size = Vector2(620, 90)

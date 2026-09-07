@@ -12,12 +12,12 @@ func _interact() -> void:
 		held_body = null
 		_show_status("OBJET RELÂCHÉ")
 		return
-	if _try_secure_hub_gate_v21():
-		return
 	var hit := _raycast(4.2)
 	if hit.is_empty():
 		return
 	var collider := hit.get("collider") as Node
+	if collider and shift and shift.interact(collider):
+		return
 	if collider is RigidBody3D and collider.get_meta("grabbable", false):
 		held_body = collider
 		held_body.gravity_scale = 0.0
@@ -29,13 +29,6 @@ func _interact() -> void:
 	if collider and collider.get_meta("ambient_agent", false):
 		_inspect_agent_v12(collider as CharacterBody3D)
 
-func _try_secure_hub_gate_v21() -> bool:
-	var gate := find_child("SecureHubGateV21", true, false) as Node3D
-	if gate == null or not gate.has_method("authorize_nearby_player"):
-		return false
-	if player.global_position.distance_to(gate.global_position) >= 2.7:
-		return false
-	return bool(gate.call("authorize_nearby_player", player))
 
 func _primary_action() -> void:
 	if held_body:
@@ -44,6 +37,8 @@ func _primary_action() -> void:
 		held_body.gravity_scale = 1.0
 		held_body.linear_velocity = player.velocity
 		held_body.apply_central_impulse(forward * clamp(held_body.mass * 3.2, 18.0, 70.0))
+		shift.make_noise(held_body.position, 25)
+		shift.sound.emit("Grab", held_body.position)
 		held_body = null
 		_show_status("OBJET LANCÉ")
 		return
@@ -53,6 +48,11 @@ func _primary_action() -> void:
 		return
 	var collider := hit.get("collider") as Node
 	var hit_position := hit.get("position", Vector3.ZERO) as Vector3
+	if collider and collider.has_method("take_hit"):
+		collider.take_hit(24.0)
+		return
+	if collider and collider.has_meta("shift_task") and shift.interact(collider):
+		return
 	if collider is RigidBody3D and collider.get_meta("grabbable", false):
 		_interact()
 	elif collider and collider.has_meta("terminal"):
@@ -101,6 +101,9 @@ func _on_prop_body_entered(other: Node, prop: RigidBody3D) -> void:
 		_damage_destructible(other, clamp(impact * 0.22, 8.0, 52.0), prop.global_position, tool_id, impulse)
 
 func _damage_destructible(body: Node, amount: float, at: Vector3, tool_id := "flashlight_bash", impulse := Vector3.ZERO) -> void:
+	if shift:
+		shift.make_noise(at, 25)
+		shift.sound.emit("Impact", at)
 	var bridge := get_node_or_null("/root/GeneratedAssetBridge")
 	if bridge != null and bridge.has_method("apply_damage"):
 		var result := bridge.call("apply_damage", body, {

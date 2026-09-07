@@ -302,7 +302,7 @@ func _layout_mobile(viewport: Vector2) -> void:
 func sync() -> void:
 	if game == null:
 		return
-	var modal: bool = not game.game_started or game.intro_active or game.pause_panel.visible or game.win_panel.visible or game.tablet_open or game.context_menu_open
+	var modal: bool = not game.game_started or game.intro_active or game.pause_panel.visible or game.win_panel.visible or game.tablet_open or game.context_menu_open or bool(game.get_meta("fnaf_surveillance_open", false))
 	var playing := not modal
 	if _playing and not playing:
 		game._release_touch_actions_v20()
@@ -319,6 +319,6 @@ func sync() -> void:
 		game.mobile_layer.visible = playing
 	action_back.visible = game.context_menu_open
 	game.context_menu.visible = game.context_menu_open
-	bars.text = "SANTÉ %d%%   ·   KITE %d%%   ·   RONDE %d/5" % [game.player_health, game.drone_battery, game.current_round]
+	bars.text = "SANTÉ %d   ·   ÉNERGIE %d   ·   FATIGUE %d" % [game.player_health, game.fnaf_surveillance_v21.power, game.get_meta("fatigue", 0)]
 	if game.drone_active:
 		bars.text = "VUE KITE   ·   BAT %d%%   ·   C : RETOUR" % game.drone_battery

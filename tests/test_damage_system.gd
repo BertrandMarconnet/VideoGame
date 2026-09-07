@@ -103,6 +103,8 @@ func _run() -> void:
 
 	wall.queue_free()
 	specter.queue_free()
+	await process_frame
+	await process_frame
 	if failed:
 		quit(1)
 	else:

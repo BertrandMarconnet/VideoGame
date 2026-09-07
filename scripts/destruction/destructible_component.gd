@@ -198,6 +198,9 @@ func _detach_visual(target: Node3D, context: Dictionary) -> void:
 	if mesh_instance == null or mesh_instance.mesh == null:
 		target.visible = false
 		return
+	if not is_instance_valid(debris_parent):
+		target.visible = false
+		return
 	var rigid := RigidBody3D.new()
 	rigid.name = target.name + "_Detached"
 	rigid.mass = clampf(float(context.get("mass", 3.0)), 0.5, 18.0)
@@ -216,6 +219,11 @@ func _detach_visual(target: Node3D, context: Dictionary) -> void:
 	rigid.add_child(collision)
 	if debris_parent:
 		debris_parent.add_child(rigid)
+		rigid.add_to_group("bounded_damage_debris")
+		var fragments := get_tree().get_nodes_in_group("bounded_damage_debris")
+		while fragments.size() > 24:
+			var oldest: Node = fragments.pop_front()
+			oldest.queue_free()
 		rigid.global_transform = world_transform
 		var impulse := context.get("impulse", Vector3.ZERO) as Vector3
 		if impulse.is_zero_approx():

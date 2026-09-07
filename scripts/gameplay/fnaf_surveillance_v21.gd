@@ -37,29 +37,6 @@ var camera_nodes: Array[Dictionary] = [
 	{"name":"CAM 08 // NORTH RELAY", "position":Vector3(4.8, 2.8, -78.0), "look":Vector3(0.0, 1.0, -84.0)},
 ]
 
-var route_nodes := {
-	"HUB_L": Vector3(-4.8, 1.0, -22.8),
-	"HUB_R": Vector3(4.8, 1.0, -22.8),
-	"W1": Vector3(-5.5, 1.0, -31.0),
-	"W2": Vector3(-5.5, 1.0, -45.0),
-	"W3": Vector3(-5.5, 1.0, -61.0),
-	"NW": Vector3(-5.5, 1.0, -69.0),
-	"NE": Vector3(5.5, 1.0, -69.0),
-	"E3": Vector3(5.5, 1.0, -61.0),
-	"E2": Vector3(5.5, 1.0, -45.0),
-	"E1": Vector3(5.5, 1.0, -31.0),
-	"RELAY_TURN": Vector3(6.0, 1.0, -74.0),
-	"RELAY": Vector3(0.0, 1.0, -84.0),
-}
-
-var route_edges := {
-	"HUB_L": ["W1"], "W1": ["HUB_L", "W2"], "W2": ["W1", "W3"],
-	"W3": ["W2", "NW"], "NW": ["W3", "NE"],
-	"NE": ["NW", "E3", "RELAY_TURN"], "E3": ["NE", "E2"],
-	"E2": ["E3", "E1"], "E1": ["E2", "HUB_R"], "HUB_R": ["E1"],
-	"RELAY_TURN": ["NE", "RELAY"], "RELAY": ["RELAY_TURN"],
-}
-
 func configure(game_scene: Node3D) -> void:
 	game = game_scene
 	player = game.get("player") as CharacterBody3D
@@ -87,7 +64,7 @@ func _install_input() -> void:
 	if not InputMap.has_action("camera_network"):
 		InputMap.add_action("camera_network")
 	var key := InputEventKey.new()
-	key.physical_keycode = KEY_C
+	key.physical_keycode = KEY_V
 	InputMap.action_add_event("camera_network", key)
 
 func _build_shutters() -> void:
@@ -190,13 +167,14 @@ func _build_ui() -> void:
 	story_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	story_label.add_theme_font_size_override("font_size", 14)
 	ui_frame.add_child(story_label)
-	var controls := HBoxContainer.new()
-	controls.alignment = BoxContainer.ALIGNMENT_CENTER
+	var controls := HFlowContainer.new()
+	controls.alignment = FlowContainer.ALIGNMENT_CENTER
 	ui_frame.add_child(controls)
 	_add_button(controls, "◀ CAM", previous_camera)
 	_add_button(controls, "CAM ▶", next_camera)
 	_add_button(controls, "LOCK L", toggle_left_shutter)
 	_add_button(controls, "LOCK R", toggle_right_shutter)
+	_add_button(controls, "CIRCUIT", func(): game.shift.toggle_circuit())
 	_add_button(controls, "FERMER", toggle_surveillance)
 	_reflow_overlay()
 
@@ -229,7 +207,13 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	_reconcile_worldforge_if_needed()
-	cam_button.visible = _game_active() and not get_tree().paused
+	cam_button.visible = _game_active() and not get_tree().paused and not surveillance_open
+	var bounds := get_viewport().get_visible_rect().size
+	cam_button.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	cam_button.position = Vector2(bounds.x - 228, 178 if bounds.x < 600 else 12)
+	cam_button.size = Vector2(48, 44)
+	if get_tree().paused:
+		return
 	alert_cooldown = maxf(0.0, alert_cooldown - delta)
 	if not _game_active():
 		if surveillance_open:
@@ -241,13 +225,13 @@ func _process(delta: float) -> void:
 		player.velocity.x = 0.0
 		player.velocity.z = 0.0
 		_reflow_overlay()
-	var drain := 0.012
+	var drain := 0.025 if game.shift and game.shift.circuit_isolated else 0.045
 	if surveillance_open:
-		drain += 0.065
+		drain += 0.10
 	if left_closed:
-		drain += 0.085
+		drain += 0.15
 	if right_closed:
-		drain += 0.085
+		drain += 0.15
 	power = maxf(0.0, power - drain * delta * (1.0 + float(game.get("current_round")) * 0.12))
 	if power <= 0.0:
 		left_closed = false
@@ -268,9 +252,15 @@ func _reflow_overlay() -> void:
 	if ui_frame == null:
 		return
 	var viewport_size := get_viewport().get_visible_rect().size
-	var scale_value := minf(1.0, minf(viewport_size.x / 760.0, viewport_size.y / 550.0))
-	ui_frame.scale = Vector2.ONE * scale_value
-	ui_frame.position = -ui_frame.size * 0.5 * scale_value
+	var width := minf(720, viewport_size.x - 24)
+	ui_frame.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	ui_frame.custom_minimum_size = Vector2.ZERO
+	ui_frame.scale = Vector2.ONE
+	ui_frame.size = Vector2(width, 0)
+	ui_frame.position = Vector2((viewport_size.x - width) / 2, 12)
+	feed.custom_minimum_size = Vector2(0, minf(width * 0.5625, maxf(90, viewport_size.y - 245)))
+	cam_label.add_theme_font_size_override("font_size", 14)
+	power_label.add_theme_font_size_override("font_size", 14)
 
 func _game_active() -> bool:
 	if game == null or not is_instance_valid(game):
@@ -287,8 +277,11 @@ func toggle_surveillance() -> void:
 func _open_surveillance() -> void:
 	if not _game_active() or get_tree().paused or power <= 0.0:
 		return
+	if game.drone_active:
+		game._force_player_view_v13("Connexion SENTINEL")
 	surveillance_open = true
 	game.set_meta("fnaf_surveillance_open", true)
+	game._release_touch_actions_v20()
 	overlay.visible = true
 	camera_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	_saved_mouse_mode = Input.mouse_mode
@@ -352,7 +345,7 @@ func _update_overlay() -> void:
 	var round_value := int(game.get("current_round"))
 	match round_value:
 		1:
-			story_label.text = "RONDE 1 // Calibrez les caméras et activez le relais nord. Les mouvements cessent lorsqu'ils sont observés."
+			story_label.text = "NUIT 1 // Après deux feeds : fusible en LOGISTICS, puis circuit POWER. Revenir au poste."
 		2:
 			story_label.text = "RONDE 2 // ATHENA teste vos habitudes. Évitez de garder toujours la même caméra ouverte."
 		3:
@@ -378,7 +371,7 @@ func _check_hub_threat() -> void:
 				return
 
 func is_robot_observed(robot: Node3D) -> bool:
-	if not surveillance_open or camera_3d == null or robot == null or not robot.visible:
+	if not surveillance_open or camera_3d == null or robot == null or not robot.visible or (game.shift and (game.shift.interference > 0.45 or (game.shift.circuit_isolated and camera_index == 5))):
 		return false
 	var to_robot := robot.global_position - camera_3d.global_position
 	if to_robot.length() > 34.0:
@@ -391,40 +384,6 @@ func is_robot_observed(robot: Node3D) -> bool:
 		query.exclude = [player.get_rid()]
 	var hit := game.get_world_3d().direct_space_state.intersect_ray(query)
 	return not hit.is_empty() and hit.get("collider") == robot
-
-func next_route_target(from_position: Vector3, target_position: Vector3) -> Vector3:
-	var start := _nearest_route_node(from_position)
-	var goal := _nearest_route_node(target_position)
-	if start == goal:
-		return target_position
-	var queue: Array[String] = [start]
-	var came_from := {start: ""}
-	while not queue.is_empty():
-		var current: String = queue.pop_front()
-		if current == goal:
-			break
-		for neighbor_variant in route_edges.get(current, []):
-			var neighbor := String(neighbor_variant)
-			if came_from.has(neighbor):
-				continue
-			came_from[neighbor] = current
-			queue.append(neighbor)
-	if not came_from.has(goal):
-		return target_position
-	var step := goal
-	while String(came_from.get(step, "")) != start and String(came_from.get(step, "")) != "":
-		step = String(came_from[step])
-	return route_nodes.get(step, target_position) as Vector3
-
-func _nearest_route_node(position_value: Vector3) -> String:
-	var best := "HUB_L"
-	var best_distance := INF
-	for key in route_nodes.keys():
-		var distance := position_value.distance_squared_to(route_nodes[key] as Vector3)
-		if distance < best_distance:
-			best_distance = distance
-			best = String(key)
-	return best
 
 func _reconcile_worldforge_if_needed() -> void:
 	if game == null:

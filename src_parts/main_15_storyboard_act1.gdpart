@@ -14,18 +14,10 @@ func _ensure_storyboard_act1_v16() -> void:
 	_build_first_person_tool_v16()
 	_build_ps1_visual_profile_v16()
 	_add_retro_accessibility_control_v16()
-	_lock_act1_threats_v16()
 	player.global_position = Vector3(0.0, 1.15, 35.0)
 	player.rotation = Vector3.ZERO
 	objective_label.text = "OBJECTIF : rejoindre l'entrée S-01 de ToyGuard."
 	phase_label.text = "ACTE I — ARRIVÉE"
-	var story_timer: Timer = Timer.new()
-	story_timer.name = "StoryboardAct1Timer"
-	story_timer.wait_time = 0.08 if not is_mobile else 0.14
-	story_timer.process_mode = Node.PROCESS_MODE_ALWAYS
-	story_timer.timeout.connect(_update_storyboard_act1_v16)
-	add_child(story_timer)
-	story_timer.start()
 	print("BLACKOUT_STORYBOARD_ACT1_READY")
 
 func _build_exterior_toyguard_v16() -> void:

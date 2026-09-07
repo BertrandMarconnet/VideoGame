@@ -1,4 +1,5 @@
 # Industrial art direction: readable lighting, shaped hardware, Web budgets.
+var shift: Node
 var visuals_v20 := preload("res://scripts/visual/industrial_visuals.gd").new()
 var fnaf_factory_v21 := preload("res://scripts/visual/fnaf_factory_v21.gd").new()
 var fnaf_surveillance_script_v21 := preload("res://scripts/gameplay/fnaf_surveillance_v21.gd")
@@ -14,11 +15,13 @@ var local_lights_v20: Array[OmniLight3D] = []
 
 func _prepare_industrial_v20() -> void:
 	_apply_act1_interface_v18()
-	visuals_v20.build_factory_detail(self)
 	fnaf_factory_v21.install(self, visuals_v20)
 	fnaf_surveillance_v21 = fnaf_surveillance_script_v21.new()
 	add_child(fnaf_surveillance_v21)
 	fnaf_surveillance_v21.call("configure", self)
+	shift = preload("res://scripts/campaign/night_shift.gd").new()
+	add_child(shift)
+	shift.configure(self)
 	responsive_ui_v20.install(self)
 	var settings := ConfigFile.new()
 	if settings.load("user://display_settings.cfg") == OK:
@@ -45,10 +48,11 @@ func _finish_industrial_v20() -> void:
 				mesh.material_override = visuals_v20.surface(kind)
 				mesh.set_meta("v20_surface", true)
 	visuals_v20.polish_imported(self)
+	for robot in robots:
+		shift._install_animation_vocabulary(robot)
 	if act1_airlock_root_v18:
 		visuals_v20.poster(act1_airlock_root_v18, Vector3(8.99, 1.95, -3.7), 0, 90.0)
 		visuals_v20.sign_board(act1_airlock_root_v18, Vector3(10.5, 2.7, -10.1), "S-01  /  SECURITY")
-		visuals_v20.cabinet(act1_airlock_root_v18, Vector3(5.4, 0.13, -15.08), 0.0)
 	_refresh_lights_v20()
 	_set_brightness(brightness_v20)
 	reflow_interface_v20()
@@ -76,7 +80,7 @@ func _apply_quality_v20(mode: int) -> void:
 		flashlight.spot_range = 24.0
 	if world_env:
 		world_env.environment.ambient_light_color = Color(0.54, 0.60, 0.64)
-		world_env.environment.ambient_light_energy = 0.62
+		world_env.environment.ambient_light_energy = 0.78
 		world_env.environment.fog_density = 0.0042
 	_save_display_settings_v20()
 

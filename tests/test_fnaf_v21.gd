@@ -45,7 +45,7 @@ func _run() -> void:
 	await _frames(30)
 	_check(game.game_started, "campaign did not start")
 	_check(game.relay_terminal.global_position.distance_to(Vector3(0.0, 1.1, -87.8)) < 0.5, "relay terminal must sit against the north wall, clear of circulation")
-	_check(game.uplink_terminal.global_position.distance_to(Vector3(-3.2, 1.1, -18.4)) < 1.0, "uplink terminal was not moved into S-01")
+	_check(game.uplink_terminal.global_position.distance_to(Vector3(-3.0, 1.1, -12.6)) < 1.0, "uplink terminal was not moved into S-01")
 
 	# The old centre line must be physically blocked by a utility core, while both
 	# lateral halls and the north cross-route remain passable.
@@ -99,7 +99,7 @@ func _run() -> void:
 		director.call("toggle_surveillance")
 		await _frames(8)
 		var frame := director.get("ui_frame") as Control
-		_check(frame != null and frame.scale.x <= 0.55, "camera UI does not scale for phone width")
+		_check(frame != null and frame.get_global_rect().end.x <= 391 and frame.get_global_rect().end.y <= 844, "camera UI does not scale for phone width")
 		await _capture("10-mobile-camera")
 		director.call("toggle_surveillance")
 

@@ -84,9 +84,8 @@ func _build_security_hub(
 	_static_box(hub, Vector3(14.0, 0.22, 11.0), Vector3(0.0, 3.75, -16.0), concrete, "HubCeilingV21")
 
 	# Consoles are wall-side so the center remains readable and navigable.
-	for x in [-4.6, -1.6, 1.6, 4.6]:
+	for x in [-3.0, 3.0]:
 		_static_box(hub, Vector3(2.3, 0.82, 0.78), Vector3(x, 0.41, -11.6), rubber, "HubConsoleV21")
-		_visual_box(hub, Vector3(1.45, 0.62, 0.05), Vector3(x, 1.10, -11.98), paint, "HubCRTGlowV21")
 	_label(hub, "S-01 // SECURITY CONTROL", Vector3(0.0, 2.95, -10.32), 31, Color(0.68, 0.95, 0.88))
 	_label(hub, "CAMERAS  •  SHUTTERS  •  POWER", Vector3(0.0, 2.52, -10.32), 17, Color(0.96, 0.58, 0.24))
 
@@ -116,7 +115,8 @@ func _build_lateral_halls(
 	_static_box(halls, Vector3(7.0, WALL_HEIGHT, 0.30), Vector3(0.0, WALL_HEIGHT * 0.5, -24.0), concrete, "UtilityCoreSouthV21")
 	_static_box(halls, Vector3(7.0, WALL_HEIGHT, 0.30), Vector3(0.0, WALL_HEIGHT * 0.5, -65.0), concrete, "UtilityCoreNorthV21")
 	_static_box(halls, Vector3(0.30, WALL_HEIGHT, 19.0), Vector3(3.5, WALL_HEIGHT * 0.5, -33.5), concrete, "UtilityCoreEastSouthV21")
-	_static_box(halls, Vector3(0.30, WALL_HEIGHT, 19.0), Vector3(3.5, WALL_HEIGHT * 0.5, -55.5), concrete, "UtilityCoreEastNorthV21")
+	_static_box(halls, Vector3(0.30, WALL_HEIGHT, 7.0), Vector3(3.5, WALL_HEIGHT * 0.5, -48.0), concrete, "UtilityCoreEastNorthV21")
+	_static_box(halls, Vector3(0.30, WALL_HEIGHT, 10.5), Vector3(3.5, WALL_HEIGHT * 0.5, -59.75), concrete, "UtilityCoreEastReturn")
 	# West core wall contains a destructible maintenance access at z=-53.
 	_static_box(halls, Vector3(0.30, WALL_HEIGHT, 23.0), Vector3(-3.5, WALL_HEIGHT * 0.5, -35.5), concrete, "UtilityCoreWestSouthV21")
 	_static_box(halls, Vector3(0.30, WALL_HEIGHT, 9.0), Vector3(-3.5, WALL_HEIGHT * 0.5, -60.5), concrete, "UtilityCoreWestNorthV21")
@@ -127,8 +127,12 @@ func _build_lateral_halls(
 		_visual_box(halls, Vector3(0.08, 0.018, 40.0), Vector3(x, 0.035, -44.5), paint, "HallGuideV21")
 	# Outer hall/room separator walls with doorway gaps rather than free-standing barriers.
 	for x in [-7.45, 7.45]:
-		for z in [-27.0, -41.0, -55.0]:
-			_static_box(halls, Vector3(0.24, WALL_HEIGHT, 6.4), Vector3(x, WALL_HEIGHT * 0.5, z), steel, "HallRoomWallV21")
+		var cursor := -21.5
+		for door_z in [-33.5, -47.0, -61.0]:
+			var end: float = door_z + 1.5
+			_static_box(halls, Vector3(0.24, WALL_HEIGHT, cursor - end), Vector3(x, WALL_HEIGHT * 0.5, (cursor + end) * 0.5), concrete, "HallRoomWallV21")
+			cursor = door_z - 1.5
+		_static_box(halls, Vector3(0.24, WALL_HEIGHT, cursor + 67.0), Vector3(x, WALL_HEIGHT * 0.5, (cursor - 67.0) * 0.5), concrete, "HallRoomReturn")
 	_label(halls, "WEST HALL", Vector3(-5.55, 2.7, -25.0), 22, Color(0.78, 0.90, 0.76))
 	_label(halls, "EAST HALL", Vector3(5.55, 2.7, -25.0), 22, Color(0.78, 0.90, 0.76))
 
@@ -155,8 +159,8 @@ func _build_side_rooms(
 		var x := float(item["x"])
 		var z := float(item["z"])
 		_visual_box(rooms, Vector3(7.3, 0.025, 12.5), Vector3(x, 0.02, z), floor_mat, "RoomFloorV21")
-		_static_box(rooms, Vector3(7.3, WALL_HEIGHT, 0.25), Vector3(x, WALL_HEIGHT * 0.5, z - 6.2), concrete, "RoomEndWallV21")
-		_static_box(rooms, Vector3(7.3, WALL_HEIGHT, 0.25), Vector3(x, WALL_HEIGHT * 0.5, z + 6.2), concrete, "RoomEndWallV21")
+		_static_box(rooms, Vector3(9.2, WALL_HEIGHT, 0.25), Vector3(signf(x) * 12.05, WALL_HEIGHT * 0.5, z - 6.2), concrete, "RoomEndWallV21")
+		_static_box(rooms, Vector3(9.2, WALL_HEIGHT, 0.25), Vector3(signf(x) * 12.05, WALL_HEIGHT * 0.5, z + 6.2), concrete, "RoomEndWallV21")
 		_label(rooms, String(item["name"]), Vector3(x, 2.75, z - 5.95), 19, Color(0.78, 0.91, 0.84))
 		_build_room_prop(rooms, Vector3(x, 0.0, z), String(item["kind"]), steel, paint, rubber)
 
@@ -171,7 +175,7 @@ func _build_room_prop(
 	match kind:
 		"crate":
 			for i in range(4):
-				_static_box(parent, Vector3(1.3, 1.0, 1.3), at + Vector3(-2.0 + float(i % 2) * 3.8, 0.5, -1.8 + float(i / 2) * 3.6), rubber, "LogisticsCrateV21")
+				_static_box(parent, Vector3(1.3, 1.0, 1.3), at + Vector3(-2.5 + float(i % 2) * 3.0, 0.5, -1.8 + float(i / 2) * 3.6), rubber, "LogisticsCrateV21")
 		"archive":
 			for i in range(3):
 				_static_box(parent, Vector3(4.6, 2.6, 0.65), at + Vector3(0.0, 1.3, -3.5 + float(i) * 3.4), steel, "ArchiveRackV21")
@@ -183,8 +187,8 @@ func _build_room_prop(
 			_visual_box(parent, Vector3(1.2, 0.8, 0.08), at + Vector3(2.25, 1.6, -1.2), paint, "AssemblyPanelV21")
 		"generator":
 			for i in range(2):
-				_static_box(parent, Vector3(2.5, 2.8, 2.0), at + Vector3(-1.8 + float(i) * 3.6, 1.4, 0.0), steel, "PowerGeneratorV21")
-				_visual_box(parent, Vector3(1.4, 0.12, 1.0), at + Vector3(-1.8 + float(i) * 3.6, 1.8, -1.05), paint, "PowerMeterV21")
+				_static_box(parent, Vector3(2.5, 2.8, 2.0), at + Vector3(-0.5 + float(i) * 3.6, 1.4, 0.0), steel, "PowerGeneratorV21")
+				_visual_box(parent, Vector3(1.4, 0.12, 1.0), at + Vector3(-0.5 + float(i) * 3.6, 1.8, -1.05), paint, "PowerMeterV21")
 		"cage":
 			for x in [-2.2, 2.2]:
 				_static_box(parent, Vector3(0.16, 3.0, 5.0), at + Vector3(x, 1.5, 0.0), steel, "TestCageV21")
@@ -207,19 +211,19 @@ func _build_north_loop(
 	_static_box(north, Vector3(1.0, WALL_HEIGHT, 0.24), Vector3(8.5, WALL_HEIGHT * 0.5, -71.1), concrete, "NorthCrossReturnV22")
 	# L-shaped approach to relay room; no direct axial view from the hub.
 	_visual_box(north, Vector3(4.0, 0.025, 12.0), Vector3(6.0, 0.02, -75.0), floor_mat, "RelayApproachFloorV21")
-	_static_box(north, Vector3(0.24, WALL_HEIGHT, 12.0), Vector3(4.0, WALL_HEIGHT * 0.5, -75.0), steel, "RelayApproachWestV21")
+	_static_box(north, Vector3(0.24, WALL_HEIGHT, 9.7), Vector3(4.0, WALL_HEIGHT * 0.5, -76.15), steel, "RelayApproachWestV21")
 	_static_box(north, Vector3(0.24, WALL_HEIGHT, 12.0), Vector3(8.0, WALL_HEIGHT * 0.5, -75.0), steel, "RelayApproachEastV21")
 	_visual_box(north, Vector3(13.0, 0.025, 10.0), Vector3(0.0, 0.02, -84.0), floor_mat, "RelayRoomFloorV21")
 	_static_box(north, Vector3(13.0, WALL_HEIGHT, 0.25), Vector3(0.0, WALL_HEIGHT * 0.5, -89.0), concrete, "RelayNorthWallV21")
 	_static_box(north, Vector3(0.25, WALL_HEIGHT, 10.0), Vector3(-6.5, WALL_HEIGHT * 0.5, -84.0), concrete, "RelayWestWallV21")
 	_static_box(north, Vector3(0.25, WALL_HEIGHT, 10.0), Vector3(6.5, WALL_HEIGHT * 0.5, -84.0), concrete, "RelayEastWallV21")
 	_label(north, "CAM 08 // NORTH RELAY", Vector3(0.0, 2.8, -88.75), 22, Color(0.92, 0.47, 0.20))
-	_label(north, "NO DIRECT LINE TO S-01", Vector3(0.0, 2.35, -88.75), 15, Color(0.66, 0.78, 0.73))
+	_label(north, "MATRYOSHKA / PERSONNEL AUTORISÉ", Vector3(0.0, 2.35, -88.75), 15, Color(0.66, 0.78, 0.73))
 	var relay_value = scene.get("relay_terminal")
 	if relay_value is Node3D:
 		var relay := relay_value as Node3D
 		relay.global_position = Vector3(0.0, 1.1, -87.8)
-		relay.rotation_degrees.y = 180.0
+		relay.rotation_degrees.y = 0.0
 	_visual_box(north, Vector3(0.08, 0.018, 10.0), Vector3(6.0, 0.035, -75.0), paint, "RelayGuideV21")
 
 func _build_secret_route(
@@ -244,8 +248,8 @@ func _build_secret_route(
 
 func _build_decor(root: Node3D, visuals: Object) -> void:
 	if visuals.has_method("poster"):
-		visuals.call("poster", root, Vector3(-14.75, 1.8, -31.0), 0, 90.0)
-		visuals.call("poster", root, Vector3(14.75, 1.8, -46.0), 0, -90.0)
+		visuals.call("poster", root, Vector3(-16.7, 1.8, -31.0), 0, 90.0)
+		visuals.call("poster", root, Vector3(16.7, 1.8, -46.0), 0, -90.0)
 	if visuals.has_method("cabinet"):
 		visuals.call("cabinet", root, Vector3(-13.6, 0.12, -64.0), 90.0)
 		visuals.call("cabinet", root, Vector3(13.6, 0.12, -36.0), -90.0)

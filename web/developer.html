@@ -18,26 +18,26 @@
   <article class="card hero-card">
     <div class="eyebrow">ACCÈS DIRECT // AUCUN RACCOURCI CLAVIER NÉCESSAIRE</div>
     <h2>Ouvrir l’éditeur WorldForge</h2>
-    <p>Le jeu démarre en mode développeur, génère l’usine avec le seed choisi, puis affiche automatiquement l’éditeur. Vous pourrez placer ou remplacer des assets, déplacer les objets, auditer la scène et appliquer les corrections automatiques.</p>
+    <p>Le jeu démarre en mode développeur, prépare le décor de l’usine avec le seed choisi, puis affiche automatiquement l’éditeur. Vous pourrez placer ou remplacer des assets, déplacer les objets, auditer la scène et appliquer les corrections automatiques.</p>
     <div class="launch-grid">
       <div class="seed-box"><label for="seed">SEED DE LA MAP — facultatif</label><div class="seed-line"><input id="seed" inputmode="numeric" autocomplete="off" placeholder="Laisser vide pour une nouvelle map"><button id="randomSeed" type="button" title="Créer un seed aléatoire">↻ ALÉATOIRE</button></div></div>
       <button id="launchEditor" class="primary" type="button">⚙ OUVRIR L’ÉDITEUR</button>
     </div>
     <div class="launch-actions"><button id="launchNewWindow" type="button">OUVRIR DANS UNE NOUVELLE FENÊTRE</button><button id="copyEditorLink" class="ghost" type="button">COPIER LE LIEN DE L’ÉDITEUR</button></div>
-    <div class="hint"><b>Conseil :</b> utilisez un ordinateur avec clavier et souris. Le seed permet de retrouver exactement la même organisation de l’usine lors d’une prochaine session.</div>
+    <div class="hint"><b>Conseil :</b> utilisez un ordinateur avec clavier et souris. Le seed permet de retrouver exactement les mêmes variantes de décor lors d’une prochaine session.</div>
   </article>
   <aside class="card status-card"><h3>ÉTAT DU POSTE</h3><div id="checks" class="checks"></div></aside>
 </section>
 
 <section class="grid" aria-label="Outils développeur">
   <article class="card tool featured"><div class="tool-icon">3D</div><h3>Générer un asset 3D</h3><p>Chargez les images, vérifiez les animations, textures, sons et parties destructibles proposées, puis lancez la génération GitHub.</p><a class="button amber" href="./asset-generator.html?dev=worldforge">OUVRIR LE GÉNÉRATEUR</a></article>
-  <article class="card tool"><div class="tool-icon">▶</div><h3>Jouer sans outils</h3><p>Ouvre la version destinée au joueur, sans éditeur, sans bouton développeur et avec une nouvelle map procédurale.</p><a class="button" href="./">LANCER LE JEU NORMAL</a></article>
+  <article class="card tool"><div class="tool-icon">▶</div><h3>Jouer sans outils</h3><p>Ouvre la version destinée au joueur, sans éditeur, sans bouton développeur et avec une nouvelle variante de décor.</p><a class="button" href="./">LANCER LE JEU NORMAL</a></article>
   <article class="card tool"><div class="tool-icon">GH</div><h3>Contrôler les builds</h3><p>Consultez les générations d’assets, les tests Godot, Firefox et le déploiement GitHub Pages.</p><a class="button" href="https://github.com/BertrandMarconnet/VideoGame/actions" target="_blank" rel="noopener">OUVRIR GITHUB ACTIONS</a></article>
 
   <article class="card guide"><h2 class="section-title">UTILISATION EN 4 ÉTAPES</h2><div class="steps">
-    <div class="step"><div><b>Choisir la map</b><span>Laissez le seed vide pour une usine différente, ou saisissez un seed enregistré pour retrouver une map.</span></div></div>
+    <div class="step"><div><b>Choisir la map</b><span>Laissez le seed vide pour un décor différent, ou saisissez un seed enregistré pour retrouver une map.</span></div></div>
     <div class="step"><div><b>Ouvrir l’éditeur</b><span>Cliquez sur le bouton principal. WorldForge s’ouvre automatiquement après le chargement du jeu.</span></div></div>
-    <div class="step"><div><b>Modifier et vérifier</b><span>Placez ou remplacez les assets, puis utilisez « Auditer » et « Corriger auto » avant de valider.</span></div></div>
+    <div class="step"><div><b>Modifier et vérifier</b><span>Placez ou remplacez les assets, puis utilisez « AUDIT LEVEL » et « AUTO FIX » avant de valider.</span></div></div>
     <div class="step"><div><b>Sauvegarder</b><span>Enregistrez le manifeste depuis l’éditeur pour conserver le seed, la génération et le rapport de cohérence.</span></div></div>
   </div></article>
   <aside class="card side"><h2 class="section-title">SEEDS RÉCENTS</h2><div id="recentSeeds" class="recent"></div><button id="clearSeeds" class="ghost" type="button" style="width:100%;margin-top:10px">EFFACER L’HISTORIQUE LOCAL</button></aside>

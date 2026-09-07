@@ -53,10 +53,6 @@ func _build_storyboard_environment_v17() -> void:
 	storyboard_art_root_v17.name = "StoryboardArtPassV17"
 	add_child(storyboard_art_root_v17)
 	_build_exterior_detail_v17(storyboard_art_root_v17)
-	_build_s01_detail_v17(storyboard_art_root_v17)
-	_build_corridor_detail_v17(storyboard_art_root_v17)
-	_build_assembly_detail_v17(storyboard_art_root_v17)
-	_build_relay_detail_v17(storyboard_art_root_v17)
 
 func _build_exterior_detail_v17(root: Node3D) -> void:
 	var wall: StandardMaterial3D = _material(Color(0.075, 0.085, 0.09), 0.22, 0.88)

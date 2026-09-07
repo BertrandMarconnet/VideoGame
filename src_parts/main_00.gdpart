@@ -1,11 +1,11 @@
 extends Node3D
 
-const MAP_LENGTH := 176.0
+const MAP_LENGTH := 90.0
 const MAP_WIDTH := 34.0
 const PLAYER_SPEED := 5.2
 const SPRINT_SPEED := 8.1
 const GRAVITY := 18.0
-const MAX_DEBRIS := 56
+const MAX_DEBRIS := 24
 const TOTAL_ROUNDS := 5
 
 var player: CharacterBody3D

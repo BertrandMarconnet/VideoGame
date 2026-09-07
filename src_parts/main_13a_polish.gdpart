@@ -6,10 +6,7 @@ func _build_v13_polish() -> void:
 	campaign_seed = rng.randi_range(100000, 999999)
 	round_seed = _calculate_round_seed_v13()
 	_configure_drone_camera_v13()
-	_relocate_control_screen_v13()
-	_build_control_screen_feed_v13()
 	_build_player_hud_v13()
-	_apply_round_environment_v13()
 
 func _configure_drone_camera_v13() -> void:
 	if not drone or not drone_camera:

@@ -32,31 +32,17 @@ func generate(scene_root: Node3D, seed_value: int) -> Dictionary:
 	generated_root.set_meta("worldforge_seed", seed_value)
 	scene_root.add_child(generated_root)
 
-	var map_cfg := _config.get("map", {}) as Dictionary
-	var sector_count := int(map_cfg.get("sector_count", 8))
-	var sector_start_z := float(map_cfg.get("sector_start_z", -25.0))
-	var spacing := float(map_cfg.get("sector_spacing", 16.5))
-	var previous_by_side := {"left": "", "right": ""}
-
-	for sector_index in range(sector_count):
-		var sector_z := sector_start_z - float(sector_index) * spacing
-		var heavy_used := false
-		for side_name in ["left", "right"]:
-			var module := _pick_module(String(previous_by_side[side_name]), heavy_used)
-			if module.is_empty():
-				continue
-			var module_id := String(module.get("id", "empty_tension"))
-			if bool(module.get("requires_wall", false)):
-				heavy_used = true
-			var side_sign := -1.0 if side_name == "left" else 1.0
-			var record := _build_module(generated_root, scene_root, module_id, side_sign, sector_z, sector_index)
-			record["side"] = side_name
-			record["sector"] = sector_index
-			record["event_tags"] = module.get("event_tags", [])
-			(_manifest["modules"] as Array).append(record)
-			previous_by_side[side_name] = module_id
-
-	_reseed_existing_props(scene_root)
+	for index in range(6):
+		var at := Vector3(-15.9 if index % 2 == 0 else 15.9, 0, -26.0 - floorf(index / 2.0) * 14.0)
+		var color := Color(0.12 + _rng.randf() * 0.05, 0.15, 0.14)
+		var mesh := MeshInstance3D.new()
+		mesh.mesh = scene_root.visuals_v20.bevel_box(Vector3(0.3, 0.45, 0.3))
+		mesh.material_override = scene_root.visuals_v20.material(color, 0.3, 0.7, Color.BLACK)
+		mesh.position = at + Vector3.UP * 0.23
+		mesh.set_meta("worldforge_generated", true)
+		mesh.set_meta("room", index)
+		generated_root.add_child(mesh)
+		(_manifest["modules"] as Array).append({"id":"room_fixture", "position":[at.x,at.y,at.z], "event_tags":["ambient"]})
 	_manifest["placed_nodes"] = generated_root.get_child_count()
 	return _manifest.duplicate(true)
 

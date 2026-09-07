@@ -2,10 +2,10 @@ class_name WorldForgeAutoRepairAgent
 extends RefCounted
 
 const MAP_HALF_WIDTH := 16.1
-const MAP_MIN_Z := -173.0
+const MAP_MIN_Z := -89.0
 const MAP_MAX_Z := -2.0
 const FLOOR_Y := 0.0
-const CEILING_ASSET_Y := 7.4
+const CEILING_ASSET_Y := 3.1
 
 func repair(scene_root: Node3D, report: Dictionary) -> Dictionary:
 	var actions: Array[Dictionary] = []

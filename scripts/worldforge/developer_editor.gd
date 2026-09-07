@@ -6,6 +6,7 @@ var scene_root: Node3D
 var panel: PanelContainer
 var seed_field: LineEdit
 var asset_selector: OptionButton
+var room_selector: OptionButton
 var target_selector: OptionButton
 var status_label: RichTextLabel
 var _asset_ids: Array[String] = []
@@ -81,6 +82,11 @@ func _build_ui() -> void:
 	seed_buttons.add_child(_button("Seed aléatoire", _random_seed))
 	column.add_child(seed_buttons)
 
+	room_selector = OptionButton.new()
+	for room in ["TOUTES", "HUB", "LOGISTICS", "ARCHIVES", "MAINTENANCE", "ASSEMBLY", "POWER", "TEST", "RELAY"]:
+		room_selector.add_item(room)
+	room_selector.item_selected.connect(func(_index): _refresh_targets())
+	column.add_child(_row("Salle", room_selector))
 	asset_selector = OptionButton.new()
 	asset_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	column.add_child(_row("Asset", asset_selector))
@@ -107,8 +113,8 @@ func _build_ui() -> void:
 	column.add_child(nudge_grid)
 
 	var agent_buttons := HBoxContainer.new()
-	agent_buttons.add_child(_button("Auditer", _audit))
-	agent_buttons.add_child(_button("Corriger auto", _autofix))
+	agent_buttons.add_child(_button("AUDIT LEVEL", _audit))
+	agent_buttons.add_child(_button("AUTO FIX", _autofix))
 	agent_buttons.add_child(_button("Sauver manifeste", _save_manifest))
 	column.add_child(agent_buttons)
 
@@ -174,7 +180,10 @@ func _refresh_targets() -> void:
 	for candidate in scene_root.find_children("*", "Node3D", true, false):
 		if not candidate is Node3D:
 			continue
-		if bool(candidate.get_meta("worldforge_replaceable", false)) or bool(candidate.get_meta("worldforge_generated", false)):
+		var room := room_selector.get_item_text(room_selector.selected)
+		if room != "TOUTES" and scene_root.shift.navigation.nearest(candidate.global_position) != room:
+			continue
+		if bool(candidate.get_meta("worldforge_replaceable", false)) or bool(candidate.get_meta("worldforge_generated", false)) or bool(candidate.get_meta("facility_editable", false)):
 			_target_paths.append(candidate.get_path())
 			target_selector.add_item(String(candidate.name))
 	if _target_paths.is_empty():
@@ -242,8 +251,8 @@ func _replace_selected_target() -> void:
 
 func _delete_selected_target() -> void:
 	var target := _selected_target()
-	if target == null or not bool(target.get_meta("worldforge_generated", false)):
-		_log("Seuls les éléments WorldForge peuvent être supprimés ici.", true)
+	if target == null or not (bool(target.get_meta("worldforge_generated", false)) or bool(target.get_meta("facility_editable", false))):
+		_log("Sélectionnez un objet de décor éditable.", true)
 		return
 	target.queue_free()
 	_log("Élément supprimé : %s" % target.name)

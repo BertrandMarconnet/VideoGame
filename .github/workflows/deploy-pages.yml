@@ -36,17 +36,13 @@ jobs:
           test "$(grep -c '^func ' scripts/main.gd)" -ge 70
           grep -q 'func _build_factory' scripts/main.gd
           grep -q 'func _build_mobile_controls' scripts/main.gd
-          grep -q 'func _update_specter' scripts/main.gd
-          grep -q 'func _update_crawler' scripts/main.gd
           grep -q 'func _break_destructible' scripts/main.gd
           grep -q 'func _activate_terminal' scripts/main.gd
           grep -q 'func _build_v12_ui' scripts/main.gd
           grep -q 'func _start_intro_v12' scripts/main.gd
           grep -q 'func _toggle_tablet_v12' scripts/main.gd
           grep -q 'func _open_context_menu_v12' scripts/main.gd
-          grep -q 'func _update_factory_population_v12' scripts/main.gd
           grep -q 'func _athena_speak_v12' scripts/main.gd
-          grep -q 'func _update_suno_audio_v14' scripts/main.gd
           grep -q 'func _build_boot_overlay_v15' scripts/main.gd
           grep -q 'BLACKOUT_RUNTIME_READY' scripts/main.gd
           grep -q 'BLACKOUT_FNAF_SURVEILLANCE_V21_READY' scripts/gameplay/fnaf_surveillance_v21.gd
@@ -59,7 +55,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          gdlint scripts/main.gd scripts/worldforge/*.gd scripts/visual/*.gd scripts/gameplay/*.gd scripts/ui/*.gd tests/test_fnaf_v21.gd tests/test_damage_system.gd > gdlint.log 2>&1
+          gdlint scripts/main.gd scripts/worldforge/*.gd scripts/visual/*.gd scripts/gameplay/*.gd scripts/ui/*.gd scripts/ai/*.gd scripts/audio/*.gd scripts/campaign/*.gd scripts/world/*.gd tests/test_nightshift.gd tests/test_fnaf_v21.gd tests/test_damage_system.gd > gdlint.log 2>&1
           status=$?
           set -e
           cat gdlint.log
@@ -108,22 +104,18 @@ jobs:
           grep -q 'BLACKOUT_FACTORY_FNAF_V21_READY' godot-runtime.log
           if grep -Eqi 'SCRIPT ERROR|Invalid call|Invalid get index|Attempt to call|ERROR:' godot-runtime.log; then exit 1; fi
 
-      - name: Render and beta-test FNAF v21 gameplay
+      - name: Render and exercise five night shifts, navigation and destruction
         shell: bash
         run: |
-          set +e
-          xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 MESA_GL_VERSION_OVERRIDE=3.3 timeout 150 "$GODOT_BIN" --path . --script res://tests/test_fnaf_v21.gd -- --touch-ui > build/fnaf-v21-test.log 2>&1
-          status=$?
-          set -e
-          cat build/fnaf-v21-test.log
-          if [ "$status" -ne 0 ]; then exit "$status"; fi
-          grep -q 'V21_FNAF_CHECKS PASS' build/fnaf-v21-test.log
-          if grep -Eqi 'SCRIPT ERROR|V21_FNAF_CHECK_FAILED' build/fnaf-v21-test.log; then exit 1; fi
-          test -s build/fnaf-v21/01-hub.png
-          test -s build/fnaf-v21/02-west-hall.png
-          test -s build/fnaf-v21/04-east-hall.png
-          test -s build/fnaf-v21/08-camera-network.png
-          test -s build/fnaf-v21/10-mobile-camera.png
+          set -euo pipefail
+          mkdir -p build/nightshift
+          xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 MESA_GL_VERSION_OVERRIDE=3.3 timeout 600 "$GODOT_BIN" --path . --audio-driver Dummy --script res://tests/test_nightshift.gd -- --touch-ui > build/nightshift-test.log 2>&1 || { cat build/nightshift-test.log; exit 1; }
+          cat build/nightshift-test.log
+          grep -q 'NIGHTSHIFT_TESTS PASS' build/nightshift-test.log
+          if grep -Eqi 'SCRIPT ERROR|NIGHTSHIFT_FAIL|ERROR:' build/nightshift-test.log; then exit 1; fi
+          for image in 01-hub 02-west-hall 03-logistics 04-east-hall 05-assembly 06-archives 07-power 08-relay 09-secret 10-camera-ui 11-chase 12-destruction 13-mobile-camera; do
+            test -s "build/nightshift/$image.png"
+          done
           timeout 60 "$GODOT_BIN" --headless --path . --script res://tests/test_damage_system.gd > build/damage-test.log 2>&1
           cat build/damage-test.log
           if grep -Eqi 'SCRIPT ERROR|DAMAGE_TEST_FAIL' build/damage-test.log; then exit 1; fi
@@ -137,6 +129,7 @@ jobs:
           set -e
           if [ "$status" -ne 0 ]; then tail -n 240 godot-export.log; exit "$status"; fi
           python3 tools/patch_web_shell.py build/web/index.html
+          python3 tools/build_release_manifest.py build/web "$GITHUB_SHA"
           grep -q 'BLACKOUT_WEBGL_PREFLIGHT_V16' build/web/index.html
           grep -q 'BLACKOUT_ASSET_GENERATOR_MENU_V2' build/web/index.html
           grep -q 'BLACKOUT_DEVELOPER_MENU_V1' build/web/index.html
@@ -199,8 +192,8 @@ jobs:
             godot-import.log
             godot-runtime.log
             godot-export.log
-            build/fnaf-v21-test.log
-            build/fnaf-v21/*.png
+            build/nightshift-test.log
+            build/nightshift/**
             build/firefox-console.log
             build/firefox-smoke.png
             build/firefox-after-start.png
@@ -219,7 +212,7 @@ jobs:
           JOB_STATUS: ${{ job.status }}
         run: |
           set -euo pipefail
-          if [ "$JOB_STATUS" = "success" ]; then state="success"; description="Godot FNAF v21, rendered beta-test and Firefox validated"; else state="failure"; description="Godot FNAF v21 or Firefox validation failed"; fi
+          if [ "$JOB_STATUS" = "success" ]; then state="success"; description="Godot night shifts, navigation, destruction and Firefox validated"; else state="failure"; description="Godot night shifts or Firefox validation failed"; fi
           curl --fail-with-body -sS -L -X POST -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -d "{\"state\":\"$state\",\"context\":\"blackout/firefox-web\",\"description\":\"$description\",\"target_url\":\"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}"
 
       - name: Configure GitHub Pages
@@ -253,6 +246,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: deploy
     steps:
+      - uses: actions/checkout@v5
+      - name: Verify exact public release
+        run: python3 tools/verify_public_release.py "${{ needs.deploy.outputs.page_url }}" "$GITHUB_SHA"
       - name: Verify public game, portal and generator files
         shell: bash
         env:
@@ -280,3 +276,17 @@ jobs:
           grep -q 'GÉNÉRER LE MODÈLE 3D' deployed-generator.html
           grep -q 'zero-shot-image-classification' deployed-autodetect.js
           grep -q 'Submit asset job' deployed-submit.js
+
+      - name: Play the deployed game and open the public editor in Firefox
+        run: |
+          mkdir -p build
+          npm install --no-save playwright@1.55.0 pngjs@7.0.0
+          npx playwright install --with-deps firefox
+          xvfb-run -a env BLACKOUT_FIREFOX_HEADLESS=0 BLACKOUT_TEST_URL="${{ needs.deploy.outputs.page_url }}" LIBGL_ALWAYS_SOFTWARE=1 MESA_GL_VERSION_OVERRIDE=3.3 MOZ_WEBRENDER=1 MOZ_X11_EGL=1 node tools/firefox_smoke.mjs
+          xvfb-run -a env BLACKOUT_FIREFOX_HEADLESS=0 BLACKOUT_TEST_URL="${{ needs.deploy.outputs.page_url }}" LIBGL_ALWAYS_SOFTWARE=1 MESA_GL_VERSION_OVERRIDE=3.3 MOZ_WEBRENDER=1 MOZ_X11_EGL=1 node tools/worldforge_portal_smoke.mjs
+      - name: Save public browser evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: public-playtest-${{ github.sha }}
+          path: build/*
