@@ -1,11 +1,12 @@
 class_name BlackoutEntryClearanceGuardV22
 extends Node
 ## Hard safety guard for the Act I onboarding path.
-## These two legacy vestibule walls are no longer part of the playable route.
+## Legacy vestibule closure walls are no longer part of the playable route.
 
 const REMOVED_BLOCKERS := [
 	"VestibuleNorthWallV18",
 	"VestibuleSouthWallV18",
+	"VestibuleEndWallV18",
 ]
 
 var game: Node3D
