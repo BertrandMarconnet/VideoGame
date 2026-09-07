@@ -230,6 +230,22 @@ try {
   analyzeFrame(startFrame, "after-start-mobile-controls-and-art");
   consoleLines.push("[interaction] movement, flashlight, crouch, right look joystick and storyboard art initialized successfully");
 
+  // Exercise the exported camera interface, then the actual narrow Web viewport.
+  await page.keyboard.press("v");
+  await page.waitForTimeout(1_200);
+  if (!consoleLines.some((line) => line.includes("BLACKOUT_CCTV_OPEN feeds=8"))) {
+    throw new Error("The exported game did not open its eight-feed CCTV network");
+  }
+  await page.keyboard.press("e");
+  await page.keyboard.press("1");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(1_200);
+  analyzeFrame(await page.screenshot({ path: "build/firefox-mobile-camera.png", fullPage: true }), "390px-camera");
+  await page.keyboard.press("v");
+  await page.waitForTimeout(500);
+  analyzeFrame(await page.screenshot({ path: "build/firefox-mobile-hud.png", fullPage: true }), "390px-hud");
+  consoleLines.push("[interaction] camera network, feed switch, shutter and 390x844 Web viewport exercised");
+
   if (runtimeErrors.length > 0) {
     throw new Error(`Firefox emitted runtime errors:\n${runtimeErrors.join("\n")}`);
   }

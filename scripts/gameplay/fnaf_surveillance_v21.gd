@@ -280,6 +280,7 @@ func _open_surveillance() -> void:
 	if game.drone_active:
 		game._force_player_view_v13("Connexion SENTINEL")
 	surveillance_open = true
+	print("BLACKOUT_CCTV_OPEN feeds=%d fps=%d" % [camera_nodes.size(), Engine.get_frames_per_second()])
 	game.set_meta("fnaf_surveillance_open", true)
 	game._release_touch_actions_v20()
 	overlay.visible = true

@@ -187,6 +187,8 @@ func run() -> void:
 	forge.set_developer_mode(true)
 	forge.open_developer_editor()
 	await frames(12)
+	var editor_rect: Rect2 = forge.developer_editor.panel.get_global_rect()
+	check(Rect2(Vector2.ZERO,Vector2(root.size)).encloses(editor_rect), "editor panel fits viewport " + str(editor_rect))
 	check(forge.developer_editor._asset_ids.size() >= 2, "editor catalogue loaded")
 	check(forge.developer_editor.room_selector.item_count >= 9, "editor room selection")
 	var obstruction: StaticBody3D = game.fnaf_factory_v21._static_box(game,Vector3(1,2,1),Vector3(-5.55,1,-30),game.visuals_v20.surface("paint"),"AuditProbe")

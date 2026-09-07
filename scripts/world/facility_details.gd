@@ -68,7 +68,9 @@ func install(scene: Node3D) -> void:
 			v.box(root, Vector3(0.55, 0.04, 0.4), Vector3(base.x, 0.02, base.z), v.surface("steel"), "TaskFoot")
 		body.set_meta("shift_task", key)
 		interactables[key] = body
-		v.sign_board(root, spec[0] + Vector3(0, 0.52, 0), String(spec[1]))
+		if key != "relay":
+			v.sign_board(root, spec[0] + Vector3(0, 0.52, 0), String(spec[1]), 0, Color(0.8,0.86,0.74), 0.35)
+			v.box(root,Vector3(0.06,0.52,0.06),spec[0]+Vector3(0,0.26,0.1),v.surface("steel"),"TaskSignSupport")
 	# Breakable window in a framed partition opens a maintenance shortcut.
 	game._build_destructible_wall(Vector3(3.5, 0.65, -53), Vector3(0.22, 1.3, 2.4), "M04ExitGrille")
 	game.fnaf_factory_v21._static_box(root, Vector3(7.0, 2.4, 0.22), Vector3(0, 2.6, -48.9), v.surface("concrete"), "M04NorthPartition")

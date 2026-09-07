@@ -35,10 +35,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 func _build_ui() -> void:
 	panel = PanelContainer.new()
 	panel.name = "DeveloperPanel"
-	panel.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
-	panel.position = Vector2(-460.0, -345.0)
-	panel.size = Vector2(440.0, 690.0)
-	panel.custom_minimum_size = Vector2(440.0, 690.0)
+	panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	panel.add_theme_font_size_override("font_size", 13)
+	get_viewport().size_changed.connect(_resize_panel)
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.008, 0.018, 0.024, 0.97)
@@ -56,14 +55,19 @@ func _build_ui() -> void:
 	margin.add_theme_constant_override("margin_right", 14)
 	margin.add_theme_constant_override("margin_top", 12)
 	margin.add_theme_constant_override("margin_bottom", 12)
-	panel.add_child(margin)
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	panel.add_child(scroll)
+	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(margin)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 8)
 	margin.add_child(column)
 
 	var title := Label.new()
 	title.text = "WORLDFORGE // ÉDITEUR DÉVELOPPEUR"
-	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_font_size_override("font_size", 16)
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	title.modulate = Color(0.55, 0.9, 1.0)
 	column.add_child(title)
 	var warning := Label.new()
@@ -88,9 +92,13 @@ func _build_ui() -> void:
 	room_selector.item_selected.connect(func(_index): _refresh_targets())
 	column.add_child(_row("Salle", room_selector))
 	asset_selector = OptionButton.new()
+	asset_selector.fit_to_longest_item = false
+	asset_selector.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	asset_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	column.add_child(_row("Asset", asset_selector))
 	target_selector = OptionButton.new()
+	target_selector.fit_to_longest_item = false
+	target_selector.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	target_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	column.add_child(_row("Cible", target_selector))
 
@@ -122,13 +130,19 @@ func _build_ui() -> void:
 	status_label.bbcode_enabled = true
 	status_label.fit_content = false
 	status_label.scroll_active = true
-	status_label.custom_minimum_size = Vector2(400.0, 250.0)
+	status_label.custom_minimum_size = Vector2(250.0, 160.0)
 	status_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	status_label.text = "[color=#85dfff]WorldForge prêt.[/color]\nLancer un audit avant de publier une nouvelle map."
 	column.add_child(status_label)
 
 	var close_button := _button("FERMER L'ÉDITEUR", func(): visible = false)
 	column.add_child(close_button)
+	_resize_panel()
+
+func _resize_panel() -> void:
+	var screen := get_viewport().get_visible_rect().size
+	panel.size = Vector2(minf(510,screen.x-24),screen.y-24)
+	panel.position = Vector2(screen.x-panel.size.x-12,12)
 
 func _row(label_text: String, control: Control) -> HBoxContainer:
 	var row := HBoxContainer.new()
@@ -143,7 +157,8 @@ func _row(label_text: String, control: Control) -> HBoxContainer:
 func _button(text_value: String, callback: Callable) -> Button:
 	var button := Button.new()
 	button.text = text_value
-	button.custom_minimum_size = Vector2(92.0, 36.0)
+	button.custom_minimum_size = Vector2(64.0, 40.0)
+	button.add_theme_font_size_override("font_size", 12)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.pressed.connect(callback)
 	return button

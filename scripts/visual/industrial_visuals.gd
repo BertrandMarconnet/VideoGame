@@ -151,10 +151,11 @@ func wall(parent: Node3D, size: Vector3, at: Vector3, label: String) -> void:
 	collision.shape = shape
 	body.add_child(collision)
 
-func sign_board(parent: Node3D, at: Vector3, text_value: String, facing := 0.0, tint := Color(0.75, 0.81, 0.68)) -> void:
+func sign_board(parent: Node3D, at: Vector3, text_value: String, facing := 0.0, tint := Color(0.75, 0.81, 0.68), board_scale := 1.0) -> void:
 	var root := Node3D.new()
 	root.position = at
 	root.rotation_degrees.y = facing
+	root.scale = Vector3.ONE * board_scale
 	parent.add_child(root)
 	box(root, Vector3(2.3, 0.62, 0.045), Vector3.ZERO, surface("paint"), "SignBack", true)
 	var label := Label3D.new()

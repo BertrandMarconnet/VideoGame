@@ -231,6 +231,10 @@ func _attach_generated_visual(robot: CharacterBody3D, entry: Dictionary) -> void
 	var rotation_values := entry.get("visual_rotation_degrees", [0.0, 0.0, 0.0]) as Array
 	if rotation_values.size() >= 3:
 		instance.rotation_degrees = Vector3(float(rotation_values[0]), float(rotation_values[1]), float(rotation_values[2]))
+	if String(entry.get("category", "")) == "robot_biped":
+		# Imported bipeds face +Z; CharacterBody perception and steering face -Z.
+		instance.rotation.y += PI
+		preload("res://scripts/visual/robot_mechanical_shell.gd").new().install(instance)
 	var dimensions := entry.get("dimensions_m", {}) as Dictionary
 	var target_height := maxf(float(dimensions.get("height", 1.0)), 0.1)
 	var bounds := _combined_aabb(instance)
