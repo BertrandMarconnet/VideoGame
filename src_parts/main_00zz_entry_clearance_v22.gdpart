@@ -1,0 +1,13 @@
+# v22 onboarding safety guard — installed before _ready so late Act I geometry
+# can never leave the service entrance blocked for a playable frame.
+var entry_clearance_guard_script_v22 := preload("res://scripts/qa/entry_clearance_guard_v22.gd")
+var entry_clearance_guard_v22: Node
+@onready var _entry_clearance_guard_boot_v22: bool = _install_entry_clearance_guard_v22()
+
+func _install_entry_clearance_guard_v22() -> bool:
+	if entry_clearance_guard_v22 != null and is_instance_valid(entry_clearance_guard_v22):
+		return true
+	entry_clearance_guard_v22 = entry_clearance_guard_script_v22.new()
+	add_child(entry_clearance_guard_v22)
+	entry_clearance_guard_v22.call("configure", self)
+	return true
