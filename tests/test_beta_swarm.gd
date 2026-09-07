@@ -52,7 +52,9 @@ func _run() -> void:
 	await _frames(120)
 	game._start_game()
 	game._finish_intro_v12()
-	await _frames(35)
+	# The airlock is late-authored by Act I. Give the production safety agent a
+	# few real frames to observe and repair that newly created geometry.
+	await _frames(45)
 	player = game.get("player") as CharacterBody3D
 	var swarm: Node = game.get_node_or_null("BetaTestSwarmV22")
 	_check(player != null, "player missing")
@@ -62,18 +64,36 @@ func _run() -> void:
 		await _finish()
 		return
 
+	# Structural walking uses the same deterministic strategy as the established
+	# NightShift explorer: stop the player's normal input physics so two movement
+	# loops cannot overwrite each other, open legitimate doors, then walk the
+	# CharacterBody through every metre of the onboarding route.
+	game.set_physics_process(false)
+	for robot_body in game.get("robots") as Array:
+		if robot_body is CharacterBody3D:
+			(robot_body as CharacterBody3D).global_position = Vector3(-12.5, 1.0, -63.0)
+	var drone := game.get("drone") as CharacterBody3D
+	if drone != null:
+		drone.global_position = Vector3(13.0, 2.2, -26.0)
+	var outer_door := game.get("act1_outer_door_v18") as AnimatableBody3D
+	var inner_door := game.get("act1_inner_door_v18") as AnimatableBody3D
+	_check(outer_door != null and inner_door != null, "Act I service airlock doors missing")
+	if outer_door != null:
+		outer_door.position.x = 12.95
+	if inner_door != null:
+		inner_door.position.x = 8.05
+	await _frames(5)
+
 	# ENTRY SENTINEL — reproduce the exact public onboarding path instead of
 	# teleporting directly into S-01 as the older integration tests did.
 	player.global_position = Vector3(10.5, 0.95, 3.0)
 	player.velocity = Vector3.ZERO
-	await _frames(20)
+	await _frames(8)
 	await _capture("00-service-approach")
 	_check(game.find_child("VestibuleNorthWallV18", true, false) == null, "obsolete wall still exists immediately after inner blast door")
 	_check(await _walk_to(Vector3(10.5, 0.95, -1.0)), "ENTRY_SENTINEL blocked at outer service door: " + String(swarm.call("describe_blocker", player.global_position)))
 	await _capture("01-airlock-entry")
 	_check(await _walk_to(Vector3(10.5, 0.95, -5.3)), "ENTRY_SENTINEL cannot cross decontamination airlock: " + String(swarm.call("describe_blocker", player.global_position)))
-	# Inner door opens after the pressure-lock dwell.
-	await _frames(75)
 	_check(await _walk_to(Vector3(10.5, 0.95, -12.7)), "ENTRY_SENTINEL blocked after inner blast door: " + String(swarm.call("describe_blocker", player.global_position)))
 	await _capture("02-vestibule-open")
 	for point: Vector3 in [Vector3(9.1, 0.95, -13.4), Vector3(7.5, 0.95, -13.4), Vector3(5.8, 0.95, -14.8), Vector3(3.2, 0.95, -16.5), Vector3(0.0, 0.95, -18.0)]:

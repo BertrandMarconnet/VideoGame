@@ -40,6 +40,11 @@ func _deferred_first_audit() -> void:
 func _process(delta: float) -> void:
 	if game == null or not is_instance_valid(game):
 		return
+	# Act I's service airlock is authored lazily when the campaign starts, after
+	# this agent is first configured. Repair the known video regression as soon
+	# as that late-authored node appears, before the player can reach it.
+	if game.find_child("VestibuleNorthWallV18", true, false) != null:
+		_repair_known_entry_regression()
 	_elapsed += delta
 	if _elapsed < 0.6:
 		return
@@ -53,11 +58,16 @@ func _process(delta: float) -> void:
 
 func _repair_known_entry_regression() -> void:
 	# Video regression: this legacy wall sits <1 m after the inner blast door and
-	# makes the vestibule look/behave like a dead end. v21 uses the lateral turn
-	# itself, not this obsolete closure.
+	# makes the vestibule look/behave like a dead end. v21 uses the lateral turn.
 	for candidate in game.find_children("VestibuleNorthWallV18", "StaticBody3D", true, false):
 		var wall := candidate as StaticBody3D
 		wall.set_meta("beta_swarm_safe_fix", "remove_obsolete_entry_blocker")
+		wall.collision_layer = 0
+		wall.collision_mask = 0
+		for shape_node in wall.find_children("*", "CollisionShape3D", true, false):
+			(shape_node as CollisionShape3D).disabled = true
+		for mesh_node in wall.find_children("*", "MeshInstance3D", true, false):
+			(mesh_node as MeshInstance3D).visible = false
 		wall.queue_free()
 		_repair_count += 1
 	var console := game.find_child("SentinelVestibuleConsoleV18", true, false)
@@ -185,6 +195,9 @@ func blocker_at(point: Vector3, ignore_operable_doors := true) -> Node:
 		if collider == null:
 			continue
 		var node_name := String(collider.name)
+		# Actors may cross a route temporarily but must never be diagnosed as walls.
+		if collider is CharacterBody3D or bool(collider.get_meta("robot", false)) or bool(collider.get_meta("drone", false)):
+			continue
 		if ignore_operable_doors and node_name in ["ServiceDoorOuterV18", "BlastDoorInnerV18", "HubLeftShutterV21", "HubRightShutterV21"]:
 			continue
 		if node_name.contains("Floor") or node_name.contains("Ceiling"):

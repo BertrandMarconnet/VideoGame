@@ -23,6 +23,12 @@ func _prepare_industrial_v20() -> void:
 	beta_test_swarm_v22 = beta_swarm_script_v22.new()
 	add_child(beta_test_swarm_v22)
 	beta_test_swarm_v22.call("configure", self)
+	# KITE-01 still collides with the factory, but no longer acts like an invisible
+	# wall for Paul when the drone is parked or returning to the S-01 hub.
+	if drone:
+		drone.collision_layer = 2
+		drone.collision_mask = 1
+		drone.set_meta("player_passthrough_v22", true)
 	fnaf_surveillance_v21 = fnaf_surveillance_script_v21.new()
 	add_child(fnaf_surveillance_v21)
 	fnaf_surveillance_v21.call("configure", self)
