@@ -1,12 +1,13 @@
 extends SceneTree
 ## Multi-agent regression test built from the user-reported blocked entrance video.
-## It sweeps the real player capsule through the onboarding route and repeats
+## It samples the exact gameplay capsule through the onboarding route and repeats
 ## structural audits after several WorldForge seeds. Any blocker prevents Web deployment.
 
 var game: Node3D
 var player: CharacterBody3D
 var failures: Array[String] = []
 var screenshots := not DisplayServer.get_name() == "headless"
+var last_walk_blocker := "none"
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -28,11 +29,42 @@ func _capture(label: String) -> void:
 	DirAccess.make_dir_recursive_absolute("res://build/beta-swarm")
 	root.get_texture().get_image().save_png("res://build/beta-swarm/%s.png" % label)
 
+func _player_capsule_blocker(at: Vector3) -> Node:
+	var collision_shape := player.find_child("*", true, false) as CollisionShape3D
+	if collision_shape == null or collision_shape.shape == null:
+		return null
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = collision_shape.shape
+	query.transform = Transform3D(player.global_transform.basis, at)
+	query.collision_mask = player.collision_mask
+	query.collide_with_areas = false
+	query.collide_with_bodies = true
+	query.exclude = [player.get_rid()]
+	for robot_body in game.get("robots") as Array:
+		if robot_body is CollisionObject3D:
+			query.exclude.append((robot_body as CollisionObject3D).get_rid())
+	var drone := game.get("drone") as CollisionObject3D
+	if drone != null:
+		query.exclude.append(drone.get_rid())
+	for hit in game.get_world_3d().direct_space_state.intersect_shape(query, 32):
+		var collider := hit.get("collider") as Node
+		if collider == null:
+			continue
+		var node_name := String(collider.name)
+		if node_name.contains("Floor") or node_name.contains("Ceiling"):
+			continue
+		if node_name in ["ServiceDoorOuterV18", "BlastDoorInnerV18", "HubLeftShutterV21", "HubRightShutterV21"]:
+			continue
+		if bool(collider.get_meta("facility_door", false)) or bool(collider.get_meta("fnaf_shutter", false)):
+			continue
+		return collider
+	return null
+
 func _walk_to(destination: Vector3, _max_frames := 260) -> bool:
-	# Deterministic physical traversal using the exact CharacterBody3D and its
-	# gameplay capsule. Each 18 cm sweep is rejected by Jolt if any solid body
-	# blocks the player. Unlike direct move_and_slide calls from a SceneTree test,
-	# this does not depend on an external physics callback owning the body.
+	# Jolt volume validation with the exact player's CollisionShape3D. Sampling
+	# every 18 cm catches a wall/prop before placing the test player there while
+	# avoiding false positives from test_move() continuously touching the floor.
+	last_walk_blocker = "none"
 	var start: Vector3 = player.global_position
 	var horizontal := Vector3(destination.x - start.x, 0.0, destination.z - start.z)
 	var distance := horizontal.length()
@@ -41,8 +73,9 @@ func _walk_to(destination: Vector3, _max_frames := 260) -> bool:
 	var steps := maxi(1, ceili(distance / 0.18))
 	for step in range(1, steps + 1):
 		var target := start.lerp(destination, float(step) / float(steps))
-		var motion := target - player.global_position
-		if player.test_move(player.global_transform, motion):
+		var blocker := _player_capsule_blocker(target)
+		if blocker != null:
+			last_walk_blocker = "%s path=%s at=%s" % [blocker.name, blocker.get_path(), target]
 			return false
 		player.global_position = target
 		await physics_frame
@@ -60,8 +93,6 @@ func _run() -> void:
 	await _frames(120)
 	game._start_game()
 	game._finish_intro_v12()
-	# The airlock is late-authored by Act I. Give both production guards a few
-	# real frames to observe and remove obsolete vestibule geometry.
 	await _frames(45)
 	player = game.get("player") as CharacterBody3D
 	var swarm: Node = game.get_node_or_null("BetaTestSwarmV22")
@@ -73,8 +104,7 @@ func _run() -> void:
 		await _finish()
 		return
 
-	# Freeze the game director while the player's real Jolt capsule is swept.
-	# Legitimate doors are opened explicitly; moving actors are parked away.
+	# Freeze moving gameplay actors while the exact capsule volume is sampled.
 	game.set_physics_process(false)
 	for robot_body in game.get("robots") as Array:
 		if robot_body is CharacterBody3D:
@@ -91,20 +121,21 @@ func _run() -> void:
 		inner_door.position.x = 8.05
 	await _frames(5)
 
-	# ENTRY SENTINEL — reproduces the public onboarding route with the real player capsule.
+	# ENTRY SENTINEL — exact public onboarding route.
 	player.global_position = Vector3(10.5, 1.1, 2.6)
 	player.velocity = Vector3.ZERO
 	await _frames(8)
 	await _capture("00-service-approach")
 	_check(game.find_child("VestibuleNorthWallV18", true, false) == null, "obsolete north vestibule wall still exists")
 	_check(game.find_child("VestibuleSouthWallV18", true, false) == null, "obsolete south vestibule wall still exists")
-	_check(await _walk_to(Vector3(10.5, 1.1, -1.0)), "ENTRY_SENTINEL blocked at outer service door: " + String(swarm.call("describe_blocker", player.global_position)))
+	_check(game.find_child("VestibuleEndWallV18", true, false) == null, "obsolete end vestibule wall still exists")
+	_check(await _walk_to(Vector3(10.5, 1.1, -1.0)), "ENTRY_SENTINEL blocked at outer service door: " + last_walk_blocker)
 	await _capture("01-airlock-entry")
-	_check(await _walk_to(Vector3(10.5, 1.1, -5.3)), "ENTRY_SENTINEL cannot cross decontamination airlock: " + String(swarm.call("describe_blocker", player.global_position)))
-	_check(await _walk_to(Vector3(10.5, 1.1, -12.7)), "ENTRY_SENTINEL blocked after inner blast door: " + String(swarm.call("describe_blocker", player.global_position)))
+	_check(await _walk_to(Vector3(10.5, 1.1, -5.3)), "ENTRY_SENTINEL cannot cross decontamination airlock: " + last_walk_blocker)
+	_check(await _walk_to(Vector3(10.5, 1.1, -12.7)), "ENTRY_SENTINEL blocked after inner blast door: " + last_walk_blocker)
 	await _capture("02-vestibule-open")
 	for point: Vector3 in [Vector3(9.1, 1.1, -13.4), Vector3(7.5, 1.1, -13.4), Vector3(5.8, 1.1, -14.8), Vector3(3.2, 1.1, -16.5), Vector3(0.0, 1.1, -18.0)]:
-		_check(await _walk_to(point), "ENTRY_SENTINEL route to S-01 blocked near %s by %s" % [point, String(swarm.call("describe_blocker", player.global_position))])
+		_check(await _walk_to(point), "ENTRY_SENTINEL route to S-01 blocked near %s by %s" % [point, last_walk_blocker])
 	await _capture("03-hub-arrival")
 	_check(player.global_position.distance_to(Vector3(0.0, 1.1, -18.0)) < 0.35, "ENTRY_SENTINEL did not reach S-01")
 
@@ -116,9 +147,7 @@ func _run() -> void:
 	var cameras: Node = game.get_node_or_null("FNAFSurveillanceV21")
 	_check(cameras != null and (cameras.get("camera_nodes") as Array).size() == 8, "SECURITY_GUARD camera network invalid")
 
-	# WORLD FORGE CHAOS — future procedural changes must not be able to put a
-	# generated wall or prop on a mandatory route. Safe generated blockers are
-	# automatically relocated by the runtime swarm before deployment.
+	# WORLD FORGE CHAOS — generated assets must never re-block mandatory paths.
 	var forge: Node = root.get_node_or_null("WorldForgeRuntime")
 	_check(forge != null, "WORLD_FORGE_CHAOS runtime missing")
 	var seed_results: Array[Dictionary] = []
