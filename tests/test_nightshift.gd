@@ -27,6 +27,17 @@ func run() -> void:
 	await frames(20)
 	game.shift.restart()
 	await frames(20)
+	# Every robot must have an imported mesh and real clips after a clean import.
+	for subject in game.robots:
+		var visual: Node3D = subject.get_node_or_null("GeneratedVisual")
+		check(visual != null, "imported robot visual " + subject.name)
+		check(not subject.find_children("*", "AnimationPlayer", true, false).is_empty(), "imported animation player " + subject.name)
+		if visual:
+			var bridge = root.get_node("GeneratedAssetBridge").bridge
+			var bounds: AABB = bridge._combined_aabb(visual)
+			var bottom: float = visual.position.y + bounds.position.y * visual.scale.y
+			var capsule: CapsuleShape3D = subject.get_node("GameplayCollision").shape
+			check(absf(bottom + capsule.height * 0.5) < 0.08, "robot feet aligned to collision " + subject.name)
 	var shift: Node = game.shift
 	var nav: RefCounted = shift.navigation
 	var audit: Array = nav.audit()
@@ -176,6 +187,7 @@ func run() -> void:
 	forge.set_developer_mode(true)
 	forge.open_developer_editor()
 	await frames(12)
+	check(forge.developer_editor._asset_ids.size() >= 2, "editor catalogue loaded")
 	check(forge.developer_editor.room_selector.item_count >= 9, "editor room selection")
 	var obstruction: StaticBody3D = game.fnaf_factory_v21._static_box(game,Vector3(1,2,1),Vector3(-5.55,1,-30),game.visuals_v20.surface("paint"),"AuditProbe")
 	await physics_frame
@@ -194,6 +206,9 @@ func run() -> void:
 	floating.queue_free()
 	await frames(3)
 	forge.developer_editor._audit()
+	var audit_file := FileAccess.open("res://build/nightshift/editor-audit.json",FileAccess.WRITE)
+	audit_file.store_string(JSON.stringify(forge.last_report,"  "))
+	audit_file.close()
 	await capture("15-editor-audit")
 	forge.developer_editor.hide()
 	if screenshots:

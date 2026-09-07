@@ -84,7 +84,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          timeout 180 "$GODOT_BIN" --headless --editor --path . --quit-after 12 > godot-import.log 2>&1
+          timeout 300 "$GODOT_BIN" --headless --path . --import > godot-import.log 2>&1
           status=$?
           set -e
           if [ "$status" -ne 0 ]; then tail -n 200 godot-import.log; exit "$status"; fi

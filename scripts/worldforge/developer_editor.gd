@@ -83,7 +83,7 @@ func _build_ui() -> void:
 	column.add_child(seed_buttons)
 
 	room_selector = OptionButton.new()
-	for room in ["TOUTES", "HUB", "LOGISTICS", "ARCHIVES", "MAINTENANCE", "ASSEMBLY", "POWER", "TEST", "RELAY"]:
+	for room in ["TOUTES", "HUB", "LOGISTICS", "ARCHIVES", "MAINTENANCE", "ASSEMBLY", "POWER", "TEST", "RELAY", "WEST HALL", "EAST HALL", "M-04"]:
 		room_selector.add_item(room)
 	room_selector.item_selected.connect(func(_index): _refresh_targets())
 	column.add_child(_row("Salle", room_selector))
@@ -157,7 +157,7 @@ func _refresh_lists() -> void:
 func _refresh_assets() -> void:
 	asset_selector.clear()
 	_asset_ids.clear()
-	var bridge := get_node_or_null("/root/GeneratedAssetRuntime")
+	var bridge := get_node_or_null("/root/GeneratedAssetBridge")
 	if bridge == null or not bridge.has_method("list_assets"):
 		asset_selector.add_item("Aucun catalogue chargé")
 		return
@@ -181,7 +181,7 @@ func _refresh_targets() -> void:
 		if not candidate is Node3D:
 			continue
 		var room := room_selector.get_item_text(room_selector.selected)
-		if room != "TOUTES" and scene_root.shift.navigation.nearest(candidate.global_position) != room:
+		if room != "TOUTES" and scene_root.shift.navigation.room_for_position(candidate.global_position) != room:
 			continue
 		if bool(candidate.get_meta("worldforge_replaceable", false)) or bool(candidate.get_meta("worldforge_generated", false)) or bool(candidate.get_meta("facility_editable", false)):
 			_target_paths.append(candidate.get_path())
@@ -213,7 +213,7 @@ func _random_seed() -> void:
 
 func _spawn_selected_asset() -> void:
 	var asset_id := _selected_asset_id()
-	var bridge := get_node_or_null("/root/GeneratedAssetRuntime")
+	var bridge := get_node_or_null("/root/GeneratedAssetBridge")
 	if asset_id.is_empty() or bridge == null or scene_root == null:
 		_log("Asset ou runtime indisponible.", true)
 		return
@@ -237,7 +237,7 @@ func _spawn_selected_asset() -> void:
 func _replace_selected_target() -> void:
 	var target := _selected_target()
 	var asset_id := _selected_asset_id()
-	var bridge := get_node_or_null("/root/GeneratedAssetRuntime")
+	var bridge := get_node_or_null("/root/GeneratedAssetBridge")
 	if target == null or asset_id.is_empty() or bridge == null:
 		_log("Sélection asset/cible incomplète.", true)
 		return

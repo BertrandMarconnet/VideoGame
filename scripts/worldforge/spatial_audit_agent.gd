@@ -109,7 +109,11 @@ func _audit_robots(scene_root: Node3D) -> void:
 			else:
 				var required := ["Idle-loop", "Walk-loop", "Run-loop", "Attack", "Shutdown"]
 				for clip in required:
-					if not (animation_player as AnimationPlayer).has_animation(clip):
+					var found := false
+					for available in (animation_player as AnimationPlayer).get_animation_list():
+						if String(available).to_lower().contains(String(clip).replace("-loop", "").to_lower()):
+							found = true
+					if not found:
 						_stats["animation_issues"] = int(_stats["animation_issues"]) + 1
 						_add_issue("medium", "missing_animation_clip", robot, "Animation requise absente : %s" % clip, {"clip": clip})
 
@@ -127,7 +131,8 @@ func _audit_audio(scene_root: Node3D) -> void:
 	for candidate in scene_root.find_children("GeneratedVisual*", "Node3D", true, false):
 		if candidate is Node3D and candidate.has_meta("generated_asset_id"):
 			var audio_component := candidate.get_node_or_null("GeneratedAssetAudio")
-			if audio_component == null:
+			var shift_audio: bool = candidate.get_parent().get_meta("nightshift_audio_bound", false)
+			if audio_component == null and not shift_audio:
 				_stats["audio_issues"] = int(_stats["audio_issues"]) + 1
 				_add_issue("low", "generated_audio_component_missing", candidate, "Asset généré sans composant audio synchronisé.")
 

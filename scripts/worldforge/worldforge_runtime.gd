@@ -135,6 +135,7 @@ func save_snapshot() -> String:
 		"schema_version": 1,
 		"seed": current_seed,
 		"manifest": last_manifest,
+		"edited_objects": _edited_objects(),
 		"audit": last_report,
 		"repair": last_repair,
 		"developer_mode": developer_mode
@@ -293,3 +294,13 @@ func _save_json(path: String, data: Variant) -> void:
 func _ensure_directory(path: String) -> void:
 	var absolute := ProjectSettings.globalize_path(path)
 	DirAccess.make_dir_recursive_absolute(absolute)
+
+func _edited_objects() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for node in scene_root.find_children("*","Node3D",true,false):
+		if not (node.get_meta("facility_editable",false) or node.get_meta("worldforge_generated",false)):
+			continue
+		var at: Vector3 = node.global_position
+		var orientation: Vector3 = node.rotation_degrees
+		result.append({"path":str(scene_root.get_path_to(node)),"asset":node.get_meta("generated_asset_id",""),"position":[at.x,at.y,at.z],"rotation":[orientation.x,orientation.y,orientation.z],"scale":[node.scale.x,node.scale.y,node.scale.z]})
+	return result

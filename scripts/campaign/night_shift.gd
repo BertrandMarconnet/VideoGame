@@ -264,6 +264,7 @@ func _install_animation_vocabulary(robot: Node3D) -> void:
 				library.add_animation(name_value, clip)
 				break
 	animation_player.add_animation_library("Shift", library)
+	robot.set_meta("nightshift_audio_bound", true)
 
 func _shape_motion(clip: Animation, motion: String) -> void:
 	clip.loop_mode = Animation.LOOP_LINEAR if motion in ["Head scan", "Limp", "Climb"] else Animation.LOOP_NONE

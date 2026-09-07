@@ -10,10 +10,11 @@ func _build_v11_upgrade() -> void:
 func _build_industrial_arm_v11(at: Vector3, side: float) -> void:
 	var rig := Node3D.new()
 	rig.name = "FactoryArm"
+	rig.scale = Vector3.ONE * 0.45
 	rig.position = at
 	rig.rotation_degrees.y = -90.0 * side
 	add_child(rig)
-	var dark := _material(Color(0.055, 0.065, 0.072), 0.92, 0.22)
+	var dark := _material(Color(0.22, 0.25, 0.27), 0.7, 0.5)
 	var joint_mat := _material(Color(0.28, 0.29, 0.3), 0.95, 0.18)
 	_v11_box(rig, Vector3(1.9, 0.5, 1.9), Vector3(0, 0, 0), dark, "ArmBase")
 	var base_joint := Node3D.new()

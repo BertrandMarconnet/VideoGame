@@ -94,3 +94,18 @@ func audit() -> Array[Dictionary]:
 				issues.append({"code":"blocked_route", "edge":pair, "position":at, "node_path":str(body.get_path()), "severity":"error"})
 				break
 	return issues
+
+func room_for_position(at: Vector3) -> String:
+	if at.z > -22:
+		return "HUB"
+	if at.z < -71:
+		return "RELAY"
+	if absf(at.x) < 3.7 and at.z < -49 and at.z > -57:
+		return "M-04"
+	if absf(at.x) <= 7.5:
+		return "WEST HALL" if at.x < 0 else "EAST HALL"
+	if at.z > -38:
+		return "LOGISTICS" if at.x < 0 else "ASSEMBLY"
+	var west_room := "ARCHIVES" if at.z > -53 else "MAINTENANCE"
+	var east_room := "POWER" if at.z > -53 else "TEST"
+	return west_room if at.x < 0 else east_room

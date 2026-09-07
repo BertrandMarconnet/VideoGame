@@ -238,7 +238,11 @@ func _attach_generated_visual(robot: CharacterBody3D, entry: Dictionary) -> void
 		var scale_factor := target_height / bounds.size.y
 		instance.scale = Vector3.ONE * scale_factor
 		var center := bounds.position + bounds.size * 0.5
-		instance.position = Vector3(-center.x * scale_factor, -bounds.position.y * scale_factor, -center.z * scale_factor)
+		var floor_offset := 0.0
+		var collision := robot.get_node_or_null("GameplayCollision") as CollisionShape3D
+		if collision != null and collision.shape is CapsuleShape3D:
+			floor_offset = collision.position.y - (collision.shape as CapsuleShape3D).height * 0.5
+		instance.position = Vector3(-center.x * scale_factor, floor_offset - bounds.position.y * scale_factor, -center.z * scale_factor)
 	_disable_procedural_visual(robot, instance)
 	robot.set_meta("generated_visual_active", true)
 	robot.set_meta("generated_visual_path", path)
