@@ -9,8 +9,10 @@ from pathlib import Path
 MARKER = "BLACKOUT_WEBGL_PREFLIGHT_V16"
 ASSET_MENU_MARKER = "BLACKOUT_ASSET_GENERATOR_MENU_V2"
 DEVELOPER_MENU_MARKER = "BLACKOUT_DEVELOPER_MENU_V1"
+BETA_AGENT_SHORTCUT_MARKER = "BLACKOUT_BETA_AGENT_SHORTCUT_V1"
 PUBLISHED_WEB_FILES = (
     "developer.html",
+    "beta-agents.html",
     "asset-generator.html",
     "asset-autodetect.js",
     "github-direct-submit.js",
@@ -41,6 +43,11 @@ STYLE_AND_SCRIPT = r'''
 </script>
 '''
 
+BETA_AGENT_SHORTCUT = r'''
+<!-- BLACKOUT_BETA_AGENT_SHORTCUT_V1 -->
+<a href="./beta-agents.html" style="position:fixed;left:14px;bottom:14px;z-index:2000;display:inline-flex;align-items:center;gap:8px;padding:11px 14px;border:1px solid #65dda0;border-radius:9px;background:#06251cf2;color:#dfffee;text-decoration:none;font:850 12px ui-monospace,'Cascadia Mono',Consolas,monospace;box-shadow:0 0 22px #45d58a22">🤖 BÊTA AGENTS / ÉTAT DES TESTS</a>
+'''
+
 
 def publish_web_tools(html_path: Path) -> None:
     root = Path(__file__).resolve().parent.parent
@@ -55,6 +62,15 @@ def publish_web_tools(html_path: Path) -> None:
         if destination.stat().st_size < minimum:
             raise RuntimeError(f"Published web tool is unexpectedly small: {destination}")
         print(f"Published {filename} to {destination}")
+
+    developer_path = html_path.parent / "developer.html"
+    developer_html = developer_path.read_text(encoding="utf-8")
+    if BETA_AGENT_SHORTCUT_MARKER not in developer_html:
+        if "</body>" not in developer_html:
+            raise RuntimeError("Developer portal has no </body> tag")
+        developer_html = developer_html.replace("</body>", f"{BETA_AGENT_SHORTCUT}\n</body>", 1)
+        developer_path.write_text(developer_html, encoding="utf-8")
+        print(f"Injected {BETA_AGENT_SHORTCUT_MARKER} into {developer_path}")
 
 
 def main() -> int:
